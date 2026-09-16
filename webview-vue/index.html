@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!--
+      Host-injected configuration.
+
+      Every value is a quoted string on purpose: the extension host substitutes
+      the `PI_*_PLACEHOLDER` needles with literal text after building, and a
+      page that does not consume a given value leaves its needle intact. Quoting
+      keeps the script valid in that case. Parse numbers with `toNumber()` in
+      `src/lib/injected.ts`.
+    -->
+    <script>
+      window.__PI__ = {
+        home: "PI_HOME_PLACEHOLDER",
+        sep: "PI_SEP_PLACEHOLDER",
+        workspace: "PI_WORKSPACE_PLACEHOLDER",
+        fontSize: "PI_FONTSIZE_PLACEHOLDER",
+        lang: "PI_LANG_PLACEHOLDER",
+        mermaidTheme: "PI_MERMAID_THEME_PLACEHOLDER",
+        bgImage: "PI_BG_IMAGE_PLACEHOLDER",
+        bgOpacity: "PI_BG_OPACITY_PLACEHOLDER",
+        sendShortcut: "PI_SENDSHORTCUT_PLACEHOLDER",
+      };
+    </script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="./src/main.ts"></script>
+  </body>
+</html>

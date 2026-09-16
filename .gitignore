@@ -1,0 +1,16 @@
+node_modules
+*.log
+.env*
+dist
+*.vsix
+package-lock.json
+.DS_Store
+
+# webview-vue build output
+webview-vue/dist
+
+# generated at build time
+webview-vue/src/lib/model-icons-data.ts
+
+# TypeScript native preview single-file check config
+.tsconfig.pi-extensions-check.json

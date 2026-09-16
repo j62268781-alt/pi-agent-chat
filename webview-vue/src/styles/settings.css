@@ -1,0 +1,1271 @@
+.codicon {
+  font: normal normal normal var(--fs-16)/1 codicon;
+  display: inline-block;
+  text-decoration: none;
+  text-rendering: auto;
+  text-align: center;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  user-select: none;
+}
+.codicon-add::before {
+  content: "\ea60";
+}
+.codicon-arrow-up::before {
+  content: "\eaa1";
+}
+.codicon-check::before {
+  content: "\eab2";
+}
+.codicon-chevron-right::before {
+  content: "\eab6";
+}
+.codicon-chevron-down::before {
+  content: "\eab4";
+}
+.codicon-chevron-left::before {
+  content: "\eab5";
+}
+.codicon-circle::before {
+  content: "\eabc";
+}
+.codicon-circle-filled::before {
+  content: "\ea71";
+}
+.codicon-circle-slash::before {
+  content: "\eabd";
+}
+.codicon-clear-all::before {
+  content: "\eabf";
+}
+.codicon-close::before {
+  content: "\ea76";
+}
+.codicon-copy::before {
+  content: "\ebcc";
+}
+.codicon-discard::before {
+  content: "\eae2";
+}
+.codicon-edit::before {
+  content: "\ea73";
+}
+.codicon-error::before {
+  content: "\ea87";
+}
+.codicon-file-text::before {
+  content: "\ec5e";
+}
+.codicon-gear::before {
+  content: "\eaf8";
+}
+.codicon-git-commit::before {
+  content: "\eafc";
+}
+.codicon-globe::before {
+  content: "\eb01";
+}
+.codicon-go-to-file::before {
+  content: "\ea94";
+}
+.codicon-hubot::before {
+  content: "\eb08";
+}
+.codicon-info::before {
+  content: "\ea74";
+}
+.codicon-key::before {
+  content: "\eb11";
+}
+.codicon-lightbulb::before {
+  content: "\ea61";
+}
+.codicon-link::before {
+  content: "\eb15";
+}
+.codicon-lock::before {
+  content: "\ea75";
+}
+.codicon-organization::before {
+  content: "\ea7e";
+}
+.codicon-package::before {
+  content: "\eb29";
+}
+.codicon-person::before {
+  content: "\ea67";
+}
+.codicon-plus::before {
+  content: "\ea60";
+}
+.codicon-quote::before {
+  content: "\eb33";
+}
+.codicon-refresh::before {
+  content: "\eb37";
+}
+.codicon-rocket::before {
+  content: "\eb44";
+}
+.codicon-save::before {
+  content: "\eb4b";
+}
+.codicon-search::before {
+  content: "\ea6d";
+}
+.codicon-server::before {
+  content: "\eb50";
+}
+.codicon-settings-gear::before {
+  content: "\eb51";
+}
+.codicon-shield::before {
+  content: "\eb53";
+}
+.codicon-sign-in::before {
+  content: "\ea6f";
+}
+.codicon-sign-out::before {
+  content: "\ea6e";
+}
+.codicon-sparkle::before {
+  content: "\ec10";
+}
+.codicon-star::before {
+  content: "\ea6a";
+}
+.codicon-sync::before {
+  content: "\ea77";
+}
+.codicon-tag::before {
+  content: "\ea66";
+}
+.codicon-terminal::before {
+  content: "\ea85";
+}
+.codicon-tools::before {
+  content: "\eb6d";
+}
+.codicon-trash::before {
+  content: "\ea81";
+}
+.codicon-unlock::before {
+  content: "\eb74";
+}
+.codicon-versions::before {
+  content: "\eb78";
+}
+.codicon-warning::before {
+  content: "\ea6c";
+}
+.codicon-zap::before {
+  content: "\ea86";
+}
+
+:root {
+  --fs: var(--vscode-font-size, 13px);
+  --fs-10: calc(var(--fs) * 10 / 13);
+  --fs-11: calc(var(--fs) * 11 / 13);
+  --fs-12: calc(var(--fs) * 12 / 13);
+  --fs-13: var(--fs);
+  --fs-14: calc(var(--fs) * 14 / 13);
+  --fs-15: calc(var(--fs) * 15 / 13);
+  --fs-16: calc(var(--fs) * 16 / 13);
+  --fs-32: calc(var(--fs) * 32 / 13);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--pi-font);
+  font-size: var(--fs);
+  color: var(--pi-text);
+  background: var(--pi-bg-page);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ── window shell ─────────────────────────────────────────────────────────
+ * Board A (node 2:726). There is no window-spanning bar any more: the title
+ * and the reload control belong to the sidebar's own header, and the sidebar
+ * owns the collapse affordance at its foot. */
+
+.app {
+  display: flex;
+  height: 100%;
+  width: 100%;
+  background: var(--pi-bg-page);
+  color: var(--pi-text);
+}
+
+.nav-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--pi-h-control);
+  height: var(--pi-h-control);
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--pi-icon);
+  cursor: pointer;
+  border-radius: var(--pi-r-md);
+  flex-shrink: 0;
+}
+
+.nav-icon-btn:hover {
+  background: var(--pi-bg-hover);
+  color: var(--pi-text);
+}
+
+.nav-icon-btn:disabled {
+  color: var(--pi-icon-disabled);
+  cursor: default;
+}
+
+.nav-icon-btn:disabled:hover {
+  background: transparent;
+}
+
+.nav-icon-btn .codicon {
+  font-size: var(--fs-16);
+  line-height: 1;
+}
+
+.nav {
+  width: 240px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--pi-sp-1);
+  padding: var(--pi-sp-3);
+  border-right: 1px solid var(--pi-border);
+  background: var(--pi-bg-page);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.nav-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--pi-sp-2);
+  height: var(--pi-h-row);
+  padding: 0 var(--pi-sp-5);
+  flex-shrink: 0;
+}
+
+.nav-title {
+  font-size: var(--fs-14);
+  font-weight: 500;
+  color: var(--pi-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nav-tab {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--pi-sp-5);
+  width: 100%;
+  height: var(--pi-h-row);
+  padding: 0 var(--pi-sp-5);
+  border: none;
+  border-radius: var(--pi-r-md);
+  background: transparent;
+  color: var(--pi-text);
+  font-family: var(--pi-font);
+  font-size: var(--fs-13);
+  cursor: pointer;
+  text-align: left;
+  flex-shrink: 0;
+  transition: background 0.1s;
+}
+
+.nav-tab:hover {
+  background: var(--pi-bg-hover);
+}
+
+.nav-tab.active {
+  background: var(--pi-bg-selected);
+  color: var(--pi-text-brand);
+  font-weight: 500;
+}
+
+.nav-tab:disabled {
+  color: var(--pi-text-disabled);
+  cursor: default;
+}
+
+.nav-tab:disabled:hover {
+  background: transparent;
+}
+
+.nav-tab .codicon {
+  font-size: var(--fs-16);
+  line-height: 1;
+  flex-shrink: 0;
+  color: var(--pi-icon);
+}
+
+.nav-tab.active .codicon {
+  color: var(--pi-icon-brand);
+}
+
+.nav-tab:disabled .codicon {
+  color: var(--pi-icon-disabled);
+}
+
+/* Selection indicator. The board draws this bar as an in-flow flex child, which
+ * would shove every selected row's icon 15px to the right — so it is pinned to
+ * the row's leading edge as a pseudo-element and icon positions stay identical
+ * across all four states. */
+.nav-tab::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 3px;
+  height: 24px;
+  border-radius: 2px;
+  background: var(--pi-brand);
+  transform: translateY(-50%);
+  opacity: 0;
+}
+
+.nav-tab.active::before {
+  opacity: 1;
+}
+
+.nav-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Board A also draws a collapse control at the foot of the sidebar. It is
+ * deliberately not implemented: the settings UI only opens as an editor-area
+ * WebviewPanel that settings-panel.ts moves into its own window, so there is
+ * never a narrow sidebar to collapse out of — the button would be dead weight.
+ *
+ * What follows is a safety net rather than a feature. If the panel is squeezed
+ * below this width the labels step aside on their own: there is no state to
+ * toggle and nothing for the user to operate. */
+@media (max-width: 640px) {
+  .nav {
+    width: 64px;
+    padding: 0;
+  }
+
+  .nav-title,
+  .nav-label {
+    display: none;
+  }
+
+  .nav-head {
+    justify-content: center;
+    padding: 0;
+  }
+
+  .nav-tab {
+    justify-content: center;
+    gap: 0;
+    padding: 0;
+  }
+
+  .nav-tab::before {
+    display: none;
+  }
+}
+
+.content {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  padding: var(--pi-sp-7) var(--pi-sp-8);
+  background: var(--pi-bg-page);
+}
+
+.tab-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--pi-text-muted);
+  font-size: var(--fs-14);
+}
+
+/* ── components ───────────────────────────────────────────────────────────
+ * Ported from the design boards. Geometry follows B1/B2 (controls 32px tall,
+ * radius 6 on fields and 8 on cards), the four button states come from the
+ * "Style Spec" board.
+ *
+ * The previous component layer also carried a lot of dead CSS — .list*,
+ * .form-label/.form-input, .section*, .switch*, .modal*, .subtab*, .alert*,
+ * .scope-select, .empty-state and .mcp-cfg* had no call site left anywhere in
+ * tabs/*.ts, so they were dropped rather than restyled.
+ * ------------------------------------------------------------------------ */
+
+/* ── buttons ─────────────────────────────────────────────────────────────── */
+
+.btn,
+.btn-primary,
+.btn-secondary,
+.btn-sm {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--pi-sp-2);
+  height: var(--pi-h-control);
+  padding: 0 var(--pi-sp-5);
+  border: 1px solid transparent;
+  border-radius: var(--pi-r-md);
+  background: var(--pi-bg-subtle);
+  color: var(--pi-text);
+  font-family: inherit;
+  font-size: var(--fs-13);
+  line-height: 1;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn:hover,
+.btn-secondary:hover,
+.btn-sm:hover {
+  background: var(--pi-bg-hover);
+}
+
+.btn:disabled,
+.btn-primary:disabled,
+.btn-secondary:disabled,
+.btn-sm:disabled {
+  background: var(--pi-bg-subtle);
+  color: var(--pi-text-disabled);
+  cursor: default;
+}
+
+.btn .codicon,
+.btn-primary .codicon,
+.btn-secondary .codicon,
+.btn-sm .codicon {
+  font-size: var(--fs-16);
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.btn-primary {
+  background: var(--pi-brand);
+  color: var(--pi-text-on-solid);
+}
+
+.btn-primary:hover {
+  background: var(--pi-brand-hover);
+}
+
+.btn-primary:disabled,
+.btn-primary:disabled:hover {
+  background: var(--pi-bg-subtle);
+  color: var(--pi-text-disabled);
+}
+
+/* Unsaved-changes state — Style Spec board: #EAF2FF fill, #AAC7FF stroke,
+ * #0052D9 label. */
+.btn-primary.modified {
+  background: var(--pi-brand-soft);
+  border-color: var(--pi-border-brand);
+  color: var(--pi-text-brand);
+}
+
+.btn-primary.modified:hover {
+  background: var(--pi-bg-selected);
+}
+
+.btn-secondary {
+  background: var(--pi-bg-raised);
+  border-color: var(--pi-border-input);
+  color: var(--pi-text);
+}
+
+.btn-sm {
+  height: var(--pi-h-control-sm);
+  padding: 0 var(--pi-sp-4);
+  border-radius: var(--pi-r-sm);
+  font-size: var(--fs-12);
+}
+
+/* Destructive. Bare .btn-danger is a text tint; inside a confirm bar the
+ * board paints it solid #D14343 with a white label. */
+.btn-danger {
+  color: var(--pi-danger);
+}
+
+.confirm-bar .btn-danger {
+  background: var(--pi-danger);
+  border-color: transparent;
+  color: var(--pi-text-on-solid);
+}
+
+.confirm-bar .btn-danger:hover {
+  opacity: 0.88;
+}
+
+.btn-row {
+  display: flex;
+  align-items: center;
+  gap: var(--pi-sp-3);
+  margin-top: var(--pi-sp-5);
+  flex-wrap: wrap;
+}
+
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--pi-h-control-sm);
+  height: var(--pi-h-control-sm);
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--pi-icon);
+  border-radius: var(--pi-r-sm);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.btn-icon:hover {
+  background: var(--pi-bg-hover);
+  color: var(--pi-text);
+}
+
+.btn-icon:disabled {
+  color: var(--pi-icon-disabled);
+  cursor: default;
+}
+
+.btn-icon:disabled:hover {
+  background: transparent;
+}
+
+.btn-icon .codicon {
+  font-size: var(--fs-16);
+  line-height: 1;
+}
+
+/* Boards B1/W1 and B1/W11 draw destructive icon buttons on #FEF2F2. */
+.btn-icon.btn-danger {
+  background: var(--pi-danger-soft);
+  color: var(--pi-danger);
+}
+
+.btn-icon.btn-danger:hover {
+  background: var(--pi-bg-hover);
+}
+
+/* ── sections and page headers ───────────────────────────────────────────── */
+
+.tab-section {
+  margin-bottom: var(--pi-sp-8);
+}
+
+.page-title {
+  margin: 0 0 var(--pi-sp-5);
+  font-size: var(--fs-16);
+  font-weight: 500;
+  color: var(--pi-text);
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--pi-sp-3);
+  min-height: var(--pi-h-row);
+  margin-bottom: var(--pi-sp-4);
+}
+
+.section-header h2,
+.section-header h3,
+.section-title {
+  margin: 0;
+  font-size: var(--fs-14);
+  font-weight: 500;
+  color: var(--pi-text);
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--pi-sp-3);
+}
+
+/* Board B2: each page opens with a 16px title, while headers nested inside a
+ * page (e.g. B1's "Custom Providers") stay at 14px. Pages that own their whole
+ * shell — Models, which starts with a secondary tab row — get no page title,
+ * matching B1. */
+.content > .tab-section:first-child > .section-header:first-child > h3,
+.content > .tab-section:first-child > h3 {
+  font-size: var(--fs-16);
+}
+
+/* ── list rows (providers, agents, servers, …) ───────────────────────────── */
+
+.item-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pi-sp-3);
+  margin-bottom: var(--pi-sp-5);
+}
+
+.item-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--pi-sp-4);
+  padding: var(--pi-sp-4) var(--pi-sp-5);
+  border: 1px solid var(--pi-border);
+  border-radius: var(--pi-r-md);
+  background: var(--pi-bg-raised);
+}
+
+/* The OAuth and API-key panes emit bare sibling rows straight into
+ * #models-body — with no .item-list wrapper — so the list's own gap never
+ * reaches them. Now that every row carries a full border and radius, touching
+ * siblings read as one solid block instead of separate cards, so space them
+ * here too. The :not() keeps rows that *are* in a real .item-list from getting
+ * the gap twice. */
+:not(.item-list) > .item-row + .item-row {
+  margin-top: var(--pi-sp-3);
+}
+
+.item-row:hover {
+  background: var(--pi-bg-hover);
+}
+
+.item-row.selected {
+  background: var(--pi-bg-selected);
+  border-color: var(--pi-border-brand);
+}
+
+.item-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.item-title {
+  display: flex;
+  align-items: center;
+  gap: var(--pi-sp-3);
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.item-name {
+  font-size: var(--fs-13);
+  color: var(--pi-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.item-row.selected .item-name {
+  color: var(--pi-text-brand);
+}
+
+.item-desc {
+  font-size: var(--fs-11);
+  color: var(--pi-text-muted);
+  word-break: break-all;
+  min-width: 0;
+}
+
+.item-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--pi-sp-1);
+  flex-shrink: 0;
+}
+
+.dim {
+  font-size: var(--fs-11);
+  color: var(--pi-text-secondary);
+  word-break: break-all;
+  min-width: 0;
+}
+
+/* ── badges — soft fill plus a coloured label, never a solid chip ────────── */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 2px var(--pi-sp-2);
+  border-radius: var(--pi-r-xs);
+  background: var(--pi-bg-subtle);
+  color: var(--pi-text-secondary);
+  font-size: var(--fs-10);
+  line-height: 1.5;
+}
+
+.badge-user,
+.badge-package,
+.badge-stdio {
+  background: var(--pi-info-soft);
+  color: var(--pi-text-brand);
+}
+
+.badge-project,
+.badge-cli {
+  background: var(--pi-success-soft);
+  color: var(--pi-text-success);
+}
+
+.badge-builtin {
+  background: var(--pi-bg-subtle);
+  color: var(--pi-text-secondary);
+}
+
+.badge-other {
+  background: var(--pi-bg-subtle);
+  color: var(--pi-text-muted);
+}
+
+.badge-http {
+  background: var(--pi-warning-soft);
+  color: var(--pi-text-warning);
+}
+
+.badge-disabled {
+  background: var(--pi-danger-soft);
+  color: var(--pi-text-danger);
+}
+
+/* ── fields, inputs, textareas ───────────────────────────────────────────── */
+
+.field-label {
+  display: block;
+  margin: var(--pi-sp-4) 0 var(--pi-sp-2);
+  font-size: var(--fs-12);
+  color: var(--pi-text-secondary);
+}
+
+.hint {
+  margin: 2px 0 var(--pi-sp-3);
+  font-size: var(--fs-11);
+  color: var(--pi-text-muted);
+  word-break: break-all;
+}
+
+.hint code {
+  padding: 1px 4px;
+  border-radius: var(--pi-r-xs);
+  background: var(--pi-bg-subtle);
+  font-family: var(--pi-mono);
+  font-size: var(--fs-11);
+}
+
+.check-label {
+  display: flex;
+  align-items: center;
+  gap: var(--pi-sp-3);
+  margin: var(--pi-sp-3) 0;
+  font-size: var(--fs-13);
+  color: var(--pi-text);
+  cursor: pointer;
+}
+
+.check-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  flex-shrink: 0;
+  accent-color: var(--pi-brand);
+}
+
+.form-group {
+  margin-bottom: var(--pi-sp-5);
+  min-width: 0;
+}
+
+.form-row {
+  display: flex;
+  gap: var(--pi-sp-5);
+  align-items: flex-start;
+}
+
+.form-row > * {
+  flex: 1;
+  min-width: 0;
+}
+
+.editor-card input:not([type="checkbox"]):not([type="radio"]),
+.editor-card select,
+.editor-card textarea,
+.cfg-field input:not([type="checkbox"]):not([type="radio"]),
+.cfg-field select,
+.cfg-field textarea,
+.cfg-search,
+.ta,
+.oauth-progress input {
+  width: 100%;
+  height: var(--pi-h-control);
+  padding: 0 var(--pi-sp-5);
+  border: 1px solid var(--pi-border-input);
+  border-radius: var(--pi-r-sm);
+  background: var(--pi-bg-raised);
+  color: var(--pi-text);
+  font-family: var(--pi-font);
+  font-size: var(--fs-13);
+  outline: none;
+}
+
+.editor-card input::placeholder,
+.cfg-field input::placeholder,
+.cfg-search::placeholder,
+.ta::placeholder,
+.oauth-progress input::placeholder {
+  color: var(--pi-text-muted);
+}
+
+.editor-card input:focus,
+.editor-card select:focus,
+.editor-card textarea:focus,
+.cfg-field input:focus,
+.cfg-field select:focus,
+.cfg-field textarea:focus,
+.cfg-search:focus,
+.ta:focus,
+.oauth-progress input:focus {
+  border-color: var(--pi-brand);
+}
+
+.editor-card textarea,
+.cfg-field textarea,
+.ta {
+  height: auto;
+  min-height: 84px;
+  padding: var(--pi-sp-4);
+  font-family: var(--pi-mono);
+  font-size: var(--fs-12);
+  line-height: 1.5;
+  resize: vertical;
+}
+
+/* ── cards ───────────────────────────────────────────────────────────────── */
+
+.editor-card {
+  margin: var(--pi-sp-3) 0;
+  padding: var(--pi-sp-7);
+  border: 1px solid var(--pi-border);
+  border-radius: var(--pi-r-md);
+  background: var(--pi-bg-surface);
+}
+
+.editor-card h3 {
+  margin: 0 0 var(--pi-sp-3);
+  font-size: var(--fs-14);
+  font-weight: 500;
+  color: var(--pi-text);
+}
+
+/* Nested cards (a model inside a provider, a field group inside an edit card)
+ * flip back to the raised surface so the two levels stay legible. */
+.editor-card .editor-card {
+  background: var(--pi-bg-raised);
+}
+
+/* ── inline delete confirmation (B1 board W12) ───────────────────────────── */
+
+.confirm-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--pi-sp-5);
+  margin: var(--pi-sp-3) 0;
+  padding: var(--pi-sp-5);
+  border-radius: var(--pi-r-md);
+  background: var(--pi-bg-surface);
+  color: var(--pi-text);
+  font-size: var(--fs-13);
+}
+
+/* ── status and messages ─────────────────────────────────────────────────── */
+
+.status-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--pi-r-full);
+  flex-shrink: 0;
+}
+
+.status-dot.on {
+  background: var(--pi-success);
+}
+
+.status-dot.off {
+  background: var(--pi-border-input);
+}
+
+.error {
+  margin: var(--pi-sp-3) 0;
+  padding: var(--pi-sp-4) var(--pi-sp-5);
+  border: 1px solid var(--pi-danger);
+  border-radius: var(--pi-r-md);
+  background: var(--pi-danger-soft);
+  color: var(--pi-text-danger);
+  font-size: var(--fs-12);
+}
+
+/* Board F board W2 "Banner Warning": #FEF3E6 fill, #E37318 label, no bar. */
+.msg-warn {
+  margin: 0 0 var(--pi-sp-3);
+  padding: var(--pi-sp-4) var(--pi-sp-5);
+  border-radius: var(--pi-r-md);
+  background: var(--pi-warning-soft);
+  color: var(--pi-text-warning);
+  font-size: var(--fs-12);
+  line-height: 1.5;
+}
+
+/* ── Models page: secondary tab row (B1 board W1) ────────────────────────── */
+
+.models-tabs {
+  display: flex;
+  gap: var(--pi-sp-9);
+  height: 36px;
+  margin-bottom: var(--pi-sp-7);
+  border-bottom: 1px solid var(--pi-border);
+}
+
+.models-tab {
+  display: flex;
+  align-items: center;
+  margin-bottom: -1px;
+  padding: 0;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--pi-text-secondary);
+  font-size: var(--fs-13);
+  cursor: pointer;
+}
+
+.models-tab:hover {
+  color: var(--pi-text);
+}
+
+.models-tab.active {
+  color: var(--pi-text-brand);
+  font-weight: 500;
+  border-bottom-color: var(--pi-brand);
+}
+
+/* ── OAuth progress cards (B1 boards W3–W10) ─────────────────────────────── */
+
+.oauth-progress {
+  width: 100%;
+  max-width: 380px;
+  margin: var(--pi-sp-3) 0;
+  padding: var(--pi-sp-7);
+  border: 1px solid var(--pi-border);
+  border-radius: var(--pi-r-md);
+  background: var(--pi-bg-raised);
+}
+
+.oauth-progress .url {
+  margin: var(--pi-sp-1) 0;
+  color: var(--pi-text-brand);
+  font-family: var(--pi-mono);
+  font-size: var(--fs-11);
+  word-break: break-all;
+}
+
+.oauth-progress a {
+  color: var(--pi-text-brand);
+}
+
+/* ── compatibility groups (B1 board W2) ──────────────────────────────────── */
+
+.compat-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pi-sp-1);
+  margin-top: var(--pi-sp-1);
+}
+
+.compat-hint {
+  margin: 0 0 var(--pi-sp-1);
+  color: var(--pi-text-muted);
+  font-size: var(--fs-11);
+  line-height: 1.5;
+}
+
+.compat-bools {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: var(--pi-sp-1) var(--pi-sp-5);
+  margin-bottom: var(--pi-sp-3);
+}
+
+.compat-bool {
+  display: flex;
+  align-items: center;
+  gap: var(--pi-sp-3);
+  min-width: 0;
+}
+
+.compat-bool-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--pi-text-secondary);
+  font-size: var(--fs-11);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Declared after the shared input rule so width/height win. */
+.compat-bool select {
+  width: auto;
+  min-width: 88px;
+  height: var(--pi-h-control-sm);
+  flex-shrink: 0;
+}
+
+/* ── Settings page: search + collapsible groups (B2 board W5) ────────────── */
+
+.cfg-search-row {
+  display: flex;
+  align-items: center;
+  gap: var(--pi-sp-3);
+  margin-bottom: var(--pi-sp-4);
+}
+
+.cfg-search {
+  flex: 1;
+}
+
+.cfg-group {
+  margin-bottom: var(--pi-sp-2);
+  border: 1px solid var(--pi-border);
+  border-radius: var(--pi-r-sm);
+  overflow: hidden;
+  background: var(--pi-bg-raised);
+}
+
+.cfg-group.open {
+  background: var(--pi-bg-surface);
+}
+
+.cfg-group-header {
+  display: flex;
+  align-items: center;
+  gap: var(--pi-sp-3);
+  padding: var(--pi-sp-4) var(--pi-sp-5);
+  color: var(--pi-text);
+  font-size: var(--fs-13);
+  font-weight: 500;
+  cursor: pointer;
+  user-select: none;
+}
+
+.cfg-group-header:hover {
+  background: var(--pi-bg-hover);
+}
+
+.cfg-group-header .codicon {
+  color: var(--pi-icon);
+  transition: transform 0.12s;
+  transform: rotate(-90deg);
+}
+
+.cfg-group.open .cfg-group-header .codicon {
+  transform: none;
+}
+
+.cfg-group-body {
+  display: none;
+  padding: var(--pi-sp-7);
+  border-top: 1px solid var(--pi-border);
+}
+
+.cfg-group.open .cfg-group-body {
+  display: block;
+}
+
+.cfg-group.hidden {
+  display: none;
+}
+
+/* Board B2 W5 draws a 6px brand dot, not a glyph. The element is a <span>
+ * carrying a "●" character and toggled with the `hidden` attribute, so it
+ * needs an explicit display — and an explicit [hidden] rule to win back over
+ * it, since a bare `display: inline-block` would out-rank the UA sheet's
+ * `[hidden] { display: none }`. */
+.cfg-dirty-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-left: auto;
+  border-radius: var(--pi-r-full);
+  background: var(--pi-brand);
+  overflow: hidden;
+  color: transparent;
+  font-size: 0;
+}
+
+.cfg-dirty-dot[hidden] {
+  display: none;
+}
+
+.cfg-reset {
+  width: var(--pi-h-control-sm);
+  height: var(--pi-h-control-sm);
+}
+
+.cfg-group:not(.open) .cfg-reset {
+  display: none;
+}
+
+.cfg-field {
+  margin-bottom: var(--pi-sp-5);
+}
+
+.cfg-desc {
+  margin: 2px 0 var(--pi-sp-2);
+  color: var(--pi-text-muted);
+  font-size: var(--fs-11);
+  line-height: 1.5;
+}
+
+/* ── toast (board F W1) ──────────────────────────────────────────────────── */
+
+.toast {
+  position: fixed;
+  right: var(--pi-sp-7);
+  bottom: var(--pi-sp-7);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  gap: var(--pi-sp-3);
+  max-width: 360px;
+  padding: var(--pi-sp-4) var(--pi-sp-6);
+  border-radius: var(--pi-r-md);
+  background: var(--pi-toast-bg);
+  color: var(--pi-toast-fg);
+  font-size: var(--fs-13);
+  white-space: pre-wrap;
+  word-break: break-word;
+  opacity: 0;
+  transform: translateY(8px);
+  transition:
+    opacity 0.15s,
+    transform 0.15s;
+  pointer-events: none;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.toast.info {
+  border-left: 3px solid var(--pi-toast-info);
+}
+
+.toast.success {
+  border-left: 3px solid var(--pi-toast-success);
+}
+
+.toast.warning {
+  border-left: 3px solid var(--pi-text-warning);
+}
+
+.toast.error {
+  border-left: 3px solid var(--pi-toast-error);
+}
+
+/* ── spinner ─────────────────────────────────────────────────────────────── */
+
+.spinner {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--pi-info);
+  border-top-color: transparent;
+  border-radius: var(--pi-r-full);
+  animation: spin 0.7s linear infinite;
+  vertical-align: middle;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ── extra codicon glyphs ────────────────────────────────────────────────── */
+/* The glyph table at the top of this file is a hand-written subset of
+ * @vscode/codicons; anything used here but not declared there renders blank. */
+
+.codicon-eye::before {
+  content: "\ea70";
+}
+
+.codicon-eye-closed::before {
+  content: "\eae7";
+}
+
+/* ── secret fields with a reveal toggle (B1 board W1/W11) ────────────────── */
+
+.input-action {
+  position: relative;
+  display: block;
+  width: 100%;
+}
+
+.input-action > input {
+  padding-right: 40px;
+}
+
+.input-action > .btn-icon {
+  position: absolute;
+  top: 50%;
+  right: 2px;
+  transform: translateY(-50%);
+  background: var(--pi-bg-subtle);
+  color: var(--pi-icon);
+}
+
+.input-action > .btn-icon:hover {
+  background: var(--pi-bg-hover);
+}
+
+/* ── confirm bar internals (B1 board W12) ────────────────────────────────── */
+
+.confirm-icon {
+  flex-shrink: 0;
+  color: var(--pi-danger);
+  font-size: var(--fs-16);
+  line-height: 1;
+}
+
+.confirm-bar > span {
+  display: flex;
+  align-items: center;
+  gap: var(--pi-sp-3);
+  margin-left: auto;
+}

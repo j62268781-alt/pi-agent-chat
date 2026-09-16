@@ -1,0 +1,5 @@
+packages:
+  - webview-vue
+
+onlyBuiltDependencies:
+  - esbuild

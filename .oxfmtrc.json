@@ -1,0 +1,4 @@
+{
+  "$schema": "https://unpkg.com/oxfmt/configuration_schema.json",
+  "ignorePatterns": ["webview-vue/src/lib/model-icons-data.ts", "webview-vue/dist", "dist"]
+}

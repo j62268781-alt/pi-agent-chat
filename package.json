@@ -1,0 +1,466 @@
+{
+  "name": "pi-agent-chat",
+  "displayName": "Pi Agent Chat",
+  "version": "1.0.0",
+  "description": "Pi coding agent for VS Code — a Vue 3 webview chat panel and sidebar, backed by a `pi --mode rpc` subprocess, with a live editor bridge and bundled pi extensions (todo, questionnaire, permission gate, rewind) out of the box.",
+  "categories": [
+    "AI",
+    "Chat"
+  ],
+  "keywords": [
+    "agent",
+    "ai",
+    "ai-assistant",
+    "anthropic",
+    "chat",
+    "claude",
+    "coding-agent",
+    "gemini",
+    "llm",
+    "openai",
+    "pi",
+    "pi-agent",
+    "pi-coding-agent",
+    "vue",
+    "webview"
+  ],
+  "bugs": {
+    "url": "https://github.com/j62268781-alt/pi-agent-chat/issues"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/j62268781-alt/pi-agent-chat"
+  },
+  "publisher": "johnny-zhao",
+  "type": "module",
+  "main": "./dist/extension.cjs",
+  "scripts": {
+    "build": "pnpm run build:webview && pnpm run build:extension",
+    "build:webview": "pnpm --filter @pi-agent-chat/webview-vue build",
+    "build:extension": "rolldown -c rolldown.config.ts",
+    "dev": "rolldown -c rolldown.config.ts -w",
+    "dev:webview": "pnpm --filter @pi-agent-chat/webview-vue dev",
+    "package": "pnpm run build && pnpx @vscode/vsce package --no-dependencies",
+    "install-local": "pnpm run package && node scripts/install-local.mjs",
+    "release": "node scripts/release.mjs",
+    "fmt": "oxlint . --fix && oxfmt .",
+    "lint": "oxlint . && oxfmt --check .",
+    "typecheck": "tsgo --noEmit --skipLibCheck && node scripts/typecheck-pi-extensions.mjs && pnpm --filter @pi-agent-chat/webview-vue typecheck",
+    "test:unit": "vitest run",
+    "test": "pnpm run lint && pnpm run typecheck && pnpm run test:unit"
+  },
+  "dependencies": {
+    "@earendil-works/pi-ai": "^0.85.1",
+    "@earendil-works/pi-coding-agent": "^0.85.1"
+  },
+  "devDependencies": {
+    "@earendil-works/pi-agent-core": "^0.85.1",
+    "@earendil-works/pi-tui": "^0.85.1",
+    "@types/node": "^25.5.0",
+    "@types/vscode": "1.100.0",
+    "@typescript/native-preview": "^7.0.0-dev.20260320.1",
+    "@vscode/vsce": "^3.7.1",
+    "jsdom": "^30.0.1",
+    "ovsx": "^0.10.9",
+    "oxfmt": "^0.41.0",
+    "oxlint": "^1.56.0",
+    "rolldown": "^1.0.0-rc.10",
+    "typebox": "1.3.7",
+    "vitest": "^4.1.0"
+  },
+  "l10n": "./l10n",
+  "contributes": {
+    "icons": {
+      "pi-logo": {
+        "description": "%pi.icon.piLogo.desc%",
+        "default": {
+          "fontPath": "resources/fonts/pi-icons.woff2",
+          "fontCharacter": "\\F101"
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "pi-agent-chat.open",
+        "title": "%pi.cmd.open%"
+      },
+      {
+        "command": "pi-agent-chat.openSettingsJson",
+        "title": "%pi.cmd.openSettingsJson%"
+      },
+      {
+        "command": "pi-agent-chat.openModelsJson",
+        "title": "%pi.cmd.openModelsJson%"
+      },
+      {
+        "command": "pi-agent-chat.openSettings",
+        "title": "%pi.cmd.openSettings%",
+        "icon": {
+          "light": "resources/logo-light.svg",
+          "dark": "resources/logo.svg"
+        }
+      },
+      {
+        "command": "pi-agent-chat.openInNewWindow",
+        "title": "%pi.cmd.openInNewWindow%",
+        "icon": {
+          "light": "resources/logo-light.svg",
+          "dark": "resources/logo.svg"
+        }
+      },
+      {
+        "command": "pi-agent-chat.openInFolder",
+        "title": "%pi.cmd.openInFolder%",
+        "icon": {
+          "light": "resources/logo-light.svg",
+          "dark": "resources/logo.svg"
+        }
+      },
+      {
+        "command": "pi-agent-chat.openInSidebar",
+        "title": "%pi.cmd.openInSidebar%",
+        "icon": {
+          "light": "resources/logo-light.svg",
+          "dark": "resources/logo.svg"
+        }
+      },
+      {
+        "command": "pi-agent-chat.addSelectionToChat",
+        "title": "%pi.cmd.addSelectionToChat%"
+      },
+      {
+        "command": "pi-agent-chat.addFileToChat",
+        "title": "%pi.cmd.addFileToChat%"
+      },
+      {
+        "command": "pi-agent-chat.generateGitCommitMessage",
+        "title": "%pi.cmd.generateGitCommitMessage%",
+        "icon": {
+          "light": "resources/logo-light.svg",
+          "dark": "resources/logo.svg"
+        }
+      },
+      {
+        "command": "pi-agent-chat.abortGitCommitMessage",
+        "title": "%pi.cmd.abortGitCommitMessage%",
+        "icon": "$(debug-stop)"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "pi-agent-chat.addSelectionToChat",
+          "group": "9_cutcopypaste@98",
+          "when": "editorHasSelection"
+        },
+        {
+          "command": "pi-agent-chat.addFileToChat",
+          "group": "9_cutcopypaste@99"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "pi-agent-chat.addFileToChat",
+          "group": "navigation@98"
+        },
+        {
+          "command": "pi-agent-chat.openInFolder",
+          "group": "navigation@99",
+          "when": "explorerResourceIsFolder"
+        }
+      ],
+      "scm/title": [
+        {
+          "command": "pi-agent-chat.generateGitCommitMessage",
+          "group": "navigation",
+          "when": "config.git.enabled && scmProvider == git && !pi-agent-chat.isGeneratingCommit"
+        },
+        {
+          "command": "pi-agent-chat.abortGitCommitMessage",
+          "group": "navigation",
+          "when": "config.git.enabled && scmProvider == git && pi-agent-chat.isGeneratingCommit"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "pi-agent-chat.generateGitCommitMessage",
+          "when": "config.git.enabled && !pi-agent-chat.isGeneratingCommit"
+        },
+        {
+          "command": "pi-agent-chat.abortGitCommitMessage",
+          "when": "config.git.enabled && pi-agent-chat.isGeneratingCommit"
+        },
+        {
+          "command": "pi-agent-chat.openInNewWindow",
+          "when": "config.pi-agent-chat.ui != sidebar"
+        }
+      ]
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "pi-agent-chat",
+          "title": "%pi.chatContainer.title%",
+          "icon": "$(comment-discussion)"
+        }
+      ]
+    },
+    "views": {
+      "pi-agent-chat": [
+        {
+          "type": "webview",
+          "id": "pi-agent-chat.chatSidebar",
+          "name": "%pi.view.chat%"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "%pi.config.title%",
+      "properties": {
+        "pi-agent-chat.language": {
+          "type": "string",
+          "default": "auto",
+          "enum": [
+            "auto",
+            "en",
+            "zh-cn"
+          ],
+          "enumDescriptions": [
+            "%pi.config.language.enumDesc.auto%",
+            "%pi.config.language.enumDesc.en%",
+            "%pi.config.language.enumDesc.zhcn%"
+          ],
+          "description": "%pi.config.language.desc%"
+        },
+        "pi-agent-chat.path": {
+          "type": "string",
+          "default": "",
+          "description": "%pi.config.path.desc%"
+        },
+        "pi-agent-chat.bridgeSocket": {
+          "type": "string",
+          "default": "",
+          "description": "%pi.config.bridgeSocket.desc%"
+        },
+        "pi-agent-chat.env": {
+          "type": "object",
+          "default": {},
+          "description": "%pi.config.env.desc%"
+        },
+        "pi-agent-chat.args": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "%pi.config.args.desc%"
+        },
+        "pi-agent-chat.commitLanguage": {
+          "type": "string",
+          "default": "English",
+          "enum": [
+            "English",
+            "French",
+            "Italian",
+            "German",
+            "Spanish",
+            "Russian",
+            "Chinese (Simplified)",
+            "Chinese (Traditional)",
+            "Japanese",
+            "Korean",
+            "Czech",
+            "Portuguese (Brazil)",
+            "Turkish",
+            "Polish"
+          ],
+          "description": "%pi.config.commitLanguage.desc%"
+        },
+        "pi-agent-chat.commitMessagePrompt": {
+          "type": "string",
+          "default": "",
+          "description": "%pi.config.commitMessagePrompt.desc%"
+        },
+        "pi-agent-chat.commitModel": {
+          "type": "string",
+          "default": "",
+          "pattern": "^$|^[^/]+/.+$",
+          "patternErrorMessage": "%pi.config.commitModel.patternError%",
+          "description": "%pi.config.commitModel.desc%"
+        },
+        "pi-agent-chat.ui": {
+          "type": "string",
+          "enum": [
+            "webview",
+            "sidebar"
+          ],
+          "default": "sidebar",
+          "enumDescriptions": [
+            "%pi.config.ui.enumDesc.1%",
+            "%pi.config.ui.enumDesc.2%"
+          ],
+          "description": "%pi.config.ui.desc%"
+        },
+        "pi-agent-chat.disabledTools": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "vscode_get_diagnostics",
+              "todo",
+              "questionnaire",
+              "subagent"
+            ]
+          },
+          "default": [
+            "subagent"
+          ],
+          "description": "%pi.config.disabledTools.desc%"
+        },
+        "pi-agent-chat.permission.mode": {
+          "type": "string",
+          "enum": [
+            "AskForApproval",
+            "FullAccess"
+          ],
+          "default": "AskForApproval",
+          "enumDescriptions": [
+            "%pi.config.permission.mode.enumDesc.0%",
+            "%pi.config.permission.mode.enumDesc.1%"
+          ],
+          "description": "%pi.config.permission.mode.desc%"
+        },
+        "pi-agent-chat.permission.dangerousPatterns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "\\brm\\s+(?:-[rR][fF]?|-[fF][rR]|--recursive)\\b",
+            "\\b(?:ri|rm|remove-item)\\b.*\\s+-(?:recurse|force)\\b",
+            "\\b(?:rd|rmdir|del|erase)\\b.*\\s+[/-][a-z]*s[a-z]*\\b",
+            "\\bshred\\b",
+            "\\bdd\\b",
+            "\\b(?:format\\s+[a-z]:|format-volume\\b|clear-disk\\b|diskpart\\b)",
+            "\\bvssadmin\\s+delete\\s+shadows\\b",
+            "\\b(?:chmod|chown)\\b.*\\s0?777\\b",
+            "\\b(?:reg\\s+delete\\b|remove-item\\s+(?:hklm|hkcr|hku):)",
+            "\\b(?:Set-ItemProperty|sp)\\b",
+            "\\bSet-Acl\\b",
+            "\\bdrop\\s+(database|table|schema)\\b",
+            "\\btruncate\\s+table\\b",
+            "\\b(flushall|flushdb)\\b",
+            "\\b(?:restart-computer|stop-computer)\\b",
+            "\\b(?:taskkill(?:\\.exe)?\\s+/f|spps|stop-process)\\b",
+            "\\b(killall|pkill)\\b",
+            "\\bkill\\s+-9\\b",
+            "\\bsc\\s+delete\\b",
+            "\\bbcdedit\\s+(?:/delete|/set)\\b",
+            ":\\(\\)\\s*\\{",
+            "\\bsudo\\b",
+            "\\b(curl|wget)\\s+.*\\|\\s*(ba)?sh\\b",
+            "(?:\\bsource\\s+<\\(|\\.\\s+<\\()",
+            "(?:\\binvoke-expression\\b|\\biex\\s*\\(|\\|\\s*iex\\b)",
+            "\\b(?:Invoke-(?:RestMethod|WebRequest)|irm|iwr)\\b",
+            "\\beval\\b",
+            "\\b(git\\s+push\\s+(--force|-f))\\b",
+            "\\bgit\\s+branch\\b.*\\s+-(?:d|D|m|M|-delete|-force)\\b",
+            "\\bgit\\s+log\\b.*--output\\b",
+            "\\bfind\\b.*\\s+-(?:delete|exec|execdir|fprint|fprintf|fls|ok|okdir)\\b",
+            "\\brg\\b.*\\s+--(?:pre|hostname-bin)\\b",
+            "\\bsed\\b.*\\s+-(?:[a-zA-Z]*[ef][a-zA-Z]*|expression|file)\\b",
+            "\\bsed\\b(?:\\s+-[a-zA-Z]+)*\\s+[\"']s\\/[^/\"]*\\/[^/\"]*\\/[a-zA-Z]*[ew]",
+            "\\bsed\\b(?:\\s+-[a-zA-Z]+)*\\s+[\"'][^\"']*;W",
+            "\\bsort\\b.*\\s+-(?:o|S)\\b",
+            "\\btree\\b.*\\s+-o\\b",
+            "\\bcolumn\\b.*\\s+-c\\s+\\d+",
+            "\\bdate\\b.*\\s+(?:-s|--set)\\b"
+          ],
+          "description": "%pi.config.permission.dangerousPatterns.desc%"
+        },
+        "pi-agent-chat.rpcTrace": {
+          "type": "boolean",
+          "default": false,
+          "description": "%pi.config.rpcTrace.desc%"
+        },
+        "pi-agent-chat.chatFontSize": {
+          "type": "number",
+          "default": 14,
+          "minimum": 8,
+          "maximum": 32,
+          "description": "%pi.config.chatFontSize.desc%"
+        },
+        "pi-agent-chat.chatSendShortcut": {
+          "type": "string",
+          "default": "enter",
+          "enum": [
+            "enter",
+            "ctrlEnter"
+          ],
+          "enumDescriptions": [
+            "%pi.config.chatSendShortcut.enter%",
+            "%pi.config.chatSendShortcut.ctrlEnter%"
+          ],
+          "description": "%pi.config.chatSendShortcut.desc%"
+        },
+        "pi-agent-chat.chatMermaidTheme": {
+          "type": "string",
+          "default": "default",
+          "enum": [
+            "default",
+            "neutral",
+            "dark",
+            "forest",
+            "base"
+          ],
+          "enumDescriptions": [
+            "%pi.config.chatMermaidTheme.default%",
+            "%pi.config.chatMermaidTheme.neutral%",
+            "%pi.config.chatMermaidTheme.dark%",
+            "%pi.config.chatMermaidTheme.forest%",
+            "%pi.config.chatMermaidTheme.base%"
+          ],
+          "description": "%pi.config.chatMermaidTheme.desc%"
+        },
+        "pi-agent-chat.chatBackgroundImage": {
+          "type": "string",
+          "default": "",
+          "description": "%pi.config.chatBackgroundImage.desc%"
+        },
+        "pi-agent-chat.chatBackgroundOpacity": {
+          "type": "number",
+          "default": 1,
+          "minimum": 0,
+          "maximum": 1,
+          "description": "%pi.config.chatBackgroundOpacity.desc%"
+        }
+      }
+    },
+    "keybindings": [
+      {
+        "command": "pi-agent-chat.open",
+        "key": "alt+shift+p"
+      },
+      {
+        "command": "pi-agent-chat.openSettings",
+        "key": "alt+shift+,"
+      }
+    ]
+  },
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "icon": "resources/icon.png",
+  "badges": [
+    {
+      "url": "https://img.shields.io/github/stars/j62268781-alt/pi-agent-chat?style=social",
+      "description": "%pi.badge.stars.desc%",
+      "href": "https://github.com/j62268781-alt/pi-agent-chat"
+    }
+  ],
+  "engines": {
+    "vscode": "^1.100.0"
+  },
+  "packageManager": "pnpm@10.32.1"
+}
