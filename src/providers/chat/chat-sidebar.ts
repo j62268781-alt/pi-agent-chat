@@ -1,5 +1,5 @@
-// Sidebar chat: hosts the pi-chat webview UI in a WebviewView (own `pi-chat`
-// activity bar container, separate from the Pi sessions/settings container)
+// Sidebar chat: hosts the chat webview UI in a WebviewView (own
+// `pi-agent-chat` activity bar container, separate from any other Pi view)
 // instead of an editor-tab WebviewPanel. A single session runs in the
 // background; closing/hiding the view keeps the RPC subprocess alive, and
 // re-resolving the view re-attaches the same session. No RPC process is
@@ -258,7 +258,7 @@ export function createChatSidebarViewProvider(
 }
 
 export async function openSidebarChat(opts: SidebarChatOptions): Promise<void> {
-  // NOTE: focus the VIEW, not the container. `workbench.view.extension.pi-chat`
+  // NOTE: focus the VIEW, not the container. `workbench.view.extension.pi-agent-chat`
   // is the activity-bar container command and misbehaves when the container is
   // dragged to the secondary sidebar (focus lands on the primary sidebar,
   // e.g. Explorer). `<viewId>.focus` resolves the view's actual location and

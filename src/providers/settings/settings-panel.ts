@@ -129,8 +129,8 @@ export async function openSettingsPanel(
       .then(undefined, function () {});
   }, 120);
   panel.iconPath = {
-    light: vscode.Uri.joinPath(extensionUri, "assets", "logo-light.svg"),
-    dark: vscode.Uri.joinPath(extensionUri, "assets", "logo.svg"),
+    light: vscode.Uri.joinPath(extensionUri, "resources", "logo-light.svg"),
+    dark: vscode.Uri.joinPath(extensionUri, "resources", "logo.svg"),
   };
   panel.webview.html = getSettingsWebviewHtml(
     vscode.workspace.getConfiguration("pi-agent-chat").get<number>("chatFontSize"),

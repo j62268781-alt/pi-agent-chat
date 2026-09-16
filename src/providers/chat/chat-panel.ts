@@ -73,8 +73,8 @@ export async function openChatPanel(
     },
   );
   panel.iconPath = {
-    light: vscode.Uri.joinPath(opts.extensionUri, "assets", "logo-light.svg"),
-    dark: vscode.Uri.joinPath(opts.extensionUri, "assets", "logo.svg"),
+    light: vscode.Uri.joinPath(opts.extensionUri, "resources", "logo-light.svg"),
+    dark: vscode.Uri.joinPath(opts.extensionUri, "resources", "logo.svg"),
   };
   const chatCfg = vscode.workspace.getConfiguration("pi-agent-chat");
   panel.webview.html = getChatWebviewHtml(
