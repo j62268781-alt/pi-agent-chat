@@ -117,7 +117,7 @@ jobs:
 
       - name: Create GitHub Release with CHANGELOG notes
         if: env.DRY_RUN != 'true' && steps.notes.outputs.has_notes == 'true'
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ steps.version.outputs.tag }}
           name: ${{ steps.version.outputs.tag }}
@@ -127,7 +127,7 @@ jobs:
       # CHANGELOG 中没有该版本段落时的兜底：使用自动生成的 notes
       - name: Create GitHub Release with generated notes
         if: env.DRY_RUN != 'true' && steps.notes.outputs.has_notes != 'true'
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ steps.version.outputs.tag }}
           name: ${{ steps.version.outputs.tag }}
