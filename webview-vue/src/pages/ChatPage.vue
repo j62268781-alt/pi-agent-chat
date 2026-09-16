@@ -1,50 +1,65 @@
 <!--
-  Chat webview page.
+  Chat webview page: layout plus the host link.
 
-  NOTE: baseline scaffold. The transcript, composer and popups are ported from
-  the legacy vanilla implementation next; this page currently proves the
-  host <-> webview protocol round trip.
+  The transcript scrolls, the composer is pinned at the bottom, and the rewind /
+  widget / queue cards sit between them — the same vertical order the legacy
+  `index.html` used, so `chat.css` applies unchanged.
 -->
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from "vue";
-import { onHostMessage, post } from "@/lib/bridge";
-import { t } from "@/lib/i18n";
+import { onMounted, onUnmounted } from "vue";
+import BootSplash from "@/components/BootSplash.vue";
+import ChatToolbar from "@/components/ChatToolbar.vue";
+import Composer from "@/components/Composer.vue";
+import ConfirmDialog from "@/components/ConfirmDialog.vue";
+import Overlays from "@/components/Overlays.vue";
+import QueuePanel from "@/components/QueuePanel.vue";
+import RewindWidget from "@/components/RewindWidget.vue";
+import TranscriptView from "@/components/TranscriptView.vue";
+import WidgetPanel from "@/components/WidgetPanel.vue";
+import { useHostLink } from "@/composables/useHostLink.ts";
+import { useComposerStore } from "@/stores/composer";
+import { useOverlaysStore } from "@/stores/overlays";
 import "@/styles/chat.css";
 
-const connected = ref(false);
-const bootError = ref("");
+const { connect } = useHostLink();
+const composer = useComposerStore();
+const overlays = useOverlaysStore();
 
-let dispose: (() => void) | undefined;
+let detach: (() => void) | undefined;
+
+function onKeyDown(event: KeyboardEvent): void {
+  if (event.key !== "Escape") return;
+  if (overlays.confirmState) {
+    overlays.settleConfirmation(false);
+    return;
+  }
+  composer.closePopups();
+  overlays.closeContextMenu();
+}
 
 onMounted(() => {
-  dispose = onHostMessage((message) => {
-    switch (message.type) {
-      case "state":
-        connected.value = true;
-        break;
-      case "sessionFailed":
-      case "error":
-        bootError.value = message.message;
-        break;
-      default:
-        break;
-    }
-  });
-  post({ type: "webviewReady" });
+  detach = connect();
+  document.addEventListener("keydown", onKeyDown);
 });
 
-onUnmounted(() => dispose?.());
+onUnmounted(() => {
+  detach?.();
+  document.removeEventListener("keydown", onKeyDown);
+});
 </script>
 
 <template>
+  <BootSplash />
+
   <div class="app">
-    <div class="messages-wrap">
-      <div id="messages">
-        <div id="messages-inner">
-          <p v-if="bootError" class="boot-error-msg">{{ bootError }}</p>
-          <p v-else-if="!connected">{{ t("Connecting…") }}</p>
-        </div>
-      </div>
-    </div>
+    <ChatToolbar />
+    <TranscriptView />
+    <RewindWidget />
+    <WidgetPanel />
+    <QueuePanel />
+    <Composer />
   </div>
+
+  <Overlays />
+  <ConfirmDialog />
 </template>

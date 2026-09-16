@@ -1,0 +1,809 @@
+<!--
+  The composer: the draft input, the attachment tray, the model / thinking /
+  permission pickers, the context ring and the send-or-stop button.
+
+  The store owns the draft, this component owns the contenteditable. Typing
+  serializes the DOM back into `composer.draft` (closing `@file` / `/command`
+  tokens into chips as they are completed); a watcher redraws the chips when the
+  draft is written from the outside (`prefillInput`, `appendInput`, history) and
+  restores the caret at the end of the text.
+
+  Ported from the legacy `composer.ts` — the DOM ids/classes match `index.html`
+  and `chat.css`, which is why the triggers and their `#model-popup` /
+  `#permission-popup` shells are rendered here while the popup bodies live in
+  `./composer/*.vue`.
+-->
+<script setup lang="ts">
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
+import type { StreamingBehavior } from "@protocol/messages";
+import { post } from "@/lib/bridge.ts";
+import { t } from "@/lib/i18n.ts";
+import {
+  getCaretOffset,
+  renderSegments,
+  segmentsFromLiveText,
+  segmentsFromText,
+} from "@/lib/input-tokens.ts";
+import { getModelIcon, modelIconHtml } from "@/lib/model-icons.ts";
+import { shortenWorkspacePath } from "@/lib/paths.ts";
+import { useComposerStore, type PendingImage } from "@/stores/composer.ts";
+import { useOverlaysStore } from "@/stores/overlays.ts";
+import { useSessionStore } from "@/stores/session.ts";
+import Autocomplete from "./composer/Autocomplete.vue";
+import ModelPicker from "./composer/ModelPicker.vue";
+import PermissionPicker from "./composer/PermissionPicker.vue";
+
+/** One row of the autocomplete dropdown. */
+interface Suggestion {
+  value: string;
+  name: string;
+  detail?: string;
+  source?: string;
+  matches?: number[];
+}
+
+/** Attachments are inlined into the prompt, so keep them small. */
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+/** Gap between a trigger pill and its popup, mirrored from the legacy layout. */
+const POPUP_GAP = 12;
+
+const composer = useComposerStore();
+const session = useSessionStore();
+const overlays = useOverlaysStore();
+
+const inputEl = ref<HTMLElement | null>(null);
+const modelWrapEl = ref<HTMLElement | null>(null);
+const permissionWrapEl = ref<HTMLElement | null>(null);
+
+/** Paths the host has returned before, so `@` filters something instantly. */
+const knownFiles = ref<string[]>([]);
+
+let fileTimer: number | null = null;
+let composing = false;
+/** Set while the DOM is redrawn from the store, so the redraw is not read back. */
+let rendering = false;
+/** Draft saved when history recall starts, restored when it runs past the newest. */
+let historySnapshot: string | null = null;
+
+// ------------------------------------------------------------------ rendering
+
+/** The contenteditable as plain text, with chips back in `@file` / `/cmd` form. */
+function serializeInput(root: HTMLElement): string {
+  let out = "";
+  for (const node of Array.from(root.childNodes)) {
+    if (node.nodeType === Node.TEXT_NODE) {
+      out += node.textContent ?? "";
+      continue;
+    }
+    if (node.nodeType !== Node.ELEMENT_NODE) continue;
+    const element = node as HTMLElement;
+    if (element.tagName === "BR") {
+      out += "\n";
+      continue;
+    }
+    if (element.classList.contains("token-file")) {
+      out += "@" + (element.getAttribute("data-path") ?? "");
+      continue;
+    }
+    if (element.classList.contains("token-cmd")) {
+      out += element.getAttribute("data-value") ?? element.textContent ?? "";
+      continue;
+    }
+    out += serializeInput(element);
+  }
+  return out;
+}
+
+function autoGrow(): void {
+  const el = inputEl.value;
+  if (!el) return;
+  el.style.height = "auto";
+  const height = Math.max(36, Math.min(el.scrollHeight, 200));
+  el.style.height = `${height}px`;
+  el.style.overflowY = height >= 200 ? "auto" : "hidden";
+}
+
+/** Redraw the chips from the store and put the caret back. */
+function renderCurrent(caret?: number): void {
+  const el = inputEl.value;
+  if (!el) return;
+  rendering = true;
+  renderSegments(el, composer.segments, caret);
+  rendering = false;
+}
+
+function onInput(): void {
+  if (rendering) return;
+  const el = inputEl.value;
+  if (!el) return;
+  const text = serializeInput(el);
+  const caret = getCaretOffset(el);
+  historySnapshot = null;
+  if (text !== composer.draft) composer.draft = text;
+  // Redraw so a completed token becomes a chip. Never during IME composition:
+  // rewriting the DOM there closes the candidate window.
+  if (!composing) renderSegments(el, segmentsFromLiveText(text, caret), caret);
+  autoGrow();
+  updateAutocomplete();
+}
+
+// `composer.draft` is also written by the host (appendInput / prefillInput) and
+// by history recall; those writes have to reach the DOM, while the echo of our
+// own typing must not (it would move the caret). Comparing the two is what keeps
+// the loop closed — the store never re-renders over what the user just typed.
+watch(
+  () => composer.draft,
+  (draft) => {
+    if (rendering) return;
+    const el = inputEl.value;
+    if (!el || serializeInput(el) === draft) return;
+    renderCurrent(draft.length);
+    autoGrow();
+  },
+);
+
+// ------------------------------------------------------------------ autocomplete
+
+/**
+ * Fuzzy score for a command name — prefix hit beats a word-boundary hit beats a
+ * subsequence — plus the indices to highlight. Ported from the legacy matcher.
+ */
+function scoreCommand(
+  name: string,
+  query: string,
+): { score: number; indices: number[] | null } | null {
+  const lower = name.toLowerCase();
+  if (!query) return { score: 1, indices: null };
+  const direct = lower.indexOf(query);
+  if (direct >= 0) {
+    const indices = Array.from({ length: query.length }, (_, step) => direct + step);
+    if (direct === 0) return { score: 900, indices };
+    const previous = lower.charAt(direct - 1);
+    const base = previous === "-" || previous === "_" || previous === " " ? 750 : 600;
+    return { score: base - direct, indices };
+  }
+  let position = 0;
+  let first = -1;
+  let last = -1;
+  let streak = 0;
+  let longest = 0;
+  const indices: number[] = [];
+  for (let i = 0; i < lower.length && position < query.length; i++) {
+    if (lower.charAt(i) !== query.charAt(position)) continue;
+    if (first < 0) first = i;
+    streak = last >= 0 && i === last + 1 ? streak + 1 : 1;
+    if (streak > longest) longest = streak;
+    last = i;
+    indices.push(i);
+    position += 1;
+  }
+  if (position !== query.length) return null;
+  let startBonus = 0;
+  if (first === 0) {
+    startBonus = 50;
+  } else {
+    const previous = lower.charAt(first - 1);
+    if (previous === "-" || previous === "_" || previous === " ") startBonus = 30;
+  }
+  const gaps = last - first + 1 - query.length;
+  const compactBonus = gaps > 0 ? Math.max(0, 40 - gaps * 3) : 40;
+  return { score: 100 + startBonus + longest * 8 + compactBonus, indices };
+}
+
+function commandSuggestions(query: string): Suggestion[] {
+  const needle = query.toLowerCase();
+  const scored: Array<{ suggestion: Suggestion; score: number; order: number }> = [];
+  session.commands.forEach((command, order) => {
+    const match = scoreCommand(command.name, needle);
+    if (!match) return;
+    scored.push({
+      suggestion: {
+        value: command.name,
+        name: `/${command.name}`,
+        detail: command.description ?? "",
+        source: command.source,
+        // The label carries the leading `/`, so shift the highlight indices.
+        matches: match.indices ? match.indices.map((index) => index + 1) : undefined,
+      },
+      score: match.score,
+      order,
+    });
+  });
+  scored.sort((a, b) => (a.score !== b.score ? b.score - a.score : a.order - b.order));
+  return scored.map((entry) => entry.suggestion);
+}
+
+function fileSuggestion(path: string): Suggestion {
+  const slash = path.lastIndexOf("/");
+  return slash >= 0
+    ? { value: path, name: path.slice(slash + 1), detail: path.slice(0, slash) }
+    : { value: path, name: path };
+}
+
+/** The dropdown rows, derived from `.autocomplete` state + the command list. */
+const suggestions = computed<Suggestion[]>(() => {
+  const state = composer.autocomplete;
+  if (!state) return [];
+  if (state.kind === "command") return commandSuggestions(state.query);
+  return state.items.map((item) => fileSuggestion(item.value));
+});
+
+/** `/` only starts a command on the very first line, like the legacy parser. */
+function slashToken(text: string, caret: number): { token: string } | null {
+  const before = text.slice(0, caret);
+  const lineStart = before.lastIndexOf("\n") + 1;
+  if (lineStart !== 0) return null;
+  const lineTail = before.slice(lineStart);
+  if (lineTail.charAt(0) !== "/") return null;
+  const token = lineTail.slice(1);
+  if (token.includes(" ")) return null;
+  return { token };
+}
+
+function atToken(text: string, caret: number): { query: string; start: number } | null {
+  const before = text.slice(0, caret);
+  let wordStart = 0;
+  for (let i = before.length - 1; i >= 0; i--) {
+    if (/\s/.test(before.charAt(i))) {
+      wordStart = i + 1;
+      break;
+    }
+  }
+  const token = before.slice(wordStart, caret);
+  if (token.charAt(0) !== "@") return null;
+  return { query: token.slice(1), start: wordStart };
+}
+
+function clearFileTimer(): void {
+  if (fileTimer !== null) {
+    clearTimeout(fileTimer);
+    fileTimer = null;
+  }
+}
+
+function hideAutocomplete(): void {
+  clearFileTimer();
+  composer.autocomplete = null;
+}
+
+function showAutocomplete(kind: "command" | "file", query: string, list: Suggestion[]): void {
+  composer.autocomplete = {
+    kind,
+    query,
+    items: list.map((item) => ({
+      value: item.value,
+      label: item.name,
+      detail: item.detail ?? "",
+    })),
+    selected: list.length > 0 ? 0 : -1,
+  };
+}
+
+function updateAutocomplete(): void {
+  const el = inputEl.value;
+  if (!el) return;
+  const text = serializeInput(el);
+  const caret = getCaretOffset(el);
+
+  const slash = slashToken(text, caret);
+  if (slash) {
+    clearFileTimer();
+    const list = commandSuggestions(slash.token);
+    if (list.length === 0) hideAutocomplete();
+    else showAutocomplete("command", slash.token, list);
+    return;
+  }
+
+  const at = atToken(text, caret);
+  if (!at) {
+    hideAutocomplete();
+    return;
+  }
+  // Filter what we already know, then let the host widen the search.
+  const needle = at.query.toLowerCase();
+  const local = knownFiles.value.filter((path) => path.toLowerCase().includes(needle));
+  showAutocomplete(
+    "file",
+    at.query,
+    local.map((path) => fileSuggestion(path)),
+  );
+  clearFileTimer();
+  const query = at.query;
+  fileTimer = window.setTimeout(() => {
+    fileTimer = null;
+    post({ type: "searchFiles", query });
+  }, 120);
+}
+
+// Remember every path the host resolves so the next `@` can filter locally.
+watch(
+  () => composer.autocomplete,
+  (state) => {
+    if (!state || state.kind !== "file" || state.items.length === 0) return;
+    const seen = new Set(knownFiles.value);
+    for (const item of state.items) seen.add(item.value);
+    knownFiles.value = [...seen];
+  },
+);
+
+/** Replace the token under the caret with the accepted suggestion. */
+function complete(suggestion: Suggestion): void {
+  const el = inputEl.value;
+  if (!el) return;
+  const text = serializeInput(el);
+  const caret = getCaretOffset(el);
+  let start: number;
+  let replacement: string;
+  if (composer.autocomplete?.kind === "file") {
+    const at = atToken(text, caret);
+    if (!at) {
+      hideAutocomplete();
+      return;
+    }
+    start = at.start;
+    replacement = `@${shortenWorkspacePath(suggestion.value)} `;
+  } else {
+    start = text.slice(0, caret).lastIndexOf("\n") + 1;
+    replacement = `/${suggestion.value} `;
+  }
+  const next = text.slice(0, start) + replacement + text.slice(caret);
+  const position = start + replacement.length;
+  el.focus();
+  composer.draft = next;
+  renderSegments(el, segmentsFromText(next), position);
+  hideAutocomplete();
+  autoGrow();
+}
+
+function onAutocompleteSelect(index: number): void {
+  const chosen = suggestions.value[index];
+  if (chosen) complete(chosen);
+}
+
+// ------------------------------------------------------------------ editing
+
+/** Insert text at the caret and keep it there. Shared by paste / newline. */
+function insertAtCaret(text: string): void {
+  const el = inputEl.value;
+  if (!el) return;
+  const value = serializeInput(el);
+  const caret = getCaretOffset(el);
+  const next = value.slice(0, caret) + text + value.slice(caret);
+  composer.draft = next;
+  renderSegments(el, segmentsFromText(next), caret + text.length);
+  autoGrow();
+}
+
+function navigateHistory(direction: -1 | 1): void {
+  const el = inputEl.value;
+  if (!el || composer.history.length === 0) return;
+  if (direction === -1 && historySnapshot === null) historySnapshot = composer.draft;
+  if (!composer.recall(direction)) return;
+  if (direction === 1 && composer.draft === "" && historySnapshot !== null) {
+    // Walked past the newest entry: put back what was typed before recalling.
+    composer.setDraft(historySnapshot);
+    historySnapshot = null;
+  }
+  el.focus();
+  renderSegments(el, composer.segments, composer.payload.length);
+  autoGrow();
+}
+
+function onCompositionStart(): void {
+  composing = true;
+}
+
+function onCompositionEnd(): void {
+  composing = false;
+  const el = inputEl.value;
+  if (el) {
+    const text = serializeInput(el);
+    const caret = getCaretOffset(el);
+    renderSegments(el, segmentsFromLiveText(text, caret), caret);
+  }
+  autoGrow();
+  updateAutocomplete();
+}
+
+function onKeydown(ev: KeyboardEvent): void {
+  const state = composer.autocomplete;
+  const list = suggestions.value;
+  if (state && list.length > 0 && (ev.key === "ArrowDown" || ev.key === "ArrowUp")) {
+    ev.preventDefault();
+    const delta = ev.key === "ArrowDown" ? 1 : -1;
+    const next = (state.selected + delta + list.length) % list.length;
+    composer.autocomplete = { ...state, selected: next };
+    return;
+  }
+  if (
+    state &&
+    list.length > 0 &&
+    !ev.altKey &&
+    !ev.ctrlKey &&
+    !ev.metaKey &&
+    (ev.key === "Enter" || ev.key === "Tab")
+  ) {
+    ev.preventDefault();
+    const chosen = list[state.selected] ?? list[0];
+    if (chosen) complete(chosen);
+    return;
+  }
+  if (ev.key === "Escape" && (state || fileTimer !== null)) {
+    ev.preventDefault();
+    hideAutocomplete();
+    return;
+  }
+  const el = inputEl.value;
+  const plain = !ev.shiftKey && !ev.altKey && !ev.ctrlKey && !ev.metaKey;
+  if (el && plain && ev.key === "ArrowUp") {
+    if (serializeInput(el).slice(0, getCaretOffset(el)).indexOf("\n") === -1) {
+      ev.preventDefault();
+      navigateHistory(-1);
+      return;
+    }
+  }
+  if (el && plain && ev.key === "ArrowDown") {
+    if (serializeInput(el).slice(getCaretOffset(el)).indexOf("\n") === -1) {
+      ev.preventDefault();
+      navigateHistory(1);
+      return;
+    }
+  }
+  if (ev.key === "Enter" && !ev.isComposing && !composing) {
+    ev.preventDefault();
+    const isMac = /Mac/i.test(navigator.platform || "");
+    const modifier = isMac ? ev.metaKey : ev.ctrlKey;
+    const followUp = ev.altKey && !ev.shiftKey && !ev.ctrlKey && !ev.metaKey;
+    const send = session.sendShortcut === "enter" ? plain : modifier && !ev.shiftKey && !ev.altKey;
+    if (followUp) sendPrompt("followUp");
+    else if (send) sendPrompt("steer");
+    else insertAtCaret("\n");
+  }
+}
+
+// ------------------------------------------------------------------ attachments
+
+function isImageType(type: string): boolean {
+  return type.startsWith("image/");
+}
+
+function addImageFile(file: File): void {
+  if (!isImageType(file.type) || file.size > MAX_IMAGE_BYTES) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const url = String(reader.result ?? "");
+    const marker = ";base64,";
+    const index = url.indexOf(marker);
+    if (url.indexOf("data:") !== 0 || index < 0) return;
+    composer.addImages([
+      { type: "image", data: url.slice(index + marker.length), mimeType: url.slice(5, index) },
+    ]);
+  };
+  reader.readAsDataURL(file);
+}
+
+function dataUrl(image: PendingImage): string {
+  return `data:${image.mimeType};base64,${image.data}`;
+}
+
+function onPaste(ev: ClipboardEvent): void {
+  const data = ev.clipboardData;
+  if (!data) return;
+  const files: File[] = [];
+  for (const item of Array.from(data.items)) {
+    if (item.kind !== "file" || !isImageType(item.type)) continue;
+    const file = item.getAsFile();
+    if (file) files.push(file);
+  }
+  if (files.length > 0) {
+    ev.preventDefault();
+    for (const file of files) addImageFile(file);
+    return;
+  }
+  ev.preventDefault();
+  const text = data.getData("text/plain");
+  if (text) insertAtCaret(text);
+}
+
+function hasFiles(data: DataTransfer | null): boolean {
+  return !!data && Array.from(data.types).includes("Files");
+}
+
+function onDragOver(ev: DragEvent): void {
+  if (hasFiles(ev.dataTransfer)) ev.preventDefault();
+}
+
+function onDrop(ev: DragEvent): void {
+  const files = ev.dataTransfer?.files;
+  if (!files || files.length === 0) return;
+  ev.preventDefault();
+  for (const file of Array.from(files)) addImageFile(file);
+}
+
+function onAttach(): void {
+  if (session.isStreaming) return;
+  post({ type: "pickResource" });
+}
+
+// ------------------------------------------------------------------ send / stop
+
+function sendPrompt(behavior?: StreamingBehavior): void {
+  const message = composer.payload;
+  const images = composer.images.map((image) => ({
+    type: "image" as const,
+    data: image.data,
+    mimeType: image.mimeType,
+  }));
+  if (!message.trim() && images.length === 0) return;
+  const streaming = session.isStreaming;
+  composer.remember(message);
+  composer.clear();
+  historySnapshot = null;
+  inputEl.value?.focus();
+  if (streaming) {
+    post({
+      type: "prompt",
+      message,
+      streamingBehavior: behavior ?? "steer",
+      ...(images.length > 0 ? { images } : {}),
+    });
+  } else {
+    post({ type: "prompt", message, ...(images.length > 0 ? { images } : {}) });
+  }
+}
+
+const btwStopId = computed(() =>
+  overlays.btwActive && overlays.btwAbortId ? overlays.btwAbortId : null,
+);
+const stopMode = computed(() => session.isStreaming || btwStopId.value !== null);
+const sendDisabled = computed(() => !stopMode.value && !composer.hasContent);
+const sendTitle = computed(() =>
+  btwStopId.value !== null
+    ? t("Stop /btw")
+    : session.isStreaming
+      ? t("Stop generation")
+      : t("Send message"),
+);
+
+function onSendClick(): void {
+  const btwId = btwStopId.value;
+  if (btwId) {
+    post({ type: "btwAbort", id: btwId });
+    return;
+  }
+  if (session.isStreaming) {
+    post({ type: "abort" });
+    return;
+  }
+  sendPrompt();
+}
+
+// ------------------------------------------------------------------ toolbar state
+
+const placeholder = t("Ask anything…  (use / for commands, @ for files)");
+
+const modelLabel = computed(() => {
+  const model = session.model;
+  if (model)
+    return model.provider
+      ? `${model.name || model.id} · ${model.provider}`
+      : model.name || model.id;
+  return session.models.length === 0 ? t("No models configured") : "";
+});
+
+const modelIconMarkup = computed(() => {
+  const model = session.model;
+  return model ? modelIconHtml(getModelIcon(model.name || model.id)) : "";
+});
+
+const permissionSafe = computed(() => session.permissionMode !== "FullAccess");
+const permissionTitle = computed(() => t(permissionSafe.value ? "Smart approval" : "Full access"));
+const permissionIconClass = computed(() =>
+  permissionSafe.value ? "codicon-shield permission-safe" : "codicon-unlock permission-danger",
+);
+
+const contextPercent = computed(() => session.contextPercent);
+const ctxRingClass = computed(() => ({
+  "is-warn": contextPercent.value >= 50 && contextPercent.value < 80,
+  "is-error": contextPercent.value >= 80,
+}));
+const ctxDashOffset = computed(() => String(100 - contextPercent.value));
+
+// ------------------------------------------------------------------ popups
+
+/**
+ * Anchor a popup under its trigger. VS Code sidebars go down to ~230px, so the
+ * legacy implementation measured and clamped instead of trusting CSS.
+ */
+function positionPopup(wrap: HTMLElement | null, selector: string, floor: number): void {
+  const popup = wrap?.querySelector<HTMLElement>(selector);
+  if (!wrap || !popup) return;
+  const rect = wrap.getBoundingClientRect();
+  const margin = 8;
+  popup.style.minWidth = `${Math.min(window.innerWidth - margin * 2, Math.max(floor, rect.width))}px`;
+  popup.style.left = "0px";
+  popup.style.top = "";
+  popup.style.bottom = "";
+  const width = popup.offsetWidth;
+  if (rect.left + width > window.innerWidth - margin) {
+    popup.style.left = `${Math.max(margin - rect.left, rect.width - width)}px`;
+  }
+  const height = popup.offsetHeight || 220;
+  const spaceBelow = window.innerHeight - rect.bottom;
+  if (spaceBelow < height + margin && rect.top > spaceBelow) {
+    popup.style.bottom = `${rect.height + POPUP_GAP}px`;
+  } else {
+    popup.style.top = `${rect.height + POPUP_GAP}px`;
+  }
+}
+
+// The thinking panel grows the model popup in place, so it has to be re-measured.
+watch([() => composer.openPopup, () => composer.modelSubview], async () => {
+  await nextTick();
+  if (composer.openPopup === "model") positionPopup(modelWrapEl.value, ".model-popup", 260);
+  else if (composer.openPopup === "permission")
+    positionPopup(permissionWrapEl.value, ".permission-popup", 250);
+});
+
+/**
+ * Clicking outside a trigger closes its popup. One popup is open at a time, so
+ * the open one's wrapper decides — clicks inside the popup (including the
+ * thinking panel) keep it open.
+ */
+function onDocumentMouseDown(ev: MouseEvent): void {
+  const target = ev.target as Node | null;
+  const open = composer.openPopup;
+  if (!target || !open) return;
+  const wrap =
+    open === "model" ? modelWrapEl.value : open === "permission" ? permissionWrapEl.value : null;
+  if (wrap?.contains(target)) return;
+  composer.closePopups();
+}
+
+// ------------------------------------------------------------------ lifecycle
+
+onMounted(() => {
+  document.addEventListener("mousedown", onDocumentMouseDown);
+  // The draft may already be set (prefill before mount), so draw it once.
+  renderCurrent(composer.payload.length);
+  autoGrow();
+  updateAutocomplete();
+});
+
+onUnmounted(() => {
+  document.removeEventListener("mousedown", onDocumentMouseDown);
+  clearFileTimer();
+});
+</script>
+
+<template>
+  <div class="composer">
+    <Autocomplete
+      v-if="composer.autocomplete && suggestions.length > 0"
+      :items="suggestions"
+      :selected="composer.autocomplete.selected"
+      @select="onAutocompleteSelect"
+    />
+    <div class="composer-box">
+      <div v-if="composer.images.length > 0" id="attach-preview" class="attach-preview">
+        <div v-for="(image, index) in composer.images" :key="index" class="attach-thumb">
+          <img :src="dataUrl(image)" alt="" />
+          <button
+            class="attach-remove"
+            type="button"
+            :title="t('Remove image')"
+            @click="composer.removeImage(index)"
+          >
+            ×
+          </button>
+        </div>
+      </div>
+      <div
+        id="input"
+        ref="inputEl"
+        class="composer-input"
+        contenteditable="true"
+        role="textbox"
+        aria-multiline="true"
+        :data-placeholder="placeholder"
+        @input="onInput"
+        @keydown="onKeydown"
+        @compositionstart="onCompositionStart"
+        @compositionend="onCompositionEnd"
+        @paste="onPaste"
+        @dragover="onDragOver"
+        @drop="onDrop"
+      ></div>
+      <div class="composer-controls-bar">
+        <button
+          id="attach-btn"
+          class="icon-btn"
+          type="button"
+          :title="t('Add file or folder')"
+          :disabled="session.isStreaming"
+          @click="onAttach"
+        >
+          <span class="codicon codicon-add"></span>
+        </button>
+        <div
+          id="model-wrap"
+          ref="modelWrapEl"
+          class="select-wrap model-wrap"
+          :class="{ 'is-open': composer.openPopup === 'model' }"
+        >
+          <button
+            id="model-trigger"
+            class="model-trigger"
+            type="button"
+            :title="modelLabel"
+            @click="composer.togglePopup('model')"
+          >
+            <span id="model-icon" class="model-icon-slot" v-html="modelIconMarkup"></span>
+            <span id="model-trigger-label" class="model-trigger-label">{{ modelLabel }}</span>
+          </button>
+          <div v-if="composer.openPopup === 'model'" id="model-popup" class="model-popup">
+            <div id="model-title" class="picker-title">{{ t("Model") }}</div>
+            <ModelPicker />
+          </div>
+        </div>
+        <div
+          id="permission-wrap"
+          ref="permissionWrapEl"
+          class="select-wrap permission-wrap"
+          :class="{ 'is-open': composer.openPopup === 'permission' }"
+        >
+          <button
+            id="permission-trigger"
+            class="permission-trigger"
+            type="button"
+            :title="permissionTitle"
+            @click="composer.togglePopup('permission')"
+          >
+            <span
+              id="permission-icon"
+              class="codicon permission-icon"
+              :class="permissionIconClass"
+            ></span>
+            <span id="permission-trigger-label" class="permission-trigger-label">
+              {{ permissionTitle }}
+            </span>
+          </button>
+          <div
+            v-if="composer.openPopup === 'permission'"
+            id="permission-popup"
+            class="permission-popup"
+          >
+            <div id="permission-title" class="picker-title">{{ t("Permission approval") }}</div>
+            <PermissionPicker />
+          </div>
+        </div>
+        <div class="composer-spacer"></div>
+        <span id="ctx-ring" class="ctx-ring" :class="ctxRingClass" :title="t('Context usage')">
+          <svg viewBox="0 0 16 16">
+            <circle class="ctx-ring-track" cx="8" cy="8" r="6"></circle>
+            <circle
+              id="ctx-ring-prog"
+              class="ctx-ring-prog"
+              cx="8"
+              cy="8"
+              r="6"
+              pathLength="100"
+              :style="{ strokeDashoffset: ctxDashOffset }"
+            ></circle>
+          </svg>
+        </span>
+        <button
+          id="send"
+          class="icon-btn send-btn"
+          :class="{ 'is-stop': stopMode }"
+          type="button"
+          :disabled="sendDisabled"
+          :title="sendTitle"
+          @click="onSendClick"
+        >
+          <span class="codicon" :class="stopMode ? 'codicon-debug-stop' : 'codicon-send'"></span>
+        </button>
+      </div>
+    </div>
+  </div>
+</template>
