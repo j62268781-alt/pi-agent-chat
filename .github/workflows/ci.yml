@@ -1,0 +1,94 @@
+# CI：push 到 main、以及所有 PR 时运行。
+# 依次执行 lint(oxlint + oxfmt) / typecheck(tsgo) / 单元测试(vitest) / 构建，再打包出 .vsix 并作为构建产物上传。
+# 构建顺序有硬依赖：必须先 build:webview（产出 webview-vue/dist/**/index.html），再 build:extension
+# （rolldown 的 ?raw 插件会把这两个 HTML 内联进 dist/extension.cjs），因此统一走 `pnpm run build`。
+# 运行在 ubuntu-latest 上：部分用例只在 Linux 下执行（Windows 会被 skip），CI 能覆盖全部用例。
+name: CI
+
+"on":
+  push:
+    branches:
+      - main
+  pull_request:
+
+# 同一分支 / PR 上的新提交会取消仍在进行中的旧运行
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# 最小权限：CI 只需要读取仓库内容
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Verify
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # pnpm 版本由 package.json 的 packageManager 字段决定（pnpm@10.32.1）。
+      # 这里不要再传 version，否则会与 packageManager 冲突并报错。
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm run lint
+
+      - name: Typecheck
+        run: pnpm run typecheck
+
+      - name: Unit tests
+        run: pnpm run test:unit
+
+      - name: Build
+        run: pnpm run build
+
+  package:
+    name: Package VSIX
+    runs-on: ubuntu-latest
+    needs: verify
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # webview-vue 必须先构建，扩展打包才能内联其 HTML 产物
+      - name: Build
+        run: pnpm run build
+
+      - name: Package extension
+        run: pnpm exec vsce package --no-dependencies
+
+      - name: Upload VSIX artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pi-agent-chat-vsix
+          path: "*.vsix"
+          if-no-files-found: error
+          retention-days: 14

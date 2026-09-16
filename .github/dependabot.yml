@@ -1,0 +1,16 @@
+# Dependabot：每周检查一次依赖更新。
+# npm 生态在仓库根目录运行（Dependabot 会读取 pnpm-workspace.yaml 覆盖 webview-vue 子包），
+# 同时跟踪 .github/workflows 中使用的 GitHub Actions 版本。
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5

@@ -1,0 +1,145 @@
+# Release：推送 v* 标签（例如 v1.0.0）时发布，也支持手动触发（workflow_dispatch）。
+# 流程：校验标签版本与 package.json 的 version 一致 -> 安装/构建 -> vsce package -> 创建 GitHub Release（附加 .vsix）。
+# Release notes 优先从 CHANGELOG.md 抽取对应版本段落，抽不到则退化为 GitHub 自动生成的 notes。
+# 发布到 VS Code Marketplace / Open VSX 的步骤默认跳过：只有仓库配置了对应 Secret（VSCE_PAT / OVSX_PAT）
+# 且不是 dry_run 时才会真正发布。
+name: Release
+
+"on":
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run: 只构建并打包 VSIX，不创建 Release，也不发布到 Marketplace / Open VSX"
+        type: boolean
+        default: false
+
+# 创建 GitHub Release 需要写权限
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    env:
+      # GitHub 不允许在 step 的 if 中直接读取 secrets，因此先用 job 级 env 把 secret 传进来，
+      # 再在 step 的 if 里判断 env（空字符串表示该 Secret 未配置）。
+      VSCE_PAT: ${{ secrets.VSCE_PAT }}
+      OVSX_PAT: ${{ secrets.OVSX_PAT }}
+      DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # 需要本地 tag 信息用于校验版本
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      # 解析并校验版本：标签版本必须与 package.json 的 version 完全一致
+      - name: Resolve and verify version
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          PKG_VERSION="$(node -p "require('./package.json').version")"
+
+          if [[ "${GITHUB_REF_NAME}" == v* ]]; then
+            TAG="${GITHUB_REF_NAME}"
+          else
+            # 手动触发且 ref 不是标签时，回退使用 v<package.json version>，并要求该标签已存在
+            TAG="v${PKG_VERSION}"
+            if ! git rev-parse -q --verify "refs/tags/${TAG}" >/dev/null; then
+              echo "::error::无法确定发布标签：请选择 v* 标签作为 ref，或先创建标签 ${TAG}"
+              exit 1
+            fi
+          fi
+
+          TAG_VERSION="${TAG#v}"
+          if [[ "${PKG_VERSION}" != "${TAG_VERSION}" ]]; then
+            echo "::error::标签版本 (${TAG_VERSION}) 与 package.json version (${PKG_VERSION}) 不一致"
+            exit 1
+          fi
+
+          echo "version=${PKG_VERSION}" >> "${GITHUB_OUTPUT}"
+          echo "tag=${TAG}" >> "${GITHUB_OUTPUT}"
+          echo "vsix=pi-agent-chat-${PKG_VERSION}.vsix" >> "${GITHUB_OUTPUT}"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # webview-vue 必须先构建，扩展打包才能内联其 HTML 产物
+      - name: Build
+        run: pnpm run build
+
+      - name: Package extension
+        run: pnpm exec vsce package --no-dependencies
+
+      - name: Upload VSIX artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pi-agent-chat-vsix
+          path: ${{ steps.version.outputs.vsix }}
+          if-no-files-found: error
+          retention-days: 14
+
+      # 从 CHANGELOG.md 抽取 "## [<version>]" 到下一个 "## " 之间的内容
+      - name: Extract release notes from CHANGELOG
+        id: notes
+        shell: bash
+        run: |
+          set -euo pipefail
+          NOTES_FILE="release-notes.md"
+          awk -v ver="${{ steps.version.outputs.version }}" '
+            $0 ~ "^## \\[" ver "\\]" { capture = 1; next }
+            capture && /^## / { capture = 0 }
+            capture { print }
+          ' CHANGELOG.md > "${NOTES_FILE}"
+
+          if [[ -s "${NOTES_FILE}" ]]; then
+            echo "has_notes=true" >> "${GITHUB_OUTPUT}"
+          else
+            rm -f "${NOTES_FILE}"
+            echo "has_notes=false" >> "${GITHUB_OUTPUT}"
+          fi
+
+      - name: Create GitHub Release with CHANGELOG notes
+        if: env.DRY_RUN != 'true' && steps.notes.outputs.has_notes == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: ${{ steps.version.outputs.tag }}
+          body_path: release-notes.md
+          files: ${{ steps.version.outputs.vsix }}
+
+      # CHANGELOG 中没有该版本段落时的兜底：使用自动生成的 notes
+      - name: Create GitHub Release with generated notes
+        if: env.DRY_RUN != 'true' && steps.notes.outputs.has_notes != 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: ${{ steps.version.outputs.tag }}
+          generate_release_notes: true
+          files: ${{ steps.version.outputs.vsix }}
+
+      # 默认跳过：仅在仓库配置了 VSCE_PAT 且不是 dry_run 时发布到 Marketplace
+      - name: Publish to VS Code Marketplace
+        if: env.DRY_RUN != 'true' && env.VSCE_PAT != ''
+        run: pnpm exec vsce publish --no-dependencies --packagePath "${{ steps.version.outputs.vsix }}"
+
+      # 默认跳过：仅在仓库配置了 OVSX_PAT 且不是 dry_run 时发布到 Open VSX
+      - name: Publish to Open VSX
+        if: env.DRY_RUN != 'true' && env.OVSX_PAT != ''
+        run: pnpm exec ovsx publish "${{ steps.version.outputs.vsix }}" --pat "${OVSX_PAT}"
