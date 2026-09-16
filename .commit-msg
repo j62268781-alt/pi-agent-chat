@@ -1,9 +1,0 @@
-fix(webview): generate model icons before typechecking
-
-`model-icons-data.ts` is derived from `@lobehub/icons` at build time and is
-gitignored, but `typecheck` ran `vue-tsc` without generating it first — so a
-fresh clone (which is exactly what CI does) failed with TS2307 on
-`./model-icons-data.ts`. Locally the file was already present from an earlier
-build, which hid the problem.
-
-Caught by the new CI pipeline on its first run.

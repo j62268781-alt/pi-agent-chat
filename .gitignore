@@ -14,3 +14,5 @@ webview-vue/src/lib/model-icons-data.ts
 
 # TypeScript native preview single-file check config
 .tsconfig.pi-extensions-check.json
+# transient commit message used by tooling
+.commit-msg
