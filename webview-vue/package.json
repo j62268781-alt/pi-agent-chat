@@ -10,7 +10,7 @@
     "build:settings": "vite build --mode settings",
     "dev": "vite --mode chat",
     "preview": "vite preview",
-    "typecheck": "vue-tsc --noEmit -p tsconfig.json"
+    "typecheck": "node scripts/extract-model-icons.mjs && vue-tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
     "@vscode/codicons": "0.0.46-24",

@@ -1,35 +1,9 @@
-feat(webview): rewrite the settings UI in Vue 3
+fix(webview): generate model icons before typechecking
 
-Completes the webview migration: the settings panel was the last vanilla DOM
-surface, with ~100 kB of tab renderers spread over eight files.
+`model-icons-data.ts` is derived from `@lobehub/icons` at build time and is
+gitignored, but `typecheck` ran `vue-tsc` without generating it first — so a
+fresh clone (which is exactly what CI does) failed with TS2307 on
+`./model-icons-data.ts`. Locally the file was already present from an earlier
+build, which hid the problem.
 
-Protocol
-- `src/protocol/settings.ts` now owns the settings postMessage contract, the
-  second half of the webview boundary alongside `messages.ts`. It types both
-  directions (43 webview -> host messages, 6 host -> webview) and the `tabData`
-  payload shape per tab, and exposes an `isSettingsTabId` runtime guard.
-- The previous declarations lived only in the old webview's switch statements
-  and had drifted from `settings-panel.ts`; this file was derived by walking
-  every `case` in that handler.
-
-Webview
-- `stores/settings.ts` holds the tab list, per-tab data cache, dirty/saving
-  state and the optimistic patch path; `composables/useSettingsLink.ts` is the
-  inbound router, mirroring `useHostLink.ts` on the chat side.
-- `pages/SettingsPage.vue` rebuilds the nav shell from the legacy markup.
-- The eight tabs are components under `components/settings/`: Models (split
-  further into providers, provider detail, compat, headers, OAuth and API-key
-  panes), Agents, Prompts, Skills, MCP, Commit, System Prompt and General —
-  plus shared editors (`SettingFieldEditor`, `SecretInput`, `ScopeSelect`,
-  `ItemRow`, `ConfirmBar`, `SectionHeader`).
-- `styles/settings.css` is reused unchanged; the components emit the class
-  names it already targets.
-
-Known host-side gaps found while porting (left untouched, for a follow-up):
-- `refresh` shares a `case` with `tabLoad`, so a whole-panel reload is not
-  possible.
-- Saving settings / system prompt / commit config only answers `saved`, never a
-  fresh `tabData`, so the webview has to commit optimistically.
-- `saved{what:"mcp"}` and `writeModelsJson` have host handlers but no UI entry.
-
-Verified: pnpm run build (clean), pnpm run test (lint + typecheck + vitest).
+Caught by the new CI pipeline on its first run.
