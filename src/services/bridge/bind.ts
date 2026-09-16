@@ -59,20 +59,22 @@ export async function unlinkStaleSocket(
   platform: NodeJS.Platform = process.platform,
 ): Promise<void> {
   if (platform === "win32") return; // named pipes vanish when the server closes
-  await new Promise<void>((resolve) => {
+
+  const nothingListening = await new Promise<boolean>((resolve) => {
     const socket = connect(socketPath);
-    const done = () => {
+    const finish = (refused: boolean) => {
       socket.destroy();
-      resolve();
+      resolve(refused);
     };
-    socket.once("connect", done);
-    socket.once("error", (error) => {
-      if ((error as NodeJS.ErrnoException).code === "ECONNREFUSED") {
-        void unlink(socketPath).catch(() => {});
-      }
-      done();
-    });
+    socket.once("connect", () => finish(false));
+    socket.once("error", (error) =>
+      finish((error as NodeJS.ErrnoException).code === "ECONNREFUSED"),
+    );
   });
+
+  // Awaited: the removal used to be fire-and-forget, which let a caller resume
+  // while the path was still on disk.
+  if (nothingListening) await unlink(socketPath).catch(() => {});
 }
 
 function listen(server: Server, target: number | string): Promise<number> {
