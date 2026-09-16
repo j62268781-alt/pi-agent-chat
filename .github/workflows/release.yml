@@ -32,7 +32,7 @@ jobs:
       DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           # 需要本地 tag 信息用于校验版本
           fetch-depth: 0
