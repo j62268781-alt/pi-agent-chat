@@ -31,9 +31,10 @@ function isFavorite(model: RpcModel): boolean {
   return session.enabledModelKeys.includes(favoriteKey(model));
 }
 
+/** Row label. The row sits under a provider group title (see `groups`), so the
+ *  provider is not repeated here; typing a provider name still filters. */
 function label(model: RpcModel): string {
-  const name = model.name || model.id;
-  return model.provider ? `${name} · ${model.provider}` : name;
+  return model.name || model.id;
 }
 
 /** Provider-grouped, matching the legacy `computeFilteredModels`. */
@@ -166,7 +167,12 @@ function onSearchKeydown(ev: KeyboardEvent): void {
     </div>
     <div v-else-if="visibleCount === 0" class="model-empty">{{ t("No matching models") }}</div>
     <template v-else>
-      <template v-for="group in groups" :key="group.provider">
+      <!-- Each provider is its own wrapper so its heading can stick inside it:
+           a sticky box is clamped to its containing block, which is what pushes
+           a heading out as the next group arrives. See `.model-group` in
+           `chat.css` — as flat children of `.model-list` the headings would all
+           pin at the top and paint over each other. -->
+      <div v-for="group in groups" :key="group.provider" class="model-group">
         <div class="model-group-title">{{ group.provider }}</div>
         <div
           v-for="entry in group.models"
@@ -193,7 +199,7 @@ function onSearchKeydown(ev: KeyboardEvent): void {
             ></span>
           </button>
         </div>
-      </template>
+      </div>
     </template>
   </div>
   <ThinkingPicker />

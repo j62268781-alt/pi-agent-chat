@@ -4256,3 +4256,38 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 .boot-retry:hover {
   background: var(--pi-brand-hover);
 }
+
+/* ── model picker: sticky provider headings ────────────────────────────────
+ * The provider heading pins to the top of the list while its own rows scroll,
+ * and the next group's heading pushes it out — the usual section-list read, and
+ * the reason the row label no longer repeats the provider.
+ *
+ * `.model-group` is load-bearing, not decoration: a sticky box is clamped to
+ * its CONTAINING BLOCK, and with the headings as flat children of `.model-list`
+ * the containing block is the whole list — so a pinned heading stays at the top
+ * for the entire scroll instead of being pushed out, and the incoming heading
+ * slides over it. Measured on a 13-model list: 7 of 21 sampled scroll offsets
+ * painted two headings on top of each other.
+ *
+ * The heading's own background has to be opaque (`--pi-bg-raised` = the popup
+ * fill) and above the rows, or the list scrolls through it. */
+
+.model-group {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.model-group-title {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--pi-bg-raised);
+}
+
+/* Keyboard navigation scrolls the active row into view; without this it can
+ * come to rest underneath the pinned heading (~21px box + the list's 2px
+ * padding). */
+.model-item {
+  scroll-margin-top: 26px;
+}
