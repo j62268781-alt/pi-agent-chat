@@ -16,3 +16,6 @@ webview-vue/src/lib/model-icons-data.ts
 .tsconfig.pi-extensions-check.json
 # transient commit message used by tooling
 .commit-msg
+
+# agent working notes (same convention as pi-agent-studio)
+.workbuddy/
