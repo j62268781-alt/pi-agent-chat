@@ -404,6 +404,44 @@
           ],
           "description": "%pi.config.chatSendShortcut.desc%"
         },
+        "pi-agent-chat.chatRunningSendBehavior": {
+          "type": "string",
+          "default": "queue",
+          "enum": [
+            "queue",
+            "steer"
+          ],
+          "enumDescriptions": [
+            "%pi.config.chatRunningSendBehavior.queue%",
+            "%pi.config.chatRunningSendBehavior.steer%"
+          ],
+          "description": "%pi.config.chatRunningSendBehavior.desc%"
+        },
+        "pi-agent-chat.chatCollapseWork": {
+          "type": "boolean",
+          "default": true,
+          "description": "%pi.config.chatCollapseWork.desc%"
+        },
+        "pi-agent-chat.chatShowToolCallCount": {
+          "type": "boolean",
+          "default": true,
+          "description": "%pi.config.chatShowToolCallCount.desc%"
+        },
+        "pi-agent-chat.chatExpandToolCalls": {
+          "type": "boolean",
+          "default": false,
+          "description": "%pi.config.chatExpandToolCalls.desc%"
+        },
+        "pi-agent-chat.chatExpandThinking": {
+          "type": "boolean",
+          "default": false,
+          "description": "%pi.config.chatExpandThinking.desc%"
+        },
+        "pi-agent-chat.chatKeepReadingAnchor": {
+          "type": "boolean",
+          "default": false,
+          "description": "%pi.config.chatKeepReadingAnchor.desc%"
+        },
         "pi-agent-chat.chatMermaidTheme": {
           "type": "string",
           "default": "default",

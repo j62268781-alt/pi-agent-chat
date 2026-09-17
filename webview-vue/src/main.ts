@@ -2,7 +2,8 @@ import codiconTtf from "@vscode/codicons/dist/codicon.ttf?inline";
 import { createPinia } from "pinia";
 import { createApp } from "vue";
 import App from "@/App.vue";
-import { backgroundImage, backgroundOpacity, chatFontSize, language } from "@/lib/injected";
+import { language } from "@/lib/injected";
+import { useDisplayStore } from "@/stores/display";
 import "@/tokens.css";
 
 // `@vscode/codicons` is shipped as a subset: only the glyphs referenced by the
@@ -12,20 +13,13 @@ const codiconStyle = document.createElement("style");
 codiconStyle.textContent = `@font-face{font-family:"codicon";font-display:block;src:url(${codiconTtf}) format("truetype")}`;
 document.head.prepend(codiconStyle);
 
-const root = document.documentElement;
-root.lang = language();
+document.documentElement.lang = language();
 
-// `--chat-fs` drives the transcript, `--fs` the settings panel.
-const fontSize = `${chatFontSize()}px`;
-root.style.setProperty("--chat-fs", fontSize);
-root.style.setProperty("--fs", fontSize);
+const app = createApp(App);
+app.use(createPinia());
 
-const background = backgroundImage();
-if (background) {
-  root.style.setProperty("--pi-bg-image", `url("${background.replace(/"/g, '\\"')}")`);
-  root.style.setProperty("--pi-bg-blur", "blur(8px)");
-  root.style.setProperty("--pi-bg-on", "1");
-}
-root.style.setProperty("--pi-bg-opacity", String(backgroundOpacity()));
+// Seed the CSS custom properties from the host-injected display settings before
+// the first paint, so the transcript never flashes at the wrong size.
+useDisplayStore().applyCssVariables();
 
-createApp(App).use(createPinia()).mount("#app");
+app.mount("#app");

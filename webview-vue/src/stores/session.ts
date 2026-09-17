@@ -31,7 +31,6 @@ export const useSessionStore = defineStore("session", () => {
   /** `provider/id` keys the user starred; drives model-picker ordering. */
   const enabledModelKeys = ref<string[]>([]);
   const permissionMode = ref<PermissionMode>("AskForApproval");
-  const sendShortcut = ref<"enter" | "ctrlEnter">("enter");
 
   const sessionList = ref<SessionListItem[]>([]);
   const contextUsage = ref<RpcContextUsage | null>(null);
@@ -138,7 +137,6 @@ export const useSessionStore = defineStore("session", () => {
     commands,
     enabledModelKeys,
     permissionMode,
-    sendShortcut,
     sessionList,
     pendingNew,
     beginSwitch,

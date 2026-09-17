@@ -46,6 +46,37 @@ export interface PickedResource {
   paths: string[];
 }
 
+/**
+ * Live display preferences, mirrored one-to-one from the `pi-agent-chat.chat*`
+ * settings plus `language`.
+ *
+ * Injected into the HTML at creation time and re-pushed as a whole object on
+ * every configuration change, so the webview never has to re-derive them and
+ * never needs a webview reload to pick them up.
+ */
+export interface ChatDisplaySettings {
+  /** Transcript font size in px (`chatFontSize`). */
+  fontSize: number;
+  /** Resolved background image as a data URL, or `""` (`chatBackgroundImage`). */
+  backgroundImage: string;
+  /** Background image opacity, 0..1 (`chatBackgroundOpacity`). */
+  backgroundOpacity: number;
+  /** Send key (`chatSendShortcut`). */
+  sendShortcut: "enter" | "ctrlEnter";
+  /** What a new message does while the agent is streaming (`chatRunningSendBehavior`). */
+  runningSendBehavior: "queue" | "steer";
+  /** Fold the reasoning/tool work of a finished turn (`chatCollapseWork`). */
+  collapseWork: boolean;
+  /** Prefix the folded work header with its tool-call count (`chatShowToolCallCount`). */
+  showToolCallCount: boolean;
+  /** Tool cards start expanded (`chatExpandToolCalls`). */
+  expandToolCalls: boolean;
+  /** Thinking blocks start expanded (`chatExpandThinking`). */
+  expandThinking: boolean;
+  /** Pin a new turn to the top of the viewport instead of the bottom (`chatKeepReadingAnchor`). */
+  keepReadingAnchor: boolean;
+}
+
 // ---------------------------------------------------------------------------
 // webview -> extension
 // ---------------------------------------------------------------------------
@@ -117,8 +148,8 @@ export type ExtToWebview =
   | { type: "thinkingLevels"; levels: string[] }
   | { type: "permissionMode"; mode: PermissionMode }
   | { type: "sessionsList"; sessions: SessionListItem[]; currentFile: string | null }
-  | { type: "sendShortcut"; value: "enter" | "ctrlEnter" }
   | { type: "commands"; commands: RpcCommand[] }
+  | { type: "displaySettings"; value: ChatDisplaySettings }
   | { type: "messages"; messages: unknown[]; historyAvailable?: boolean }
   | { type: "history"; messages: unknown[] }
   | { type: "event"; event: RpcEvent }

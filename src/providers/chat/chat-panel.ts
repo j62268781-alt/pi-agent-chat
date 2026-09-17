@@ -1,11 +1,15 @@
 import { randomUUID } from "node:crypto";
-import { homedir } from "node:os";
-import { sep } from "node:path";
 import * as vscode from "vscode";
 import type { BridgeConfig } from "../../services/bridge/types.ts";
 import { ensurePiBinary } from "../../services/pi/process.ts";
-import { getChatWebviewHtml, resolveChatBackground } from "./webview-html.ts";
-import { getLocale, t } from "../../utils/i18n.ts";
+import {
+  affectsBakedHtml,
+  affectsLiveDisplaySettings,
+  buildChatWebviewOptions,
+  readChatDisplaySettings,
+} from "./display-settings.ts";
+import { getChatWebviewHtml } from "./webview-html.ts";
+import { t } from "../../utils/i18n.ts";
 import type { ChatTracker } from "./chat-tracker.ts";
 import type { RpcClient } from "../../protocol/rpc.ts";
 import {
@@ -76,45 +80,21 @@ export async function openChatPanel(
     light: vscode.Uri.joinPath(opts.extensionUri, "resources", "logo-light.svg"),
     dark: vscode.Uri.joinPath(opts.extensionUri, "resources", "logo.svg"),
   };
-  const chatCfg = vscode.workspace.getConfiguration("pi-agent-chat");
-  panel.webview.html = getChatWebviewHtml(
-    homedir(),
-    sep,
-    chatCfg.get<number>("chatFontSize"),
-    getLocale(),
-    chatCfg.get<string>("chatMermaidTheme"),
-    resolveChatBackground(panel.webview, chatCfg.get<string>("chatBackgroundImage")),
-    chatCfg.get<number>("chatBackgroundOpacity"),
-    chatCfg.get<string>("chatSendShortcut"),
-    opts.cwd ?? vscode.workspace.workspaceFolders?.[0]?.uri.fsPath,
-  );
+  const workspace = opts.cwd ?? vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+  panel.webview.html = getChatWebviewHtml(buildChatWebviewOptions(workspace));
 
   let disposed = false;
 
   const langSub = vscode.workspace.onDidChangeConfiguration((e) => {
-    if (e.affectsConfiguration("pi-agent-chat.chatSendShortcut")) {
-      const cfg = vscode.workspace.getConfiguration("pi-agent-chat");
-      panel.webview.postMessage({
-        type: "sendShortcut",
-        value: cfg.get<string>("chatSendShortcut") ?? "enter",
-      });
+    // Display preferences are pushed live: re-rendering the webview for them
+    // would throw away the draft, the scroll position and the pending queue.
+    if (affectsLiveDisplaySettings(e)) {
+      panel.webview.postMessage({ type: "displaySettings", value: readChatDisplaySettings() });
     }
-    if (
-      e.affectsConfiguration("pi-agent-chat.language") ||
-      e.affectsConfiguration("pi-agent-chat.chatMermaidTheme")
-    ) {
-      const cfg = vscode.workspace.getConfiguration("pi-agent-chat");
-      panel.webview.html = getChatWebviewHtml(
-        homedir(),
-        sep,
-        cfg.get<number>("chatFontSize"),
-        getLocale(),
-        cfg.get<string>("chatMermaidTheme"),
-        resolveChatBackground(panel.webview, cfg.get<string>("chatBackgroundImage")),
-        cfg.get<number>("chatBackgroundOpacity"),
-        cfg.get<string>("chatSendShortcut"),
-        opts.cwd ?? vscode.workspace.workspaceFolders?.[0]?.uri.fsPath,
-      );
+    // Locale and mermaid theme are consumed once at module scope inside the
+    // webview, so only these two still need a fresh document.
+    if (affectsBakedHtml(e)) {
+      panel.webview.html = getChatWebviewHtml(buildChatWebviewOptions(workspace));
     }
   });
 

@@ -1,40 +1,29 @@
+// Substitutes the host-injected configuration into the built chat webview HTML.
+
+import type { ChatDisplaySettings } from "../../protocol/messages.ts";
 import chatHtml from "../../../webview-vue/dist/chat/index.html?raw";
-import { readFileSync, statSync } from "node:fs";
-import { extname, isAbsolute } from "node:path";
-import * as vscode from "vscode";
 
-const BG_MIME: Record<string, string> = {
-  ".jpg": "image/jpeg",
-  ".jpeg": "image/jpeg",
-  ".png": "image/png",
-  ".gif": "image/gif",
-  ".webp": "image/webp",
-  ".bmp": "image/bmp",
-  ".avif": "image/avif",
-};
-const MAX_BG_SIZE = 10 * 1024 * 1024;
-
-export function resolveChatBackground(_webview: vscode.Webview, path?: string): string {
-  if (!path || !isAbsolute(path)) return "";
-  let st;
-  try {
-    st = statSync(path);
-  } catch {
-    return "";
-  }
-  if (!st.isFile() || st.size === 0 || st.size > MAX_BG_SIZE) return "";
-  const mime = BG_MIME[extname(path).toLowerCase()];
-  if (!mime) return "";
-  try {
-    const buf = readFileSync(path);
-    return `data:${mime};base64,${buf.toString("base64")}`;
-  } catch {
-    return "";
-  }
+export interface ChatWebviewOptions {
+  /** Home directory, used by the webview to abbreviate paths to `~/…`. */
+  home: string;
+  /** Platform path separator. */
+  sep: string;
+  /** Workspace root used to make tool paths relative. */
+  workspace?: string;
+  /** Resolved UI language; selects the translation bundle. */
+  language: string;
+  /** Mermaid theme name. */
+  mermaidTheme: string;
+  /** Initial display preferences; re-pushed on change. */
+  display: ChatDisplaySettings;
 }
 
-function escJsString(s: string): string {
-  return s
+/**
+ * Escape a value for embedding inside a double-quoted JavaScript string in the
+ * HTML. `<` is escaped too so a value can never close the surrounding script.
+ */
+function escapeJsString(value: string): string {
+  return value
     .replace(/\\/g, "\\\\")
     .replace(/"/g, '\\"')
     .replace(/\n/g, "\\n")
@@ -42,36 +31,21 @@ function escJsString(s: string): string {
     .replace(/</g, "\\u003c");
 }
 
-export function getChatWebviewHtml(
-  home?: string,
-  sep?: string,
-  fontSize?: number,
-  lang?: string,
-  mermaidTheme?: string,
-  bgImage?: string,
-  bgOpacity?: number,
-  sendShortcut?: string,
-  workspace?: string,
-): string {
+export function getChatWebviewHtml(options: ChatWebviewOptions): string {
   const replaceAll = (haystack: string, needle: string, value: string) =>
     haystack.split(needle).join(value);
+
   let html = chatHtml;
-  html = replaceAll(html, "PI_HOME_PLACEHOLDER", escJsString(home ?? ""));
-  html = replaceAll(html, "PI_SEP_PLACEHOLDER", escJsString(sep ?? "/"));
+  html = replaceAll(html, "PI_HOME_PLACEHOLDER", escapeJsString(options.home));
+  html = replaceAll(html, "PI_SEP_PLACEHOLDER", escapeJsString(options.sep));
+  html = replaceAll(html, "PI_WORKSPACE_PLACEHOLDER", escapeJsString(options.workspace ?? ""));
+  html = replaceAll(html, "PI_LANG_PLACEHOLDER", escapeJsString(options.language));
+  html = replaceAll(html, "PI_MERMAID_THEME_PLACEHOLDER", escapeJsString(options.mermaidTheme));
+  // Embedded as a JSON *string* so an unreplaced needle still parses.
   html = replaceAll(
     html,
-    "PI_FONTSIZE_PLACEHOLDER",
-    String(fontSize && fontSize > 0 ? Math.round(fontSize) : 13),
+    "PI_DISPLAY_PLACEHOLDER",
+    escapeJsString(JSON.stringify(options.display)),
   );
-  html = replaceAll(html, "PI_LANG_PLACEHOLDER", escJsString(lang ?? "en"));
-  html = replaceAll(html, "PI_MERMAID_THEME_PLACEHOLDER", escJsString(mermaidTheme ?? "default"));
-  html = replaceAll(html, "PI_BG_IMAGE_PLACEHOLDER", escJsString(bgImage ?? ""));
-  html = replaceAll(
-    html,
-    "PI_BG_OPACITY_PLACEHOLDER",
-    bgOpacity != null ? String(Math.min(1, Math.max(0, bgOpacity))) : "1",
-  );
-  html = replaceAll(html, "PI_SENDSHORTCUT_PLACEHOLDER", escJsString(sendShortcut ?? "enter"));
-  html = replaceAll(html, "PI_WORKSPACE_PLACEHOLDER", escJsString(workspace ?? ""));
   return html;
 }

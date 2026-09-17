@@ -16,12 +16,12 @@
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { post } from "@/lib/bridge.ts";
 import { t } from "@/lib/i18n.ts";
-import { useSessionStore } from "@/stores/session";
+import { useDisplayStore } from "@/stores/display";
 import { useTranscriptStore } from "@/stores/transcript";
 import TurnBlock from "./TurnBlock.vue";
 
 const transcript = useTranscriptStore();
-const session = useSessionStore();
+const display = useDisplayStore();
 
 const scroller = ref<HTMLElement | null>(null);
 const inner = ref<HTMLElement | null>(null);
@@ -38,7 +38,7 @@ const mod = isMac ? "\u2318" : "Ctrl+";
 
 /** One keycap row of the new-session guide, ported from the legacy `getEmptyHtml`. */
 const hints = computed(() => {
-  const ctrlEnter = session.sendShortcut === "ctrlEnter";
+  const ctrlEnter = display.sendShortcut === "ctrlEnter";
   return [
     { key: ctrlEnter ? `${mod}Enter` : "Enter", label: t("send / steer") },
     { key: ctrlEnter ? "Enter" : "Shift+Enter", label: t("newline") },

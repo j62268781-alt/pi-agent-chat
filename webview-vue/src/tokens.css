@@ -14,7 +14,7 @@
  * follows the editor font setting, so the webview keeps obeying the user.
  *
  * Font SIZES are intentionally absent — they stay owned by `--fs` (pi-settings)
- * and `--chat-fs` (pi-chat), both driven by the pi-agent-studio.chatFontSize
+ * and `--chat-fs` (pi-chat), both driven by the pi-agent-chat.chatFontSize
  * setting. Do not add a second size scale here.
  */
 

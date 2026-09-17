@@ -8,6 +8,7 @@ import type { RpcCommand, RpcContextUsage, RpcModel, RpcState } from "@protocol/
 import { ref } from "vue";
 import { onHostMessage, post } from "@/lib/bridge";
 import { useComposerStore } from "@/stores/composer";
+import { useDisplayStore } from "@/stores/display";
 import { useOverlaysStore } from "@/stores/overlays";
 import { useSessionStore } from "@/stores/session";
 import { useTranscriptStore } from "@/stores/transcript";
@@ -23,6 +24,7 @@ export function useHostLink() {
   const transcript = useTranscriptStore();
   const composer = useComposerStore();
   const overlays = useOverlaysStore();
+  const display = useDisplayStore();
 
   function handle(message: ExtToWebview): void {
     switch (message.type) {
@@ -63,12 +65,12 @@ export function useHostLink() {
         session.sessionList = message.sessions;
         break;
 
-      case "sendShortcut":
-        session.sendShortcut = message.value;
-        break;
-
       case "commands":
         session.commands = message.commands as RpcCommand[];
+        break;
+
+      case "displaySettings":
+        display.apply(message.value);
         break;
 
       case "messages":

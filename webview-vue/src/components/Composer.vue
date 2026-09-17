@@ -30,6 +30,7 @@ import { shortenWorkspacePath } from "@/lib/paths.ts";
 import { useComposerStore, type PendingImage } from "@/stores/composer.ts";
 import { useOverlaysStore } from "@/stores/overlays.ts";
 import { useSessionStore } from "@/stores/session.ts";
+import { useDisplayStore } from "@/stores/display.ts";
 import Autocomplete from "./composer/Autocomplete.vue";
 import ModelPicker from "./composer/ModelPicker.vue";
 import PermissionPicker from "./composer/PermissionPicker.vue";
@@ -50,6 +51,7 @@ const POPUP_GAP = 12;
 
 const composer = useComposerStore();
 const session = useSessionStore();
+const display = useDisplayStore();
 const overlays = useOverlaysStore();
 
 const inputEl = ref<HTMLElement | null>(null);
@@ -455,7 +457,7 @@ function onKeydown(ev: KeyboardEvent): void {
     const isMac = /Mac/i.test(navigator.platform || "");
     const modifier = isMac ? ev.metaKey : ev.ctrlKey;
     const followUp = ev.altKey && !ev.shiftKey && !ev.ctrlKey && !ev.metaKey;
-    const send = session.sendShortcut === "enter" ? plain : modifier && !ev.shiftKey && !ev.altKey;
+    const send = display.sendShortcut === "enter" ? plain : modifier && !ev.shiftKey && !ev.altKey;
     if (followUp) sendPrompt("followUp");
     else if (send) sendPrompt("steer");
     else insertAtCaret("\n");

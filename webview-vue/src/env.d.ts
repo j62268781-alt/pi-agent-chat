@@ -8,12 +8,10 @@ interface InjectedConfig {
   home: string;
   sep: string;
   workspace: string;
-  fontSize: string;
   lang: string;
   mermaidTheme: string;
-  bgImage: string;
-  bgOpacity: string;
-  sendShortcut: string;
+  /** JSON-encoded `ChatDisplaySettings`. */
+  display: string;
 }
 
 declare global {

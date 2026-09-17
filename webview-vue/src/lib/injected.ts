@@ -2,29 +2,24 @@
 // built HTML. Values are unresolved placeholder needles when the host did not
 // provide them, so every accessor validates.
 
+import type { ChatDisplaySettings } from "@protocol/messages";
+
 const PLACEHOLDER = /^PI_[A-Z_]+_PLACEHOLDER$/;
 
 interface InjectedConfig {
   home: string;
   sep: string;
   workspace: string;
-  fontSize: string;
   lang: string;
   mermaidTheme: string;
-  bgImage: string;
-  bgOpacity: string;
-  sendShortcut: string;
+  /** JSON-encoded `ChatDisplaySettings`. */
+  display: string;
 }
 
 const raw = (key: keyof InjectedConfig): string => {
   const value = window.__PI__?.[key];
   if (typeof value !== "string" || PLACEHOLDER.test(value)) return "";
   return value;
-};
-
-const number = (key: keyof InjectedConfig, fallback: number): number => {
-  const parsed = Number(raw(key));
-  return Number.isFinite(parsed) ? parsed : fallback;
 };
 
 /** Home directory used to abbreviate paths. */
@@ -42,15 +37,33 @@ export const language = (): string => raw("lang") || "en";
 /** Mermaid theme name for rendered diagrams. */
 export const mermaidTheme = (): string => raw("mermaidTheme") || "default";
 
-/** Base font size in px for the chat transcript. */
-export const chatFontSize = (): number => number("fontSize", 13);
+/**
+ * Display preferences. Doubles as the initial value for the live store: the
+ * host pushes the same object again on every configuration change so the
+ * webview never needs a reload to pick a change up.
+ */
+export function displaySettings(): ChatDisplaySettings {
+  const defaults: ChatDisplaySettings = {
+    fontSize: 13,
+    backgroundImage: "",
+    backgroundOpacity: 1,
+    sendShortcut: "enter",
+    runningSendBehavior: "queue",
+    collapseWork: true,
+    showToolCallCount: true,
+    expandToolCalls: false,
+    expandThinking: false,
+    keepReadingAnchor: false,
+  };
 
-/** Chat send shortcut: `"enter"` or `"ctrlEnter"`. */
-export const sendShortcut = (): "enter" | "ctrlEnter" =>
-  raw("sendShortcut") === "ctrlEnter" ? "ctrlEnter" : "enter";
-
-/** Optional chat background image as a data URL. */
-export const backgroundImage = (): string => raw("bgImage");
-
-/** Background image opacity, clamped to 0..1. */
-export const backgroundOpacity = (): number => Math.min(1, Math.max(0, number("bgOpacity", 1)));
+  const encoded = raw("display");
+  if (!encoded) return defaults;
+  try {
+    const parsed = JSON.parse(encoded) as Partial<ChatDisplaySettings>;
+    return { ...defaults, ...parsed };
+  } catch {
+    // A malformed payload means the host substituted something unexpected;
+    // falling back to defaults keeps the webview usable.
+    return defaults;
+  }
+}

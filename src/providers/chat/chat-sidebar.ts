@@ -7,14 +7,18 @@
 // starter screen with a button, or `pi-agent-chat.openInSidebar` is run),
 // so merely opening the container costs nothing.
 
-import { homedir } from "node:os";
-import { sep } from "node:path";
 import * as vscode from "vscode";
 import { SessionManager } from "@earendil-works/pi-coding-agent";
 import type { SessionInfo } from "@earendil-works/pi-coding-agent";
 import type { BridgeConfig } from "../../services/bridge/types.ts";
-import { getLocale, t } from "../../utils/i18n.ts";
-import { getChatWebviewHtml, resolveChatBackground } from "./webview-html.ts";
+import { t } from "../../utils/i18n.ts";
+import {
+  affectsBakedHtml,
+  affectsLiveDisplaySettings,
+  buildChatWebviewOptions,
+  readChatDisplaySettings,
+} from "./display-settings.ts";
+import { getChatWebviewHtml } from "./webview-html.ts";
 import { createChatSession, type ChatHost, type ChatSession } from "./chat-session.ts";
 
 export const SIDEBAR_VIEW_ID = "pi-agent-chat.chatSidebar";
@@ -76,19 +80,8 @@ function waitForView(): Promise<vscode.WebviewView | undefined> {
   });
 }
 
-function getChatHtml(webview: vscode.Webview): string {
-  const cfg = vscode.workspace.getConfiguration("pi-agent-chat");
-  return getChatWebviewHtml(
-    homedir(),
-    sep,
-    cfg.get<number>("chatFontSize"),
-    getLocale(),
-    cfg.get<string>("chatMermaidTheme"),
-    resolveChatBackground(webview, cfg.get<string>("chatBackgroundImage")),
-    cfg.get<number>("chatBackgroundOpacity"),
-    cfg.get<string>("chatSendShortcut"),
-    vscode.workspace.workspaceFolders?.[0]?.uri.fsPath,
-  );
+function getChatHtml(): string {
+  return getChatWebviewHtml(buildChatWebviewOptions());
 }
 
 function makeHost(webviewView: vscode.WebviewView): ChatHost {
@@ -199,7 +192,7 @@ export function createChatSidebarViewProvider(
       } as vscode.WebviewOptions & { retainContextWhenHidden?: boolean };
       // Always hand over the real chat UI immediately: its boot splash covers
       // the whole startup (board G W5), so there is no separate loading page.
-      webviewView.webview.html = getChatHtml(webviewView.webview);
+      webviewView.webview.html = getChatHtml();
 
       const host = makeHost(webviewView);
       currentHost = host;
@@ -212,22 +205,19 @@ export function createChatSidebarViewProvider(
       });
 
       const langSub = vscode.workspace.onDidChangeConfiguration((e) => {
-        if (e.affectsConfiguration("pi-agent-chat.chatSendShortcut")) {
+        // Display preferences are pushed live; re-rendering the webview for them
+        // would throw away the draft, the scroll position and the pending queue.
+        if (affectsLiveDisplaySettings(e)) {
           webviewView.webview.postMessage({
-            type: "sendShortcut",
-            value:
-              vscode.workspace.getConfiguration("pi-agent-chat").get<string>("chatSendShortcut") ??
-              "enter",
+            type: "displaySettings",
+            value: readChatDisplaySettings(),
           });
         }
-        if (
-          e.affectsConfiguration("pi-agent-chat.language") ||
-          e.affectsConfiguration("pi-agent-chat.chatMermaidTheme")
-        ) {
-          if (sidebarState?.session) {
-            webviewView.webview.html = getChatHtml(webviewView.webview);
-            sidebarState.session.attach(host);
-          }
+        // Locale and mermaid theme are consumed once at module scope inside the
+        // webview, so these two still need a fresh document plus a re-attach.
+        if (affectsBakedHtml(e) && sidebarState?.session) {
+          webviewView.webview.html = getChatHtml();
+          sidebarState.session.attach(host);
         }
       });
 
