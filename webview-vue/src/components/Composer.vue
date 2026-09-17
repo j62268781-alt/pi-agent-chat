@@ -17,6 +17,7 @@
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import type { StreamingBehavior } from "@protocol/messages";
 import { post } from "@/lib/bridge.ts";
+import { formatTokens } from "@/lib/format.ts";
 import { t } from "@/lib/i18n.ts";
 import {
   getCaretOffset,
@@ -609,6 +610,72 @@ const ctxRingClass = computed(() => ({
 }));
 const ctxDashOffset = computed(() => String(100 - contextPercent.value));
 
+// ---- context-usage readout -------------------------------------------------
+//
+// The ring is an indicator, not a readout: the numbers live in a hover card
+// (`#ctx-tooltip`, positioned by hand because the ring sits at the bottom of a
+// scrolling panel). Ported from the legacy `rebuildCtxRingTooltip` +
+// `showTooltip` pair — a multi-line `pre` card with the percentage, the used /
+// total context and, when the host reports one, the session cost.
+
+const ctxRingEl = ref<HTMLElement | null>(null);
+const ctxTooltipEl = ref<HTMLElement | null>(null);
+const ctxTooltipText = ref("");
+const ctxTooltipOpen = ref(false);
+const ctxTooltipPos = ref({ left: 0, top: 0 });
+/** Hover intent delay, mirrored from the legacy tooltip. */
+const CTX_TOOLTIP_DELAY_MS = 500;
+let ctxTooltipTimer: number | null = null;
+
+const ctxLines = computed(() => {
+  const usage = session.contextUsage;
+  const tokens = usage && typeof usage.tokens === "number" ? usage.tokens : null;
+  const total = usage && typeof usage.contextWindow === "number" ? usage.contextWindow : null;
+  const lines: string[] = [];
+  if (tokens != null && total != null) {
+    lines.push(t("Usage:") + "   " + contextPercent.value.toFixed(1) + "%");
+    lines.push(t("Context:") + " " + formatTokens(tokens) + " / " + formatTokens(total));
+  }
+  if (session.sessionCost != null)
+    lines.push(t("Cost:") + "    $" + session.sessionCost.toFixed(3));
+  return lines;
+});
+
+async function showCtxTooltip(): Promise<void> {
+  const text = ctxLines.value.join("\n");
+  const ring = ctxRingEl.value;
+  if (!text || !ring) return;
+  ctxTooltipText.value = text;
+  ctxTooltipOpen.value = true;
+  await nextTick();
+  const el = ctxTooltipEl.value;
+  if (!el) return;
+  const r = ring.getBoundingClientRect();
+  const cw = el.offsetWidth;
+  const ch = el.offsetHeight;
+  let left = r.left + r.width / 2 - cw / 2;
+  if (left < 4) left = 4;
+  else if (left + cw > window.innerWidth - 4) left = window.innerWidth - cw - 4;
+  const above = r.top - ch - 6;
+  ctxTooltipPos.value = { left, top: above < 4 ? r.bottom + 6 : above };
+}
+
+function onCtxEnter(): void {
+  if (ctxTooltipTimer !== null) clearTimeout(ctxTooltipTimer);
+  ctxTooltipTimer = window.setTimeout(() => {
+    ctxTooltipTimer = null;
+    void showCtxTooltip();
+  }, CTX_TOOLTIP_DELAY_MS);
+}
+
+function onCtxLeave(): void {
+  if (ctxTooltipTimer !== null) {
+    clearTimeout(ctxTooltipTimer);
+    ctxTooltipTimer = null;
+  }
+  ctxTooltipOpen.value = false;
+}
+
 // ------------------------------------------------------------------ popups
 
 /**
@@ -672,6 +739,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   document.removeEventListener("mousedown", onDocumentMouseDown);
+  if (ctxTooltipTimer !== null) clearTimeout(ctxTooltipTimer);
   clearFileTimer();
 });
 </script>
@@ -778,7 +846,16 @@ onUnmounted(() => {
           </div>
         </div>
         <div class="composer-spacer"></div>
-        <span id="ctx-ring" class="ctx-ring" :class="ctxRingClass" :title="t('Context usage')">
+        <span
+          id="ctx-ring"
+          ref="ctxRingEl"
+          class="ctx-ring"
+          :class="ctxRingClass"
+          role="img"
+          :aria-label="t('Context usage')"
+          @mouseenter="onCtxEnter"
+          @mouseleave="onCtxLeave"
+        >
           <svg viewBox="0 0 16 16">
             <circle class="ctx-ring-track" cx="8" cy="8" r="6"></circle>
             <circle
@@ -804,6 +881,19 @@ onUnmounted(() => {
           <span class="codicon" :class="stopMode ? 'codicon-debug-stop' : 'codicon-send'"></span>
         </button>
       </div>
+    </div>
+
+    <!-- Context readout. Fixed-positioned and appended last so it is never
+         clipped by the composer's own overflow. -->
+    <div
+      v-show="ctxTooltipOpen"
+      id="ctx-tooltip"
+      ref="ctxTooltipEl"
+      class="ctx-tooltip"
+      role="tooltip"
+      :style="{ left: ctxTooltipPos.left + 'px', top: ctxTooltipPos.top + 'px' }"
+    >
+      {{ ctxTooltipText }}
     </div>
   </div>
 </template>

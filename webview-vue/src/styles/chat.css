@@ -120,6 +120,23 @@ body {
   opacity: var(--pi-bg-opacity, 1);
   pointer-events: none;
 }
+
+/* The legacy document mounted `.app` straight into `<body>`, which is the flex
+ * column that owns the viewport height (and centres `.app` against its
+ * `max-width`). Vue mounts into an extra `#app` div in between, and without a
+ * size on it `.app { height: 100% }` resolves against `auto` and
+ * `width: 100%` against the content width — so the panel collapsed to its
+ * content: a short transcript left the composer floating mid-panel and the
+ * message area narrower than the toolbar. Give the mount point the body's role.
+ * Scoped to chat.css on purpose: the settings build ships its own stylesheet. */
+#app {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+}
+
 .app {
   display: flex;
   flex-direction: column;

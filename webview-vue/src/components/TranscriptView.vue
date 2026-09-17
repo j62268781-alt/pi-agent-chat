@@ -3,16 +3,25 @@
 
   Scroll policy matches the legacy behaviour: the view sticks to the bottom
   while the user is already there, and detaches as soon as they scroll up, with
-  a button to jump back down.
+  a button to jump back down. The jump-back button is always mounted and only
+  gains `.show` — `chat.css` fades it in from `opacity: 0`, so mounting it on
+  demand would render it invisible.
+
+  An empty session shows the legacy guide block (`.empty`): the pi mark, the
+  two-line slogan and the keycap hints. Its centring comes from
+  `.messages-inner:has(.empty)`, which is why the block has to keep that class
+  name rather than a bespoke one.
 -->
 <script setup lang="ts">
-import { nextTick, onMounted, onUnmounted, ref, watch } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { post } from "@/lib/bridge.ts";
 import { t } from "@/lib/i18n.ts";
+import { useSessionStore } from "@/stores/session";
 import { useTranscriptStore } from "@/stores/transcript";
 import TurnBlock from "./TurnBlock.vue";
 
 const transcript = useTranscriptStore();
+const session = useSessionStore();
 
 const scroller = ref<HTMLElement | null>(null);
 const inner = ref<HTMLElement | null>(null);
@@ -22,6 +31,26 @@ const stuck = ref(true);
 const STICK_THRESHOLD_PX = 48;
 
 let observer: ResizeObserver | undefined;
+
+const isMac = /Mac|iP(hone|ad|od)/i.test(navigator.platform || navigator.userAgent || "");
+/** Platform-aware modifier shown in the keycaps, `⌘` on macOS and `Ctrl+` elsewhere. */
+const mod = isMac ? "\u2318" : "Ctrl+";
+
+/** One keycap row of the new-session guide, ported from the legacy `getEmptyHtml`. */
+const hints = computed(() => {
+  const ctrlEnter = session.sendShortcut === "ctrlEnter";
+  return [
+    { key: ctrlEnter ? `${mod}Enter` : "Enter", label: t("send / steer") },
+    { key: ctrlEnter ? "Enter" : "Shift+Enter", label: t("newline") },
+    { key: "Alt+Enter", label: t("follow-up") },
+    { key: "\u2191\u2193", label: t("history") },
+    { key: "/", label: t("commands") },
+    { key: "@", label: t("files") },
+    { key: `${mod}V`, label: t("paste image") },
+    { key: "Tab", label: t("complete") },
+    { key: `${mod}U`, label: t("clear") },
+  ];
+});
 
 function onScroll(): void {
   const el = scroller.value;
@@ -70,8 +99,8 @@ watch(
 
 <template>
   <div class="messages-wrap">
-    <div ref="scroller" id="messages">
-      <div ref="inner" id="messages-inner">
+    <div ref="scroller" id="messages" class="messages">
+      <div ref="inner" id="messages-inner" class="messages-inner">
         <details
           v-if="transcript.historyAvailable && !transcript.historyLoaded"
           class="history-block"
@@ -87,8 +116,27 @@ watch(
           </div>
         </details>
 
-        <div v-if="transcript.isEmpty" class="empty-state">
-          <p class="empty-title">{{ t("Ask anything…  (use / for commands, @ for files)") }}</p>
+        <div v-if="transcript.isEmpty" class="empty">
+          <div class="empty-logo">
+            <svg viewBox="0 0 800 800" fill="currentColor">
+              <path
+                fill-rule="evenodd"
+                d="M165.29 165.29H517.36V400H400V517.36H282.65V634.72H165.29ZM282.65 282.65V400H400V282.65Z"
+              />
+              <path d="M517.36 400H634.72V634.72H517.36Z" />
+            </svg>
+          </div>
+          <div class="empty-line">{{ t("There are many agent harnesses") }}</div>
+          <div class="empty-line">
+            {{ t("but this one is") }}
+            <span class="empty-accent">{{ t("yours") }}</span>
+          </div>
+          <div class="empty-hints">
+            <span v-for="hint in hints" :key="hint.label" class="empty-hint">
+              <kbd>{{ hint.key }}</kbd
+              >{{ hint.label }}
+            </span>
+          </div>
         </div>
 
         <TurnBlock v-for="turn in transcript.turns" :key="turn.id" :turn="turn" />
@@ -96,13 +144,14 @@ watch(
     </div>
 
     <button
-      v-if="!stuck"
       id="scroll-bottom-btn"
+      class="scroll-bottom-btn"
+      :class="{ show: !stuck }"
       type="button"
       :title="t('Scroll to bottom')"
       @click="scrollToBottom"
     >
-      <span class="codicon codicon-arrow-down"></span>
+      <span class="codicon codicon-chevron-down"></span>
     </button>
   </div>
 </template>

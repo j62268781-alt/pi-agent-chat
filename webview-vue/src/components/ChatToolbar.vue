@@ -1,6 +1,15 @@
 <!--
   Chat header: new session, session name (with inline rename), streaming status,
-  reload, session switcher and the settings entry point.
+  the session switcher and the reload / settings entries.
+
+  Layout contract with `chat.css`: `.session-info` is the `flex: 1 1 auto` slot
+  for the session name, so the name sits left and everything after it — status,
+  rename, refresh, the session switcher and settings — is pushed to the right
+  edge. Without that class the whole header bunches up on the left. The switcher
+  is the legacy `.select-wrap > #sessions-btn + .sessions-popup` pair; the popup
+  itself lives in `./composer/SessionsPopup.vue`, which `chat.css` styles by its
+  own class names (`.sessions-list`, `.session-item-*`), so an inline list here
+  would render unstyled.
 -->
 <script setup lang="ts">
 import { nextTick, ref } from "vue";
@@ -9,7 +18,7 @@ import { t } from "@/lib/i18n.ts";
 import { useComposerStore } from "@/stores/composer";
 import { useSessionStore } from "@/stores/session";
 import { useTranscriptStore } from "@/stores/transcript";
-import { formatTime } from "@/lib/format.ts";
+import SessionsPopup from "./composer/SessionsPopup.vue";
 
 const session = useSessionStore();
 const transcript = useTranscriptStore();
@@ -55,65 +64,81 @@ const statusLabel = (): string => {
   if (session.isStreaming) return t("Working…");
   return "";
 };
-
-const recentSessions = () => session.sessionList.slice(0, 5);
 </script>
 
 <template>
   <header class="toolbar">
-    <button class="icon-btn" type="button" :title="t('New chat')" @click="newChat">
+    <button
+      id="new-chat-btn"
+      class="icon-btn"
+      type="button"
+      :title="t('New chat')"
+      @click="newChat"
+    >
       <span class="codicon codicon-add"></span>
     </button>
 
-    <div id="session-info">
-      <input
-        v-if="editing"
-        id="name-input"
-        ref="nameInput"
-        v-model="draftName"
-        type="text"
-        @blur="commitRename"
-        @keydown.enter.prevent="commitRename"
-        @keydown.esc.prevent="editing = false"
-      />
-      <template v-else>
-        <span class="session-name" :title="session.sessionName" @dblclick="beginRename">
-          {{ session.sessionName || t("New session") }}
-        </span>
-        <button class="icon-btn" type="button" :title="t('Rename')" @click="beginRename">
-          <span class="codicon codicon-edit"></span>
-        </button>
-      </template>
-    </div>
+    <!-- The name slot holds bare text (the legacy `#session-info` contract): it
+         is the `flex: 1 1 auto` item of `.toolbar` and ellipsises on its own, so
+         the rename button lives in the trailing icon cluster instead. -->
+    <span
+      v-show="!editing"
+      id="session-info"
+      class="session-info"
+      :title="session.sessionName"
+      @dblclick="beginRename"
+      >{{ session.sessionName || t("New session") }}</span
+    >
+    <input
+      v-show="editing"
+      id="name-input"
+      ref="nameInput"
+      v-model="draftName"
+      class="name-input"
+      type="text"
+      @blur="commitRename"
+      @keydown.enter.prevent="commitRename"
+      @keydown.esc.prevent="editing = false"
+    />
 
-    <span id="status">{{ statusLabel() }}</span>
+    <span id="status" class="status">{{ statusLabel() }}</span>
 
-    <div class="toolbar-spacer"></div>
+    <button
+      id="name-btn"
+      class="icon-btn"
+      type="button"
+      :title="t('Rename session')"
+      @click="beginRename"
+    >
+      <span class="codicon codicon-edit"></span>
+    </button>
 
-    <div class="select-wrap">
-      <button class="icon-btn" type="button" :title="t('Sessions')" @click="openSessions">
-        <span class="codicon codicon-history"></span>
-      </button>
-      <div v-if="composer.openPopup === 'sessions'" id="sessions-popup">
-        <div v-if="recentSessions().length === 0" class="popup-empty">{{ t("No sessions") }}</div>
-        <button
-          v-for="item in recentSessions()"
-          :key="item.file"
-          class="session-item"
-          type="button"
-          @click="post({ type: 'switchSession', file: item.file })"
-        >
-          <span class="session-item-name">{{ item.name || item.firstMessage || item.file }}</span>
-          <span class="session-item-time">{{
-            item.modified ? formatTime(Date.parse(item.modified)) : ""
-          }}</span>
-        </button>
-      </div>
-    </div>
-
-    <button class="icon-btn" type="button" :title="t('Reload session')" @click="reload">
+    <button
+      id="refresh-btn"
+      class="icon-btn"
+      type="button"
+      :title="t('Reload session')"
+      @click="reload"
+    >
       <span class="codicon codicon-refresh"></span>
     </button>
+
+    <div
+      id="sessions-wrap"
+      class="select-wrap sessions-wrap"
+      :class="{ 'is-open': composer.openPopup === 'sessions' }"
+    >
+      <button
+        id="sessions-btn"
+        class="icon-btn"
+        type="button"
+        :title="t('Sessions')"
+        @click="openSessions"
+      >
+        <span class="codicon codicon-server"></span>
+      </button>
+      <SessionsPopup />
+    </div>
 
     <button
       id="settings-btn"
