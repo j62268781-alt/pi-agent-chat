@@ -529,6 +529,11 @@ function onAttach(): void {
 // ------------------------------------------------------------------ send / stop
 
 function sendPrompt(behavior?: StreamingBehavior): void {
+  // A compaction rebuilds the context; a message sent mid-flight would race it.
+  if (session.isCompacting) {
+    overlays.toast(t("Context is being compacted"), "info");
+    return;
+  }
   const message = composer.payload;
   const images = composer.images.map((image) => ({
     type: "image" as const,
@@ -557,13 +562,17 @@ const btwStopId = computed(() =>
   overlays.btwActive && overlays.btwAbortId ? overlays.btwAbortId : null,
 );
 const stopMode = computed(() => session.isStreaming || btwStopId.value !== null);
-const sendDisabled = computed(() => !stopMode.value && !composer.hasContent);
+const sendDisabled = computed(
+  () => session.isCompacting || (!stopMode.value && !composer.hasContent),
+);
 const sendTitle = computed(() =>
-  btwStopId.value !== null
-    ? t("Stop /btw")
-    : session.isStreaming
-      ? t("Stop generation")
-      : t("Send message"),
+  session.isCompacting
+    ? t("Context is being compacted")
+    : btwStopId.value !== null
+      ? t("Stop /btw")
+      : session.isStreaming
+        ? t("Stop generation")
+        : t("Send message"),
 );
 
 function onSendClick(): void {
@@ -755,7 +764,11 @@ onUnmounted(() => {
     <div class="composer-box">
       <div v-if="composer.images.length > 0" id="attach-preview" class="attach-preview">
         <div v-for="(image, index) in composer.images" :key="index" class="attach-thumb">
-          <img :src="dataUrl(image)" alt="" />
+          <img
+            :src="dataUrl(image)"
+            :title="t('Click to preview')"
+            @click="overlays.openLightbox(dataUrl(image))"
+          />
           <button
             class="attach-remove"
             type="button"

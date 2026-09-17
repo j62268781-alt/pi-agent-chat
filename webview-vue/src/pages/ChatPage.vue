@@ -12,6 +12,7 @@ import ChatToolbar from "@/components/ChatToolbar.vue";
 import Composer from "@/components/Composer.vue";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
 import Overlays from "@/components/Overlays.vue";
+import Lightbox from "@/components/Lightbox.vue";
 import QueuePanel from "@/components/QueuePanel.vue";
 import RewindWidget from "@/components/RewindWidget.vue";
 import TranscriptView from "@/components/TranscriptView.vue";
@@ -62,4 +63,5 @@ onUnmounted(() => {
 
   <Overlays />
   <ConfirmDialog />
+  <Lightbox />
 </template>
