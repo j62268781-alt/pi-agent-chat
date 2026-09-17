@@ -79,6 +79,15 @@
 .codicon-history::before {
   content: "\ea82";
 }
+.codicon-trash::before {
+  content: "\ea81";
+}
+.codicon-close::before {
+  content: "\ea76";
+}
+.codicon-remove::before {
+  content: "\eb3b";
+}
 :root {
   --chat-fs: 14px;
   --chat-fs-8: calc(var(--chat-fs) * 8 / 13);
@@ -1337,6 +1346,66 @@ body {
   background: transparent;
   padding: 4px 8px;
   font-size: var(--chat-fs-12);
+}
+
+/* ── compaction divider (彬哥: 分割线样式，完成后显示「已压缩上下文」) ──────
+ * Replaces the boxed `.compaction-block` card for the in-stream compaction
+ * rows. The rules flanking the label are the summary's own ::before/::after, so
+ * an expanded summary body drops below the divider without breaking it. The
+ * running state has nothing to expand (`cursor: default`), the finished one
+ * opens the summary on click. */
+.compaction-divider {
+  font-size: var(--chat-fs-11);
+  color: var(--pi-text-secondary);
+}
+
+.compaction-divider-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  list-style: none;
+  user-select: none;
+  min-width: 0;
+}
+
+.compaction-divider-label::-webkit-details-marker {
+  display: none;
+}
+
+.compaction-divider-label::before,
+.compaction-divider-label::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--pi-border-divider);
+}
+
+.compaction-divider-label.is-running {
+  cursor: default;
+}
+
+.compaction-divider-label.is-running .codicon {
+  animation: session-status-pulse 1.4s ease-in-out infinite;
+}
+
+.compaction-divider-label:not(.is-running) {
+  cursor: pointer;
+}
+
+.compaction-divider-label:not(.is-running):hover {
+  color: var(--pi-text);
+}
+
+.compaction-summary-body {
+  margin: 6px 0 0;
+  padding: 8px 10px;
+  border: 1px solid var(--pi-border-divider);
+  border-radius: var(--pi-r-md, 6px);
+  background: var(--pi-bg-subtle);
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 220px;
+  overflow-y: auto;
 }
 .compaction-block > summary {
   cursor: pointer;
@@ -2767,10 +2836,6 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 .msg.user .bubble-actions {
   display: inline-flex;
   gap: 2px;
-  visibility: hidden;
-}
-.msg.user:hover .bubble-actions {
-  visibility: visible;
 }
 .msg.user .bubble-actions .icon-btn {
   width: 20px;
@@ -3630,8 +3695,14 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   opacity: 1;
 }
 
+/* The board's fixed 640px cap assumes a wide editor panel. A bare `640px` also
+ * applies in a ~300px sidebar, where it is WIDER than the column: a flex item
+ * may not shrink below its min-content, so any bubble holding something that
+ * cannot wrap (the sideways-scrolling image strip, a long `pre` line) grew to
+ * 640 and dragged the whole transcript into horizontal overflow. `min()` keeps
+ * the board's cap on a wide panel and the column width on a narrow one. */
 .bubble {
-  max-width: 640px;
+  max-width: min(640px, 100%);
   padding: 11px 16px;
   border-radius: 18px;
 }
@@ -3639,7 +3710,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 /* The board gives the assistant turn a fixed 640px column — long-form output
  * stays readable instead of stretching to the full panel width. */
 .msg.assistant {
-  max-width: 640px;
+  max-width: min(640px, 100%);
 }
 
 .user-bubble {
@@ -3925,6 +3996,10 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   border-radius: var(--pi-r-full);
   background: var(--pi-send-bg);
   color: var(--pi-send-fg);
+  /* The legacy 6px made room in a bar whose `gap` was 2px; the design pass
+   * raised the gap to 8px, so keeping both double-counted it and left 14px
+   * between the context ring and send. The gap alone is the board's spacing. */
+  margin-left: 0;
 }
 
 .send-btn:hover:not(:disabled):not(.is-stop) {
@@ -4069,6 +4144,26 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   }
 }
 
+/* Under ~380px the label has been squeezed to zero width — and a zero-width
+ * label still costs the 6px `gap`, so `justify-content: center` centred
+ * icon+gap+label and left the shield ~3px left of the chip's centre.
+ * Measured label width by panel width: 52px down to 460px, 42px at 430,
+ * 23px at 400, 0 from 360 down — which is exactly where the offset appeared.
+ * Drop the label and the gap together, so the chip is icon + padding only and
+ * centres perfectly; the mode itself stays on the trigger's `title`. */
+@media (max-width: 380px) {
+  .permission-trigger-label {
+    display: none;
+  }
+
+  /* `min-width` rather than `width`: it fills the wrap's own 30px floor (which
+   * the 30px `+` button also sets) instead of leaving a 6px dead slot. */
+  .permission-trigger {
+    gap: 0;
+    min-width: 30px;
+  }
+}
+
 /* VS Code's practical minimum sidebar (~230px): the composer chrome alone
  * (8px outer padding + 10px box padding + borders) eats ~38px, which would
  * force the model name out. Tighten the chrome instead — the ring and send
@@ -4103,6 +4198,9 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   .send-btn {
     width: 32px;
     height: 32px;
+    /* The bar's own gap collapses to 1px down here, which would glue the send
+     * disc to the context ring; buy that pair a readable gutter back. */
+    margin-left: 5px;
   }
 }
 
@@ -4272,6 +4370,17 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
  * The heading's own background has to be opaque (`--pi-bg-raised` = the popup
  * fill) and above the rows, or the list scrolls through it. */
 
+/* `.model-list` carries `padding: 2px 0`, and a scroll container's padding area
+ * does NOT clip content — so a pinned heading, which stops at the scrollport's
+ * padding-box edge, left a 2px strip above itself with the scrolled-out row
+ * showing through it. Measured: the pinned heading sat at exactly
+ * `rel == 2px == padding-top` for every sampled offset. Drop the vertical
+ * padding (the heading's own 6px top padding is the breathing room now) so the
+ * pinned box covers the list's top edge outright. */
+.model-list {
+  padding: 0;
+}
+
 .model-group {
   display: flex;
   flex-direction: column;
@@ -4290,4 +4399,232 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
  * padding). */
 .model-item {
   scroll-margin-top: 26px;
+}
+
+/* ── session switcher: per-row delete ──────────────────────────────────────
+ * Kept out of the way until the row is hovered or focused — the list is for
+ * switching, and a row of delete buttons would read as the primary action. The
+ * button is out of the hit-test while hidden (`pointer-events: none`) so a click
+ * where nothing is drawn cannot delete anything. */
+.session-item:focus-visible {
+  outline: 1px solid var(--pi-brand);
+  outline-offset: -1px;
+}
+
+.session-item-del {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  /* Danger red at rest, not only on hover: delete is the one destructive
+   * control in the list and should read as one before the pointer lands. */
+  color: var(--pi-danger);
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.12s,
+    background 0.12s,
+    color 0.12s;
+}
+
+.session-item:hover .session-item-del,
+.session-item:focus-within .session-item-del {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.session-item-del:hover {
+  background: var(--pi-danger-soft);
+  color: var(--pi-text-danger);
+}
+
+/* Live status on the row that is currently open: a small pulsing dot plus the
+ * phase. It replaces the meta line for that row only — recorded sessions are
+ * not running anywhere, so they keep their time/message meta. */
+.session-item-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--chat-fs-11);
+  color: var(--pi-text-brand);
+}
+
+.session-item-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: session-status-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes session-status-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+/* ── message images: one scrollable strip, not a gallery ───────────────────
+ * The legacy rule (`.user-bubble .bubble-imgs`, kept above) wrapped the tiles
+ * and let each keep its own aspect ratio at up to 160px tall, so a handful of
+ * screenshots pushed the rest of the conversation off screen. Uniform tiles in a
+ * single sideways-scrolling row keep the strip to one predictable height — the
+ * scrollbar itself is hidden globally (`*::-webkit-scrollbar`), so the tiles are
+ * clipped mid-tile at the edge to signal that there is more. */
+.user-bubble .bubble-imgs {
+  flex-wrap: nowrap;
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+
+.user-bubble .bubble-imgs img {
+  flex: 0 0 auto;
+  width: 50px;
+  height: 50px;
+  object-fit: cover;
+  cursor: zoom-in;
+}
+
+/* Same treatment for the composer's attachment tray: wrapping it grew the
+ * composer by a row per four images and ate the transcript. The tray already
+ * carries 10px of inline padding, which is what keeps the × buttons (offset
+ * -6px) inside the scroller instead of being clipped by it. */
+.attach-preview {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+
+.attach-preview > .attach-thumb {
+  flex: 0 0 auto;
+}
+
+/* Thumbnails are previews, not dead ends: click opens the full-size lightbox. */
+.attach-thumb img {
+  cursor: zoom-in;
+}
+
+/* ── image lightbox ─────────────────────────────────────────────────────────
+ * Full-screen preview above every other overlay (`.overlay` tops out at 200).
+ * 彬哥 (参考某预览器): 遮罩不要黑实底——用主题抬升色的半透明 + 磨砂，透出底下内容；
+ * 图片本身带投影 + hairline 描边，白底截图在浅色遮罩上也有边界。 */
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: flex;
+  padding: 24px;
+  background: color-mix(in srgb, var(--pi-bg-raised) 55%, transparent);
+  backdrop-filter: blur(14px);
+  cursor: zoom-out;
+  /* A zoomed tall screenshot overflows on purpose: the backdrop scrolls so the
+   * detail stays reachable (its scrollbar is hidden globally, like the image
+   * strip). `margin: auto` on the img keeps it centred while it fits AND keeps
+   * the overflowed top reachable — flex centering alone would clip it. */
+  overflow: auto;
+}
+
+.lightbox img {
+  margin: auto;
+  max-width: 92vw;
+  max-height: 92vh;
+  border: 1px solid var(--pi-border-divider);
+  border-radius: var(--pi-r-lg, 8px);
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.12),
+    0 24px 64px rgba(0, 0, 0, 0.28);
+  cursor: default;
+  /* No width/height transition: under headless virtual time it freezes at the
+   * start value and reads as "zoom did nothing". The step is deliberate anyway. */
+}
+
+/* ── lightbox chrome（参考彬哥给的预览器）────────────────────────────────── */
+.lightbox-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--pi-border-divider);
+  border-radius: var(--pi-r-full, 999px);
+  background: var(--pi-bg-raised);
+  color: var(--pi-text);
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+}
+
+.lightbox-close:hover {
+  background: var(--pi-bg-hover);
+}
+
+.lightbox-close .codicon {
+  font-size: 14px;
+}
+
+/* Bottom-center zoom control — a sibling of the scrolling image, so it stays
+ * pinned to the viewport (fixed) instead of riding the scrolled content. The
+ * file-name chip was dropped: transcript images have no name, so the chip
+ * would only ever show for composer attachments. */
+.lightbox-zoom {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--pi-r-full, 999px);
+  background: var(--pi-bg-raised);
+  color: var(--pi-text);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+}
+
+.lightbox-zoom button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  border-radius: var(--pi-r-full, 999px);
+  background: transparent;
+  color: var(--pi-text);
+  cursor: pointer;
+}
+
+.lightbox-zoom button:hover:not(:disabled) {
+  background: var(--pi-bg-hover);
+}
+
+.lightbox-zoom button:disabled {
+  color: var(--pi-icon-disabled);
+  cursor: default;
+}
+
+.lightbox-zoom .codicon {
+  font-size: 14px;
+}
+
+.lightbox-zoom-value {
+  min-width: 44px;
+  text-align: center;
+  font-size: var(--chat-fs-12);
+  font-variant-numeric: tabular-nums;
 }

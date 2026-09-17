@@ -9,11 +9,11 @@ import TextBlockView from "./TextBlockView.vue";
 import ThinkingBlockView from "./ThinkingBlockView.vue";
 import ToolCallView from "./ToolCallView.vue";
 
-defineProps<{ block: Block; timestamp?: number | null }>();
+defineProps<{ block: Block }>();
 </script>
 
 <template>
-  <TextBlockView v-if="block.kind === 'text'" :block="block" :timestamp="timestamp" />
+  <TextBlockView v-if="block.kind === 'text'" :block="block" />
   <ThinkingBlockView v-else-if="block.kind === 'thinking'" :block="block" />
   <ToolCallView v-else :block="block" />
 </template>

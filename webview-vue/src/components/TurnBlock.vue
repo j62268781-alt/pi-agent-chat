@@ -36,6 +36,11 @@ const counts = computed(() => formatCounts(props.turn.added, props.turn.removed)
 
 const canAct = computed(() => !session.isStreaming && props.turn.user?.timestamp != null);
 
+/** `data:` URL for an image content block — the strip and the lightbox share it. */
+function imageSrc(image: { mimeType: string; data: string }): string {
+  return `data:${image.mimeType};base64,${image.data}`;
+}
+
 function copyUserText(): void {
   post({ type: "copy", text: props.turn.user?.text ?? "" });
   overlays.toast(t("Copied"), "success");
@@ -68,12 +73,13 @@ function revertToUser(): void {
 <template>
   <div v-if="turn.user" class="msg user">
     <div class="bubble user-bubble">
-      <div v-if="turn.user.images.length" class="bubble-images">
+      <div v-if="turn.user.images.length" class="bubble-imgs">
         <img
           v-for="(image, index) in turn.user.images"
           :key="index"
-          :src="`data:${image.mimeType};base64,${image.data}`"
-          alt=""
+          :src="imageSrc(image)"
+          :alt="turn.user.text || ''"
+          @click.stop="overlays.openLightbox(imageSrc(image), turn.user?.text || undefined)"
         />
       </div>
       <div v-if="turn.user.text" class="user-text">{{ turn.user.text }}</div>
@@ -95,9 +101,19 @@ function revertToUser(): void {
   </div>
 
   <div v-for="message in turn.leading" :key="message.id" class="system-row">
-    <div v-if="message.variant === 'compaction'" class="compaction-block">
-      {{ message.text || t("Compacting…") }}
-    </div>
+    <!-- Compaction reads as a divider: "正在压缩…" while it runs (pulsing icon),
+         "已压缩上下文" once done — clicking that one opens the summary. -->
+    <details v-if="message.variant === 'compaction'" class="compaction-divider">
+      <summary
+        class="compaction-divider-label"
+        :class="{ 'is-running': !message.text }"
+        :title="message.text || undefined"
+      >
+        <span class="codicon codicon-checklist"></span>
+        <span>{{ message.text ? t("Context compacted") : t("Compacting…") }}</span>
+      </summary>
+      <div v-if="message.text" class="compaction-summary-body">{{ message.text }}</div>
+    </details>
     <div v-else class="error-banner">
       {{ t("Error: Retry failed after {0} attempts: {1}", 0, message.text) }}
     </div>
@@ -120,6 +136,12 @@ function revertToUser(): void {
   </details>
 
   <div v-for="entry in turn.finalBlocks" :key="entry.block.id" class="msg assistant">
-    <BlockView :block="entry.block" :timestamp="turn.messageTime" />
+    <BlockView :block="entry.block" />
+  </div>
+
+  <!-- Every turn closes with its own timestamp, same `.msg-time` on both sides
+       (the user turn's sits after its action buttons). -->
+  <div v-if="turn.messageTime" class="msg-meta">
+    <span class="msg-time">{{ formatTime(turn.messageTime) }}</span>
   </div>
 </template>
