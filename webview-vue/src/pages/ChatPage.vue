@@ -20,11 +20,13 @@ import WidgetPanel from "@/components/WidgetPanel.vue";
 import { useHostLink } from "@/composables/useHostLink.ts";
 import { useComposerStore } from "@/stores/composer";
 import { useOverlaysStore } from "@/stores/overlays";
+import { usePendingStore } from "@/stores/pending";
 import "@/styles/chat.css";
 
 const { connect } = useHostLink();
 const composer = useComposerStore();
 const overlays = useOverlaysStore();
+const pending = usePendingStore();
 
 let detach: (() => void) | undefined;
 
@@ -39,6 +41,9 @@ function onKeyDown(event: KeyboardEvent): void {
 }
 
 onMounted(() => {
+  // Recover any queue left over from a webview reload before the host starts
+  // pushing session content.
+  pending.restore();
   detach = connect();
   document.addEventListener("keydown", onKeyDown);
 });

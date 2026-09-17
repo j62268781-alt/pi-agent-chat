@@ -4628,3 +4628,79 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   font-size: var(--chat-fs-12);
   font-variant-numeric: tabular-nums;
 }
+
+/* ---------------------------------------------------------------------------
+   Pending queue rows.
+
+   The composer's own queue used to be rendered by the host as bare strings;
+   it now has per-row actions, so these additions carry the header, the leading
+   icon, the trailing actions and the host-queue fallback rows. Rows stay
+   single-line and compact on purpose.
+--------------------------------------------------------------------------- */
+.queue-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 2px;
+}
+
+.queue-title {
+  font-size: var(--chat-fs-10);
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  color: var(--pi-text-muted);
+}
+
+.queue-head .queue-clear {
+  margin-left: auto;
+}
+
+.queue-item.is-pending {
+  align-items: center;
+}
+
+.queue-lead {
+  flex-shrink: 0;
+  font-size: var(--chat-fs-12);
+  color: var(--pi-info);
+}
+
+.queue-item.is-pending .queue-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.queue-time {
+  flex-shrink: 0;
+  font-size: var(--chat-fs-10);
+  font-variant-numeric: tabular-nums;
+  color: var(--pi-text-muted);
+}
+
+.queue-actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+}
+
+.queue-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: var(--chat-fs-10);
+}
+
+.queue-action-label {
+  font-size: var(--chat-fs-10);
+}
+
+/* Rows pi queued itself: no handle, so no actions. */
+.queue-item.is-host {
+  opacity: 0.85;
+}

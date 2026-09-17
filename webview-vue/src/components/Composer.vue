@@ -15,7 +15,6 @@
 -->
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
-import type { StreamingBehavior } from "@protocol/messages";
 import { post } from "@/lib/bridge.ts";
 import { formatTokens } from "@/lib/format.ts";
 import { t } from "@/lib/i18n.ts";
@@ -29,6 +28,7 @@ import { getModelIcon, modelIconHtml } from "@/lib/model-icons.ts";
 import { shortenWorkspacePath } from "@/lib/paths.ts";
 import { useComposerStore, type PendingImage } from "@/stores/composer.ts";
 import { useOverlaysStore } from "@/stores/overlays.ts";
+import { usePendingStore } from "@/stores/pending.ts";
 import { useSessionStore } from "@/stores/session.ts";
 import { useDisplayStore } from "@/stores/display.ts";
 import Autocomplete from "./composer/Autocomplete.vue";
@@ -53,6 +53,7 @@ const composer = useComposerStore();
 const session = useSessionStore();
 const display = useDisplayStore();
 const overlays = useOverlaysStore();
+const pending = usePendingStore();
 
 const inputEl = ref<HTMLElement | null>(null);
 const modelWrapEl = ref<HTMLElement | null>(null);
@@ -458,8 +459,8 @@ function onKeydown(ev: KeyboardEvent): void {
     const modifier = isMac ? ev.metaKey : ev.ctrlKey;
     const followUp = ev.altKey && !ev.shiftKey && !ev.ctrlKey && !ev.metaKey;
     const send = display.sendShortcut === "enter" ? plain : modifier && !ev.shiftKey && !ev.altKey;
-    if (followUp) sendPrompt("followUp");
-    else if (send) sendPrompt("steer");
+    if (followUp) sendPrompt(true);
+    else if (send) sendPrompt();
     else insertAtCaret("\n");
   }
 }
@@ -530,7 +531,7 @@ function onAttach(): void {
 
 // ------------------------------------------------------------------ send / stop
 
-function sendPrompt(behavior?: StreamingBehavior): void {
+function sendPrompt(explicitQueue?: boolean): void {
   // A compaction rebuilds the context; a message sent mid-flight would race it.
   if (session.isCompacting) {
     overlays.toast(t("Context is being compacted"), "info");
@@ -543,21 +544,32 @@ function sendPrompt(behavior?: StreamingBehavior): void {
     mimeType: image.mimeType,
   }));
   if (!message.trim() && images.length === 0) return;
+
   const streaming = session.isStreaming;
+  // While the agent works, `chatRunningSendBehavior` decides whether the
+  // message is held locally (and stays deletable/steerable) or delivered as a
+  // steering prompt right away. Alt+Enter always holds it.
+  const hold = streaming && (explicitQueue === true || display.runningSendBehavior === "queue");
+
   composer.remember(message);
   composer.clear();
   historySnapshot = null;
   inputEl.value?.focus();
+
+  if (hold) {
+    pending.enqueue(message, images);
+    return;
+  }
   if (streaming) {
     post({
       type: "prompt",
       message,
-      streamingBehavior: behavior ?? "steer",
+      streamingBehavior: "steer",
       ...(images.length > 0 ? { images } : {}),
     });
-  } else {
-    post({ type: "prompt", message, ...(images.length > 0 ? { images } : {}) });
+    return;
   }
+  post({ type: "prompt", message, ...(images.length > 0 ? { images } : {}) });
 }
 
 const btwStopId = computed(() =>

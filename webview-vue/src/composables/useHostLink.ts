@@ -10,6 +10,7 @@ import { onHostMessage, post } from "@/lib/bridge";
 import { useComposerStore } from "@/stores/composer";
 import { useDisplayStore } from "@/stores/display";
 import { useOverlaysStore } from "@/stores/overlays";
+import { usePendingStore } from "@/stores/pending";
 import { useSessionStore } from "@/stores/session";
 import { useTranscriptStore } from "@/stores/transcript";
 
@@ -25,6 +26,7 @@ export function useHostLink() {
   const composer = useComposerStore();
   const overlays = useOverlaysStore();
   const display = useDisplayStore();
+  const pending = usePendingStore();
 
   function handle(message: ExtToWebview): void {
     switch (message.type) {
@@ -87,10 +89,13 @@ export function useHostLink() {
         transcript.appendHistory(message.messages);
         break;
 
-      case "event":
+      case "event": {
         transcript.applyEvent(message.event);
+        // The turn just settled, so the head of the pending queue is deliverable.
+        if ((message.event as { type?: string }).type === "agent_settled") pending.flushNext();
         isBooting.value = false;
         break;
+      }
 
       case "dialog":
         overlays.dialog = message.request;
