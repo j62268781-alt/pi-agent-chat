@@ -76,7 +76,8 @@ export function buildChatWebviewOptions(workspace?: string): ChatWebviewOptions 
     workspace: workspace ?? vscode.workspace.workspaceFolders?.[0]?.uri.fsPath,
     language: getLocale(),
     mermaidTheme:
-      vscode.workspace.getConfiguration("pi-agent-chat").get<string>("chatMermaidTheme") ?? "default",
+      vscode.workspace.getConfiguration("pi-agent-chat").get<string>("chatMermaidTheme") ??
+      "default",
     display: readChatDisplaySettings(),
   };
 }
