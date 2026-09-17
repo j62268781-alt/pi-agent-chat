@@ -72,6 +72,10 @@ export function useHostLink() {
         break;
 
       case "messages":
+        // Real content for whatever session is now open: an optimistic switch
+        // has landed and the "new chat" guide is over.
+        session.endSwitch();
+        session.pendingNew = false;
         transcript.hydrate(message.messages);
         transcript.historyAvailable = message.historyAvailable === true;
         isBooting.value = false;
@@ -124,8 +128,11 @@ export function useHostLink() {
       case "error":
         session.applyState({ isStreaming: false });
         transcript.statusText = "";
-        overlays.toast(message.message || "Error", "error");
+        // An optimistic switch that never got its content: put the previous
+        // session back on screen (the host has already toasted the reason).
+        session.rollbackSwitch(transcript);
         isBooting.value = false;
+        overlays.toast(message.message || "Error", "error");
         break;
 
       case "prefillInput":

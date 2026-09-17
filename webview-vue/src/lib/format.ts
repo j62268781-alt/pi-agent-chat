@@ -9,16 +9,28 @@
 
 import { t } from "./i18n.ts";
 
-/** 12h local time, e.g. `"3:07 PM"`. Invalid input yields `""`. */
+const pad2 = (value: number): string => (value < 10 ? `0${value}` : String(value));
+
+/** 24h `HH:mm` — the one clock every timestamp uses (no AM/PM, 彬哥). */
+export function formatClock(date: Date): string {
+  return `${pad2(date.getHours())}:${pad2(date.getMinutes())}`;
+}
+
+/**
+ * `HH:mm` for today, `YYYY-MM-DD HH:mm` otherwise — always 24h. Invalid input
+ * yields `""`.
+ */
 export function formatTime(ts: number | null | undefined): string {
   if (ts == null || typeof ts !== "number" || !isFinite(ts)) return "";
-  const d = new Date(ts);
-  const h = d.getHours();
-  const m = d.getMinutes();
-  const ampm = h >= 12 ? "PM" : "AM";
-  const hr = h % 12 || 12;
-  const mm = m < 10 ? "0" + m : "" + m;
-  return hr + ":" + mm + " " + ampm;
+  const date = new Date(ts);
+  const now = new Date();
+  const clock = formatClock(date);
+  const sameDay =
+    date.getFullYear() === now.getFullYear() &&
+    date.getMonth() === now.getMonth() &&
+    date.getDate() === now.getDate();
+  if (sameDay) return clock;
+  return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())} ${clock}`;
 }
 
 /** `1234` -> `"1.2k"`, `1234567` -> `"1.2M"`. */

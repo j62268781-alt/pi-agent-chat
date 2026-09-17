@@ -8,13 +8,20 @@
 -->
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
+import type { SessionListItem } from "@protocol/messages";
 import { post } from "@/lib/bridge.ts";
+import { formatClock } from "@/lib/format.ts";
 import { t } from "@/lib/i18n.ts";
+import { isBooting } from "@/composables/useHostLink.ts";
 import { useComposerStore } from "@/stores/composer.ts";
+import { useOverlaysStore } from "@/stores/overlays.ts";
 import { useSessionStore } from "@/stores/session.ts";
+import { useTranscriptStore } from "@/stores/transcript.ts";
 
 const composer = useComposerStore();
+const overlays = useOverlaysStore();
 const session = useSessionStore();
+const transcript = useTranscriptStore();
 
 const popupEl = ref<HTMLElement | null>(null);
 
@@ -28,7 +35,7 @@ function formatSessionTime(iso: string): string {
   const minutes = Math.floor((now.getTime() - date.getTime()) / 60000);
   if (minutes < 1) return t("just now");
   if (minutes < 60) return t("{0} min ago", minutes);
-  const clock = date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  const clock = formatClock(date);
   if (date.toDateString() === now.toDateString()) return clock;
   const yesterday = new Date(now);
   yesterday.setDate(now.getDate() - 1);
@@ -62,6 +69,25 @@ function meta(item: { modified: string; messageCount: number }): string {
   return parts.filter(Boolean).join(" · ");
 }
 
+/**
+ * Live status for the row that is currently open — the only session that can be
+ * mid-run. pi does not run in the background for recorded sessions, so every
+ * other row has no status to show. "Deep thinking" is the transcript's own
+ * signal: the streaming assistant message's latest thinking block is still open.
+ */
+const currentStatus = computed<string | null>(() => {
+  if (session.isCompacting) return t("Compacting…");
+  if (!session.isStreaming) return null;
+  const blocks = transcript.activeAssistant?.blocks ?? [];
+  const thinking = [...blocks].reverse().find((block) => block.kind === "thinking");
+  if (thinking && thinking.running) return t("Deep thinking…");
+  return t("Replying…");
+});
+
+function statusFor(item: SessionListItem): string | null {
+  return item.file === session.sessionFile ? currentStatus.value : null;
+}
+
 function position(): void {
   const el = popupEl.value;
   const anchor = (el?.offsetParent as HTMLElement | null) ?? null;
@@ -91,9 +117,44 @@ watch(open, async (isOpen) => {
   post({ type: "listSessions" });
 });
 
-function choose(file: string): void {
+/**
+ * Switch sessions optimistically: the highlight, the header and a loading
+ * splash move right away — the perceived lag used to be pi loading the session
+ * before anything on screen changed. If the host reports an error instead of
+ * content, `rollbackSwitch` puts the previous session back.
+ */
+function choose(item: SessionListItem): void {
   composer.closePopups();
-  post({ type: "switchSession", file });
+  if (item.file === session.sessionFile) return;
+  if (session.isStreaming) {
+    overlays.toast(t("Stop the agent before switching sessions."), "error");
+    return;
+  }
+  session.beginSwitch(
+    item.file,
+    sessionTitle(item.file, item.name, item.modified),
+    transcript.messages.slice(),
+  );
+  transcript.reset();
+  isBooting.value = true;
+  post({ type: "switchSession", file: item.file });
+}
+
+/**
+ * Delete one recorded session. The transcript is removed from disk and cannot
+ * come back, so it always goes through the confirmation dialog first. Deleting
+ * the session that is currently open is allowed: the host stops the run and
+ * moves onto another session before unlinking the file.
+ */
+async function remove(item: SessionListItem): Promise<void> {
+  const name = sessionTitle(item.file, item.name, item.modified);
+  const confirmed = await overlays.askConfirmation(
+    t("Delete session?"),
+    t("{0} — this deletes the saved transcript on disk.", name),
+    t("Delete"),
+  );
+  if (!confirmed) return;
+  post({ type: "deleteSession", file: item.file });
 }
 
 function onDocumentMouseDown(ev: MouseEvent): void {
@@ -117,13 +178,19 @@ onUnmounted(() => document.removeEventListener("mousedown", onDocumentMouseDown)
         {{ t("No sessions yet.") }}
       </div>
       <template v-else>
-        <button
+        <!-- A row is a div rather than a button so the delete button can live
+             inside it — the marker `chat.css` styles (`.session-item`) cover the
+             UA button styles either way, and the model list uses the same shape. -->
+        <div
           v-for="item in session.sessionList"
           :key="item.file"
           class="session-item"
           :class="{ selected: item.file === session.sessionFile }"
-          type="button"
-          @click="choose(item.file)"
+          role="button"
+          tabindex="0"
+          @click="choose(item)"
+          @keydown.enter.prevent="choose(item)"
+          @keydown.space.prevent="choose(item)"
         >
           <span class="session-item-text">
             <span class="session-item-title">
@@ -132,12 +199,23 @@ onUnmounted(() => document.removeEventListener("mousedown", onDocumentMouseDown)
             <span v-if="preview(item.firstMessage)" class="session-item-preview">
               {{ preview(item.firstMessage) }}
             </span>
-            <span class="session-item-meta">{{ meta(item) }}</span>
+            <span v-if="statusFor(item)" class="session-item-status">
+              <span class="session-item-status-dot"></span>{{ statusFor(item) }}
+            </span>
+            <span v-else class="session-item-meta">{{ meta(item) }}</span>
           </span>
           <span v-if="item.file === session.sessionFile" class="session-item-check">
             <span class="codicon codicon-check"></span>
           </span>
-        </button>
+          <button
+            class="session-item-del"
+            type="button"
+            :title="t('Delete session')"
+            @click.stop="remove(item)"
+          >
+            <span class="codicon codicon-trash"></span>
+          </button>
+        </div>
       </template>
     </div>
   </div>

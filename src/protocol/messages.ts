@@ -85,6 +85,8 @@ export type WebviewToExt =
   | { type: "reload" }
   | { type: "listSessions" }
   | { type: "switchSession"; file: string }
+  /** Remove one recorded session (its JSONL transcript) from disk. */
+  | { type: "deleteSession"; file: string }
   | { type: "newSession" }
   | { type: "todoClear" }
   | { type: "openSettings" }

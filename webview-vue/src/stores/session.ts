@@ -37,6 +37,44 @@ export const useSessionStore = defineStore("session", () => {
   const contextUsage = ref<RpcContextUsage | null>(null);
   const sessionCost = ref<number | null>(null);
 
+  /**
+   * Set by the "+" button: the guide is showing but pi has no session for it
+   * yet — the host creates one when the first message is sent. Cleared when the
+   * host pushes real transcript content (a switch or that first send).
+   */
+  const pendingNew = ref(false);
+
+  /**
+   * Optimistic switch bookkeeping: the row highlight and the header move the
+   * moment a session is clicked, while pi is still loading it. If the host
+   * reports an error instead of content, the snapshot puts everything back.
+   */
+  const switchSnapshot = ref<{ file: string | null; name: string; messages: unknown[] } | null>(
+    null,
+  );
+
+  function beginSwitch(file: string, name: string, messages: unknown[]): void {
+    switchSnapshot.value = { file: sessionFile.value, name: sessionName.value, messages };
+    sessionFile.value = file;
+    sessionName.value = name;
+    pendingNew.value = false;
+  }
+
+  /** The switch landed: drop the snapshot. */
+  function endSwitch(): void {
+    switchSnapshot.value = null;
+  }
+
+  /** The switch failed: put the previous session back on screen. */
+  function rollbackSwitch(transcript: { restore: (messages: unknown[]) => void }): void {
+    const snapshot = switchSnapshot.value;
+    if (!snapshot) return;
+    switchSnapshot.value = null;
+    sessionFile.value = snapshot.file;
+    sessionName.value = snapshot.name;
+    transcript.restore(snapshot.messages);
+  }
+
   /** Local usage totals, recomputed as the transcript grows. */
   const totals = ref<UsageTotals>({ input: 0, output: 0, cacheRead: 0, cacheWrite: 0, cost: 0 });
 
@@ -102,6 +140,10 @@ export const useSessionStore = defineStore("session", () => {
     permissionMode,
     sendShortcut,
     sessionList,
+    pendingNew,
+    beginSwitch,
+    endSwitch,
+    rollbackSwitch,
     contextUsage,
     sessionCost,
     totals,

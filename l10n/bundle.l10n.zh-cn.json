@@ -75,7 +75,7 @@
   "Set pi-agent-chat.path if pi is not on your PATH": "如果 pi 不在 PATH 中，请设置 pi-agent-chat.path",
   "Sessions": "会话",
   "Settings": "设置",
-  "Stop the agent before starting a new session.": "请先停止生成，再新建会话。",
+  "Stop the agent before starting a new session.": "请先停止生成，再开始新会话。",
   "Stop the agent before switching sessions.": "请先停止生成，再切换会话。",
   "Switch": "切换",
   "Switch the sidebar chat to the selected session? The current conversation stays open in the background.": "要将侧边栏聊天切换到所选会话吗？当前对话会在后台保持打开。",
@@ -106,5 +106,8 @@
   "Invalid pi-agent-chat.bridgeSocket path \"{0}\" — expected an absolute path (or \\\\.\\pipe\\ on Windows). Bridge not restarted.": "pi-agent-chat.bridgeSocket 的路径 \"{0}\" 无效 — 应为绝对路径（Windows 上为 \\\\.\\pipe\\）。桥接未重启。",
   "Pi: Open a Pi Chat first to use this command.": "Pi：请先打开 Pi 聊天再使用此命令。",
   "Pi: Make a selection in the editor first.": "Pi：请先在编辑器中选中内容。",
-  "Pi: No active editor to add.": "Pi：没有可添加的活动编辑器。"
+  "Pi: No active editor to add.": "Pi：没有可添加的活动编辑器。",
+  "The session in use cannot be deleted.": "正在使用的会话不能删除。",
+  "Session deleted.": "会话已删除。",
+  "Already in a new session.": "已经是新会话。"
 }

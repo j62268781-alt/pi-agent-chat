@@ -3,10 +3,12 @@
 // WebviewPanel (editor tab) or a WebviewView (sidebar).
 
 import { statSync } from "node:fs";
+import { rm } from "node:fs/promises";
 import { homedir } from "node:os";
 import { isAbsolute, relative, resolve, sep } from "node:path";
 import * as vscode from "vscode";
 import { SessionManager } from "@earendil-works/pi-coding-agent";
+import { t } from "../../utils/i18n.ts";
 import type { BridgeConfig } from "../../services/bridge/types.ts";
 import {
   createRpcEnvironment,
@@ -25,6 +27,7 @@ import type {
   RpcSessionEntry,
   RpcSessionStats,
 } from "../../protocol/rpc.ts";
+import type { SessionListItem } from "../../protocol/messages.ts";
 import { createRpcClient } from "../../services/rpc/client.ts";
 import { mergeBuiltinCommands, parseBuiltin } from "../../services/chat/builtin-commands.ts";
 import { readPiChangelog } from "../../utils/changelog.ts";
@@ -212,6 +215,11 @@ export async function createChatSession(
   let sessionName: string | undefined;
   let currentSessionFile = opts.sessionFile;
   let streaming = false;
+  /**
+   * The "+" guide is up but pi has no session for it yet. The first prompt
+   * creates the session (`case "prompt"`); switching or deleting clears it.
+   */
+  let pendingNewSession = false;
   let switchedSession = false;
   let historyLoaded = false;
   let historyLoading: Promise<void> | null = null;
@@ -316,6 +324,56 @@ export async function createChatSession(
     host.postMessage({ type: "toast", text, ...(kind ? { kind } : {}) });
   }
 
+  /**
+   * Per-session snapshots of the last full message list we rendered, keyed by
+   * session file. Switching sessions costs pi 2.7-3.9s no matter what (measured:
+   * it tears down and rebuilds the whole session runtime), so switching BACK to
+   * a recently viewed session replays its snapshot instantly and lets the real
+   * `switch_session` + `get_messages` catch up behind it.
+   *
+   * Bounded on purpose — payloads carry base64 images, so this is an LRU with a
+   * byte budget: at most 4 sessions / 24MB resident, and a single session over
+   * half the budget is not cached at all.
+   */
+  const MESSAGES_CACHE_MAX_ENTRIES = 4;
+  const MESSAGES_CACHE_MAX_BYTES = 24 * 1024 * 1024;
+  const messagesCache = new Map<
+    string,
+    { messages: unknown[]; historyAvailable: boolean; bytes: number }
+  >();
+  let messagesCacheBytes = 0;
+
+  function cacheMessages(
+    file: string | undefined,
+    messages: unknown[],
+    historyAvailable: boolean,
+  ): void {
+    if (!file) return;
+    const previous = messagesCache.get(file);
+    if (previous) {
+      messagesCacheBytes -= previous.bytes;
+      messagesCache.delete(file);
+    }
+    let bytes = 0;
+    try {
+      bytes = JSON.stringify(messages).length;
+    } catch {
+      return; // not serializable — never going to survive the bridge either
+    }
+    if (bytes > MESSAGES_CACHE_MAX_BYTES / 2) return;
+    messagesCache.set(file, { messages, historyAvailable, bytes });
+    messagesCacheBytes += bytes;
+    while (
+      messagesCache.size > MESSAGES_CACHE_MAX_ENTRIES ||
+      messagesCacheBytes > MESSAGES_CACHE_MAX_BYTES
+    ) {
+      const oldest = messagesCache.keys().next().value;
+      if (oldest === undefined) break;
+      messagesCacheBytes -= messagesCache.get(oldest)?.bytes ?? 0;
+      messagesCache.delete(oldest);
+    }
+  }
+
   function postMessages(messages: unknown[]): void {
     if (sessionDisposed) return;
     historyLoaded = false;
@@ -323,6 +381,40 @@ export async function createChatSession(
       (m) => !!m && typeof m === "object" && (m as { role?: string }).role === "compactionSummary",
     );
     host.postMessage({ type: "messages", messages, historyAvailable });
+    cacheMessages(currentSessionFile, messages, historyAvailable);
+  }
+
+  /**
+   * Post this workspace's recorded sessions, newest first. Also the refresh
+   * path after one is deleted.
+   */
+  async function postSessionsList(): Promise<void> {
+    let items: SessionListItem[] = [];
+    try {
+      const list = cwd ? await SessionManager.list(cwd) : [];
+      list.sort(function (a, b) {
+        return (b.modified?.getTime() ?? 0) - (a.modified?.getTime() ?? 0);
+      });
+      items = list.slice(0, 30).map(function (s) {
+        return {
+          file: s.path,
+          name: s.name ?? "",
+          firstMessage: s.firstMessage ?? "",
+          modified:
+            s.modified instanceof Date ? s.modified.toISOString() : String(s.modified ?? ""),
+          messageCount: s.messageCount ?? 0,
+        };
+      });
+    } catch {
+      // leave items empty; the popup shows its empty state
+    }
+    if (!sessionDisposed) {
+      host.postMessage({
+        type: "sessionsList",
+        sessions: items,
+        currentFile: currentSessionFile ?? null,
+      });
+    }
   }
 
   async function requestHistory(): Promise<void> {
@@ -440,9 +532,9 @@ export async function createChatSession(
         }
         case "clear":
         case "new": {
-          await rpc.newSession();
-          await refreshAfterSwitch();
-          toast("Started new session.", "success");
+          // Route through the guarded wrapper: the "+" button in the header used
+          // to bypass it and stack a new empty transcript on every click.
+          await newSession();
           break;
         }
         case "reload": {
@@ -589,6 +681,15 @@ export async function createChatSession(
         break;
       case "prompt":
         try {
+          // The guide's first send: create the session it belongs to before the
+          // builtin/prompt handling runs, so both land in the same place.
+          if (pendingNewSession) {
+            pendingNewSession = false;
+            if (!streaming) {
+              await rpc.newSession();
+              await refreshAfterSwitch();
+            }
+          }
           if (await handleBuiltin(String(msg.message ?? ""))) break;
           await rpc.prompt(
             String(msg.message ?? ""),
@@ -838,47 +939,78 @@ export async function createChatSession(
       case "reload":
         void reloadSession();
         break;
-      case "listSessions": {
-        // Fork change: feed the chat header's session-list popup with the sessions recorded
-        // for this workspace, newest first.
-        void (async () => {
-          let items: {
-            file: string;
-            name: string;
-            firstMessage: string;
-            modified: string;
-            messageCount: number;
-          }[] = [];
-          try {
-            const list = cwd ? await SessionManager.list(cwd) : [];
-            list.sort(function (a, b) {
-              return (b.modified?.getTime() ?? 0) - (a.modified?.getTime() ?? 0);
-            });
-            items = list.slice(0, 30).map(function (s) {
-              return {
-                file: s.path,
-                name: s.name ?? "",
-                firstMessage: s.firstMessage ?? "",
-                modified:
-                  s.modified instanceof Date ? s.modified.toISOString() : String(s.modified ?? ""),
-                messageCount: s.messageCount ?? 0,
-              };
-            });
-          } catch {
-            // leave items empty; the popup shows its empty state
-          }
-          if (!sessionDisposed)
-            host.postMessage({
-              type: "sessionsList",
-              sessions: items,
-              currentFile: currentSessionFile ?? null,
-            });
-        })();
+      case "listSessions":
+        // Fork change: feed the chat header's session-list popup with the sessions
+        // recorded for this workspace, newest first.
+        void postSessionsList();
         break;
-      }
       case "switchSession": {
         const file = String(msg.file ?? "");
+        pendingNewSession = false;
+        // Replay the cached snapshot first (if any): the splash comes down and
+        // the session is on screen in one bridge hop, while the real switch +
+        // get_messages run behind it and re-post the authoritative list.
+        const cached = file ? messagesCache.get(file) : undefined;
+        if (cached && !sessionDisposed) {
+          host.postMessage({
+            type: "messages",
+            messages: cached.messages,
+            historyAvailable: cached.historyAvailable,
+          });
+        }
         if (file && file !== currentSessionFile) void switchTo(file);
+        break;
+      }
+      /**
+       * The "+" button's marker: show the guide, create nothing. pi only gets a
+       * session when the guide's first message is sent (`case "prompt"`), so
+       * clicking "+" never writes an empty transcript to disk.
+       */
+      case "newSession":
+        pendingNewSession = true;
+        break;
+      case "deleteSession": {
+        // Fork change: delete one recorded session (its JSONL transcript).
+        // The path comes from the webview, so the allowed set is re-derived from
+        // `SessionManager.list` and only a listed path is deleted — never an `rm`
+        // on a caller-supplied path. Deleting the OPEN session is allowed: any
+        // run is aborted first and pi is moved onto another session BEFORE the
+        // unlink, otherwise its next append would recreate the file.
+        const file = String(msg.file ?? "");
+        void (async () => {
+          try {
+            const list = cwd ? await SessionManager.list(cwd) : [];
+            const listed = list.some(function (s) {
+              return s.path === file;
+            });
+            if (!file || !listed) return;
+            if (file === currentSessionFile) {
+              if (streaming) await rpc.abort();
+              const others = list
+                .filter(function (s) {
+                  return s.path !== file;
+                })
+                .sort(function (a, b) {
+                  return (b.modified?.getTime() ?? 0) - (a.modified?.getTime() ?? 0);
+                });
+              pendingNewSession = false;
+              if (others[0]) {
+                await rpc.switchSession(others[0].path);
+              } else {
+                // Nothing left to move onto: pi needs a live session, so this
+                // one case does write a fresh (empty) transcript.
+                await rpc.newSession();
+              }
+              await refreshAfterSwitch();
+            }
+            await rm(file, { force: true });
+            messagesCache.delete(file);
+            toast(t("Session deleted."), "success");
+            await postSessionsList();
+          } catch (e) {
+            toast(e instanceof Error ? e.message : String(e), "error");
+          }
+        })();
         break;
       }
       case "todoClear":
@@ -967,8 +1099,9 @@ export async function createChatSession(
   }
 
   async function switchTo(sessionFile: string): Promise<void> {
+    pendingNewSession = false;
     if (streaming) {
-      toast("Stop the agent before switching sessions.", "error");
+      toast(t("Stop the agent before switching sessions."), "error");
       return;
     }
     try {
@@ -984,15 +1117,37 @@ export async function createChatSession(
     }
   }
 
+  /**
+   * A session with no messages is already "new": creating another one is a
+   * no-op for the user but still writes a fresh empty transcript to disk, so
+   * refuse it. `messageCount` from the state is the cheap probe, with
+   * `getMessages()` as the fallback for a host that omits it. A failed probe
+   * must not block a legitimate reset.
+   */
+  async function sessionIsEmpty(): Promise<boolean> {
+    try {
+      const st = await rpc.getState();
+      if (typeof st.messageCount === "number") return st.messageCount === 0;
+      const messages = await rpc.getMessages();
+      return messages.length === 0;
+    } catch {
+      return false;
+    }
+  }
+
   async function newSession(): Promise<void> {
     if (streaming) {
-      toast("Stop the agent before starting a new session.", "error");
+      toast(t("Stop the agent before starting a new session."), "error");
+      return;
+    }
+    if (await sessionIsEmpty()) {
+      toast(t("Already in a new session."), "info");
       return;
     }
     try {
       await rpc.newSession();
       await refreshAfterSwitch();
-      toast("Started new session.", "success");
+      toast(t("Started new session."), "success");
     } catch (e) {
       if (!sessionDisposed) {
         host.postMessage({

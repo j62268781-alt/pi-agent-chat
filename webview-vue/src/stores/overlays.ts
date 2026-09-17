@@ -61,6 +61,17 @@ export const useOverlaysStore = defineStore("overlays", () => {
 
   const confirmState = ref<RewindConfirm | null>(null);
 
+  /** Full-screen image preview (`Lightbox`); `null` while closed. */
+  const lightbox = ref<{ src: string; alt?: string } | null>(null);
+
+  function openLightbox(src: string, alt?: string): void {
+    lightbox.value = { src, alt };
+  }
+
+  function closeLightbox(): void {
+    lightbox.value = null;
+  }
+
   function toast(text: string, kind: ToastKind = "info"): void {
     const id = ++toastSeq;
     toasts.value.push({ id, text, kind, sticky: false });
@@ -127,6 +138,9 @@ export const useOverlaysStore = defineStore("overlays", () => {
     btwAbortId,
     btwActive,
     confirmState,
+    lightbox,
+    openLightbox,
+    closeLightbox,
     toast,
     sticky,
     dismissToast,

@@ -296,6 +296,16 @@ export const useTranscriptStore = defineStore("transcript", () => {
   // ---------------------------------------------------------------- hydration
 
   /** Replace the transcript with a full history from the host. */
+  /**
+   * Put previously rendered messages back verbatim. Unlike `hydrate`, which maps
+   * raw host messages, this takes already-internal messages — it is the
+   * optimistic-switch rollback path, where the snapshot was taken from this very
+   * store.
+   */
+  function restore(list: unknown[]): void {
+    messages.value = list as TranscriptMessage[];
+  }
+
   function hydrate(list: unknown[]): void {
     reset();
     if (!Array.isArray(list) || list.length === 0) {
@@ -732,6 +742,7 @@ export const useTranscriptStore = defineStore("transcript", () => {
 
   return {
     messages,
+    restore,
     queue,
     historyAvailable,
     historyMessages,
