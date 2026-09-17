@@ -63,7 +63,7 @@ function clearHostQueue(): void {
     </div>
 
     <div v-for="item in pending.items" :key="item.id" class="queue-item is-pending">
-      <span class="codicon codicon-reply queue-lead"></span>
+      <span class="codicon codicon-chevron-right queue-lead"></span>
       <div class="queue-text" :title="item.text">{{ item.text }}</div>
       <span v-if="item.images.length > 0" class="queue-badge">+{{ item.images.length }}</span>
       <span class="queue-time">{{ formatTime(item.createdAt) }}</span>
@@ -74,7 +74,7 @@ function clearHostQueue(): void {
           :title="t('Send this now as a steering message')"
           @click="pending.steerNow(item.id)"
         >
-          <span class="codicon codicon-reply"></span>
+          <span class="codicon codicon-send"></span>
           <span class="queue-action-label">{{ t("Steer") }}</span>
         </button>
         <button
