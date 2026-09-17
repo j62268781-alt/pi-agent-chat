@@ -4704,3 +4704,69 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 .queue-item.is-host {
   opacity: 0.85;
 }
+
+/* ---------------------------------------------------------------------------
+   Compact pass — transcript rhythm and session list (彬哥: 会话列表和气泡的间距
+   都太松了).
+
+   Appended overrides, not rewrites: the board rhythm (20px, 28px on a wide
+   panel) sits between EVERY `.msg`, and every turn block IS a `.msg` sibling,
+   so the parent gap is what actually paces the conversation. 6px keeps the
+   blocks distinct without turning each one into its own paragraph; the closing
+   timestamp is still what separates two turns.
+--------------------------------------------------------------------------- */
+
+.messages-inner {
+  gap: 6px;
+}
+
+/* The assistant blocks live inside the flow card too, where the board's own
+   body gap was 8px. */
+.work-body {
+  gap: 5px;
+}
+
+/* Bubble: the board's 11px 16px is generous for a 300px sidebar. */
+.bubble {
+  padding: 8px 12px;
+}
+
+/* ---------------------------------------------------------------------------
+   Session list: one tight row per session. The row drops to a 4px 8px box with
+   a 2px rhythm, the title takes the transcript's 12px step, and the meta line
+   drops to the 10px muted step Qoder uses for secondary text.
+--------------------------------------------------------------------------- */
+
+.sessions-list {
+  gap: 2px;
+}
+
+.session-item {
+  gap: 8px;
+  padding: 4px 8px;
+  border-radius: var(--pi-r-sm);
+}
+
+.session-item-text {
+  gap: 1px;
+}
+
+.session-item-title {
+  font-size: var(--chat-fs-12);
+}
+
+.session-item-preview,
+.session-item-meta {
+  font-size: var(--chat-fs-10);
+  color: var(--pi-text-muted);
+}
+
+.session-item-status {
+  font-size: var(--chat-fs-10);
+}
+
+/* The row is now 4px tall-padded; a 24px control would inflate it again. */
+.session-item-del {
+  width: 20px;
+  height: 20px;
+}

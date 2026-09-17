@@ -10,22 +10,43 @@ import { computed, ref, watch } from "vue";
 import { post } from "@/lib/bridge.ts";
 import { parseDiffRows } from "@/lib/diff.ts";
 import { t } from "@/lib/i18n.ts";
-import { formatToolSummary, toolDisplayName } from "@/lib/tool-format.ts";
+import { basenameOf, shortenWorkspacePath } from "@/lib/paths.ts";
+import { formatToolSummary, toolDisplayName, toolPathArg, toolStr } from "@/lib/tool-format.ts";
+import { useDisplayStore } from "@/stores/display";
 import type { ToolBlock } from "@/stores/transcript";
 
 const props = defineProps<{ block: ToolBlock }>();
 
 /** Inline payloads beyond this are truncated so a huge file cannot wedge the view. */
 const MAX_INLINE = 12000;
+/** Characters of a bash command kept in the folded header. */
+const COMMAND_PREVIEW_MAX = 70;
 
-const open = ref(false);
+const display = useDisplayStore();
+
+const open = ref(display.expandToolCalls);
 const pinnedByUser = ref(false);
 
 const displayName = computed(() => toolDisplayName(props.block.name || "tool"));
+/**
+ * Folded-header summary. The tools the user watches most often get the board's
+ * own wording — a bash row leads with "Ran · <command>", a read row names the
+ * file it opened. Anything else keeps the generic argument summary.
+ */
 const summary = computed(() => {
   const args = props.block.args;
   if (!args) return props.block.argsText ? "…" : "";
-  return formatToolSummary(props.block.name, args);
+  const name = props.block.name;
+  if (name === "bash") {
+    const command = toolStr(args.command);
+    if (command) return t("Ran") + " \u00b7 " + truncate(command, COMMAND_PREVIEW_MAX);
+  } else if (name === "read" || name === "write" || name === "edit") {
+    const base = basenameOf(shortenWorkspacePath(toolPathArg(args)));
+    if (base) {
+      return name === "read" ? t("View read details for {0}", base) : t("Edited {0}", base);
+    }
+  }
+  return formatToolSummary(name, args);
 });
 const statusLabel = computed(() => {
   if (props.block.status === "running") return "●";
@@ -63,6 +84,10 @@ function clamp(text: string): string {
   return (
     text.slice(0, MAX_INLINE) + t(" ... (truncated, {0} more chars)", text.length - MAX_INLINE)
   );
+}
+
+function truncate(value: string, max: number): string {
+  return value.length > max ? value.slice(0, max) + "\u2026" : value;
 }
 
 function formatMs(ms: number): string {

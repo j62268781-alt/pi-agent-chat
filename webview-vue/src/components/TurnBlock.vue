@@ -10,6 +10,7 @@ import { computed } from "vue";
 import { post } from "@/lib/bridge.ts";
 import { formatCounts, formatDuration, formatTime, formatWorkTitle } from "@/lib/format.ts";
 import { t } from "@/lib/i18n.ts";
+import { useDisplayStore } from "@/stores/display";
 import { useOverlaysStore } from "@/stores/overlays";
 import { useSessionStore } from "@/stores/session";
 import type { Turn } from "@/stores/transcript";
@@ -17,11 +18,17 @@ import BlockView from "./BlockView.vue";
 
 const props = defineProps<{ turn: Turn }>();
 
+const display = useDisplayStore();
 const overlays = useOverlaysStore();
 const session = useSessionStore();
 
-const workTitle = computed(() =>
-  formatWorkTitle({
+/**
+ * The flow header's own title. When the display setting asks for it, the tool
+ * call count leads the line ("Ran 5 tools · 3 Turns · Worked for 12s") — the
+ * fold is the only place the count is visible, so it is worth the prefix.
+ */
+const workTitle = computed(() => {
+  const title = formatWorkTitle({
     turns: props.turn.workTurns,
     duration:
       props.turn.workStartedAt != null && props.turn.workEndedAt != null
@@ -29,8 +36,11 @@ const workTitle = computed(() =>
         : "",
     added: 0,
     removed: 0,
-  }),
-);
+  });
+  if (!display.showToolCallCount) return title;
+  const tools = props.turn.workBlocks.filter((entry) => entry.block.kind === "tool").length;
+  return tools > 0 ? t("Ran {0} tools", tools) + " \u00b7 " + title : title;
+});
 
 const counts = computed(() => formatCounts(props.turn.added, props.turn.removed));
 
@@ -119,21 +129,31 @@ function revertToUser(): void {
     </div>
   </div>
 
-  <details v-if="turn.workBlocks.length" class="work-block">
-    <summary class="work-head">
-      <span>{{ workTitle }}</span>
-      <span v-if="counts" class="work-counts">
-        <span v-if="turn.added > 0" style="color: var(--pi-success)">+{{ turn.added }}</span>
-        <span v-if="turn.added > 0 && turn.removed > 0"> </span>
-        <span v-if="turn.removed > 0" style="color: var(--pi-danger)">-{{ turn.removed }}</span>
-      </span>
-    </summary>
-    <div class="work-body">
+  <!-- `chatCollapseWork: false` drops the fold entirely: the work blocks render
+       in the clear, in their original order, as if nothing had been grouped. -->
+  <template v-if="turn.workBlocks.length">
+    <details v-if="display.collapseWork" class="work-block">
+      <summary class="work-head">
+        <span>{{ workTitle }}</span>
+        <span v-if="counts" class="work-counts">
+          <span v-if="turn.added > 0" style="color: var(--pi-success)">+{{ turn.added }}</span>
+          <span v-if="turn.added > 0 && turn.removed > 0"> </span>
+          <span v-if="turn.removed > 0" style="color: var(--pi-danger)">-{{ turn.removed }}</span>
+        </span>
+      </summary>
+      <div class="work-body">
+        <div v-for="entry in turn.workBlocks" :key="entry.block.id" class="msg assistant">
+          <BlockView :block="entry.block" />
+        </div>
+      </div>
+    </details>
+
+    <template v-else>
       <div v-for="entry in turn.workBlocks" :key="entry.block.id" class="msg assistant">
         <BlockView :block="entry.block" />
       </div>
-    </div>
-  </details>
+    </template>
+  </template>
 
   <div v-for="entry in turn.finalBlocks" :key="entry.block.id" class="msg assistant">
     <BlockView :block="entry.block" />

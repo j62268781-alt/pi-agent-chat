@@ -66,6 +66,25 @@ async function scrollToBottom(): Promise<void> {
   stuck.value = true;
 }
 
+/**
+ * Put the newest turn's user bubble at the top of the viewport (`keepReadingAnchor`)
+ * instead of chasing the bottom: the answer then grows downwards from a fixed
+ * spot and the reader never has text shoved out from under them. Measured with
+ * rects rather than `offsetTop`, because the offset parent is outside the
+ * scroller (`.messages` is not positioned).
+ */
+async function anchorToLatestTurn(): Promise<void> {
+  await nextTick();
+  const el = scroller.value;
+  const root = inner.value;
+  if (!el || !root) return;
+  const rows = root.querySelectorAll<HTMLElement>(".msg.user");
+  const row = rows[rows.length - 1];
+  if (!row) return;
+  const offset = row.getBoundingClientRect().top - el.getBoundingClientRect().top + el.scrollTop;
+  el.scrollTop = Math.max(0, offset - 8);
+}
+
 function openHistory(): void {
   if (transcript.historyLoaded || transcript.historyLoading) return;
   transcript.historyLoading = true;
@@ -91,7 +110,13 @@ onUnmounted(() => {
 // New turns and streaming deltas both grow the content; `inner` drives the observer.
 watch(
   () => transcript.turns.length,
-  () => {
+  (length, previous) => {
+    // A fresh turn is the one moment worth re-anchoring; keeps the bubble at the
+    // top and lets `stuck` detach so the growth below does not drag the view.
+    if (display.keepReadingAnchor && length > (previous ?? 0)) {
+      void anchorToLatestTurn();
+      return;
+    }
     if (stuck.value) void scrollToBottom();
   },
 );
