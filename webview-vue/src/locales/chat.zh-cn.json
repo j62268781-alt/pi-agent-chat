@@ -193,5 +193,6 @@
   "Ecosystem package {0} installed — the config below is active.": "生态包 {0} 已安装，下方配置生效中。",
   "Ecosystem package {0} is NOT installed — the config below is inert. Install with: {1}": "生态包 {0} 未安装——下方配置不会生效。安装：{1}",
   "Previous image": "上一张",
-  "Next image": "下一张"
+  "Next image": "下一张",
+  "The previous session is still generating — stop it or wait before starting a new one.": "上一个会话仍在生成中——请先停止或等待完成，再开始新会话。"
 }

@@ -681,11 +681,22 @@ export async function createChatSession(
           // The guide's first send: create the session it belongs to before the
           // builtin/prompt handling runs, so both land in the same place.
           if (pendingNewSession) {
-            pendingNewSession = false;
-            if (!streaming) {
-              await rpc.newSession();
-              await refreshAfterSwitch();
+            // The previous session is still generating: `newSession` here would
+            // be skipped and the message would silently land in THAT session's
+            // context. Refuse instead — pendingNewSession stays set, so a send
+            // after the user stops/wait still creates the fresh session.
+            if (streaming) {
+              host.postMessage({
+                type: "error",
+                message: t(
+                  "The previous session is still generating — stop it or wait before starting a new one.",
+                ),
+              });
+              return;
             }
+            pendingNewSession = false;
+            await rpc.newSession();
+            await refreshAfterSwitch();
           }
           if (await handleBuiltin(String(msg.message ?? ""))) break;
           await rpc.prompt(

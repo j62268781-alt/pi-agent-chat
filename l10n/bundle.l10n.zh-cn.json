@@ -109,5 +109,6 @@
   "Pi: No active editor to add.": "Pi：没有可添加的活动编辑器。",
   "The session in use cannot be deleted.": "正在使用的会话不能删除。",
   "Session deleted.": "会话已删除。",
-  "Already in a new session.": "已经是新会话。"
+  "Already in a new session.": "已经是新会话。",
+  "The previous session is still generating — stop it or wait before starting a new one.": "上一个会话仍在生成中——请先停止或等待完成，再开始新会话。"
 }

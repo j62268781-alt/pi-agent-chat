@@ -546,6 +546,16 @@ function sendPrompt(explicitQueue?: boolean): void {
     overlays.toast(t("Context is being compacted"), "info");
     return;
   }
+  // The new-session guide with the previous session still generating: sending
+  // would either land in that session (steer) or race it (new session) — keep
+  // the draft and ask the user to stop/wait first.
+  if (session.pendingNew && session.isStreaming) {
+    overlays.toast(
+      t("The previous session is still generating — stop it or wait before starting a new one."),
+      "info",
+    );
+    return;
+  }
   const message = composer.payload;
   const images = composer.images.map((image) => ({
     type: "image" as const,
