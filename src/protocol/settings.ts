@@ -130,11 +130,28 @@ export interface AgentItem {
   filePath: string;
 }
 
+/** Install state of an optional pi ecosystem package (pi-subagents, pi-mcp-adapter). */
+export interface EcosystemPackage {
+  /** The package's npm name, e.g. `pi-subagents`. */
+  name: string;
+  /** Whether `~/.pi/agent/npm/node_modules/<name>` exists. */
+  installed: boolean;
+  /** Absolute path checked, so the user can see where it looks. */
+  pkgDir: string;
+  /** One-liner to install it, e.g. `pi install npm:pi-subagents`. */
+  installCommand: string;
+}
+
 export interface AgentsTabData {
   agents: AgentItem[];
   hasWorkspace: boolean;
   /** `provider/modelId` keys offered by the Model picker. */
   models: string[];
+  /** Where user agent definitions live (pi-subagents reads this directory). */
+  agentsDir: string;
+  /** Whether the pi-subagents package is installed — without it these agent
+   * definitions are inert (nothing spawns them). */
+  piSubagents: EcosystemPackage;
 }
 
 /** One prompt template reported by pi's resource loader. */
@@ -199,6 +216,9 @@ export interface McpTabData {
   hasWorkspace: boolean;
   userPath: string;
   projectPath: string;
+  /** Whether the pi-mcp-adapter package is installed — without it the servers
+   * configured here are never connected. */
+  mcpAdapter: EcosystemPackage;
 }
 
 export interface CommitTabData {

@@ -1,8 +1,10 @@
 import * as vscode from "vscode";
+import { existsSync } from "node:fs";
 import { findPiColumn, findUnusedColumn } from "../../utils/webview-columns.ts";
 import { homedir } from "node:os";
 import { join, resolve, sep } from "node:path";
 import { DefaultResourceLoader, getAgentDir } from "@earendil-works/pi-coding-agent";
+import type { EcosystemPackage } from "../../protocol/settings.ts";
 import { getSettingsWebviewHtml } from "./webview-html.ts";
 import { getLocale, t } from "../../utils/i18n.ts";
 import {
@@ -484,7 +486,14 @@ async function buildTabData(
     case "agents": {
       const agents = listAgents(getBuiltinAgentsDir(extensionUri), cwd);
       const models = await getAvailableAgentModels();
-      return { agents, hasWorkspace: !!cwd, models };
+      const agentsDir = join(getAgentDir(), "agents");
+      return {
+        agents,
+        hasWorkspace: !!cwd,
+        models,
+        agentsDir,
+        piSubagents: detectEcosystemPackage(getAgentDir(), "pi-subagents"),
+      };
     }
     case "prompts": {
       const loader = new DefaultResourceLoader({
@@ -566,6 +575,7 @@ async function buildTabData(
         hasWorkspace: !!cwd,
         userPath,
         projectPath,
+        mcpAdapter: detectEcosystemPackage(getAgentDir(), "pi-mcp-adapter"),
       };
     }
     case "sysprompt": {
@@ -629,6 +639,22 @@ function computeSourceLabel(si: { origin: string; source: string; scope: string 
 // user / project scope creation is never blocked by a same-name builtin.
 function getBuiltinAgentsDir(extensionUri: vscode.Uri): string {
   return join(extensionUri.fsPath, "pi-extensions", "agents.retired");
+}
+
+/**
+ * Install state of an optional pi ecosystem package. Both pi-subagents and
+ * pi-mcp-adapter install into `<agentDir>/npm/node_modules/<name>`; without
+ * them the Agents / MCP tabs still manage their config files, but nothing
+ * consumes them (no subagent tool, no MCP connections).
+ */
+function detectEcosystemPackage(agentDir: string, name: string): EcosystemPackage {
+  const pkgDir = join(agentDir, "npm", "node_modules", name);
+  return {
+    name,
+    installed: existsSync(pkgDir),
+    pkgDir,
+    installCommand: `pi install npm:${name}`,
+  };
 }
 
 function resolveScope(raw: unknown): "user" | "project" {

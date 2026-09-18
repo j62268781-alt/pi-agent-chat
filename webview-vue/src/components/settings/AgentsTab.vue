@@ -9,6 +9,7 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import type { AgentItem, AgentsTabData } from "@protocol/settings";
+import EcoPackageBadge from "./EcoPackageBadge.vue";
 import { t } from "@/lib/i18n.ts";
 import { useSettingsStore } from "@/stores/settings.ts";
 import ItemBadge from "./ItemBadge.vue";
@@ -132,6 +133,7 @@ function save(): void {
         <span class="codicon codicon-add"></span> {{ t("New Agent") }}
       </button>
     </SectionHeader>
+    <EcoPackageBadge v-if="props.data.piSubagents" :pkg="props.data.piSubagents" />
     <div class="hint" v-html="hint"></div>
     <div class="item-list">
       <span v-if="props.data.agents.length === 0" class="dim">{{ t("No agents found.") }}</span>

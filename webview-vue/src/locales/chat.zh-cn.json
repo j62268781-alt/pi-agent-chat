@@ -29,7 +29,7 @@
   "Cancel": "取消",
   "clear": "清空",
   "Clear all todos": "清空所有待办",
-  "Clear queued messages": "清空排队消息",
+  "Clear queued messages": "清空待发送消息",
   "Close": "关闭",
   "Collapse": "折叠",
   "commands": "命令",
@@ -63,7 +63,6 @@
   "Steer": "插话",
   "Steer now": "立即插话",
   "Send this now as a steering message": "立即作为引导消息发出，让 Agent 在下一步调整方向",
-  "Clear queued messages": "清空待发送消息",
   "Fork from here": "从此处派生",
   "Fork from this message?": "从此消息派生？",
   "Create a new branch from this message. Current file changes are kept.": "从此消息创建新分支。当前文件更改会保留。",
@@ -195,5 +194,7 @@
   "Context is being compacted": "正在压缩上下文，请稍候",
   "Click to preview": "点击预览",
   "Zoom in": "放大",
-  "Zoom out": "缩小"
+  "Zoom out": "缩小",
+  "Ecosystem package {0} installed — the config below is active.": "生态包 {0} 已安装，下方配置生效中。",
+  "Ecosystem package {0} is NOT installed — the config below is inert. Install with: {1}": "生态包 {0} 未安装——下方配置不会生效。安装：{1}"
 }

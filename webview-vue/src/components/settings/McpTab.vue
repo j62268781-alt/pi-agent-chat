@@ -12,6 +12,7 @@ import { ref } from "vue";
 import type { McpServerEntry, McpServerItem, McpTabData } from "@protocol/settings";
 import { t } from "@/lib/i18n.ts";
 import { useSettingsStore } from "@/stores/settings.ts";
+import EcoPackageBadge from "./EcoPackageBadge.vue";
 import ItemBadge from "./ItemBadge.vue";
 import ItemRow from "./ItemRow.vue";
 import ScopeSelect from "./ScopeSelect.vue";
@@ -165,6 +166,7 @@ function save(): void {
         <span class="codicon codicon-go-to-file"></span> {{ t("project mcp.json") }}
       </button>
     </SectionHeader>
+    <EcoPackageBadge v-if="props.data.mcpAdapter" :pkg="props.data.mcpAdapter" />
 
     <div class="item-list">
       <span v-if="props.data.servers.length === 0" class="dim">

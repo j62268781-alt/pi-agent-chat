@@ -21,11 +21,25 @@ gate, file rewind) that work out of the box.
   | `pi-extensions/permission-gate.ts` | approval gate for dangerous bash commands |
   | `pi-extensions/rewind-code.ts` | sha256 file snapshots + rewind/accept UI |
   | `pi-extensions/btw.ts` | `/btw` side questions |
-  | `pi-extensions/subagent/index.ts` | sub-agent delegation (disabled by default) |
 - **Settings panel** — models, agents, prompt templates, skills, MCP servers, commit message
-  generation, system prompt and general settings.
+  generation, system prompt and general settings, plus install-state banners for the optional
+  ecosystem packages below.
 - **Commit messages from the SCM title bar**, generated from the staged diff via the pi SDK.
 - **Editor and Explorer context menus** to send a selection or a file to the open chat.
+
+## Optional pi ecosystem packages
+
+Two capabilities are delegated to the user-installed pi ecosystem packages instead of being
+bundled. The Settings panel detects both and shows a banner in the related tab — the tabs still
+manage the config files either way, but the configs are inert until the package is installed.
+
+| package                                                          | what it provides                                                                                                                                                  | config files                                                                                         | install                         |
+| ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | ------------------------------- |
+| [`pi-subagents`](https://www.npmjs.com/package/pi-subagents)     | the `subagent` tool: delegate tasks to child agents with isolated contexts (single, parallel, async/background, workflows). Agents are defined as markdown files. | `~/.pi/agent/agents/*.md` — drop-in samples live in [`docs/examples/agents/`](docs/examples/agents/) | `pi install npm:pi-subagents`   |
+| [`pi-mcp-adapter`](https://www.npmjs.com/package/pi-mcp-adapter) | MCP server connections: the servers configured in the MCP tab are only connected when this adapter is installed                                                   | `~/.pi/agent/mcp.json` (user) and `<workspace>/.mcp.json` (project), managed by the MCP tab          | `pi install npm:pi-mcp-adapter` |
+
+Without a package the related tab shows a "NOT installed" banner with the install command;
+with it installed the banner turns green and the config is live.
 
 ## Project layout
 
