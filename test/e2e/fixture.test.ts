@@ -1,5 +1,5 @@
 import { existsSync, readFileSync, rmSync } from "node:fs";
-import { join } from "node:path";
+import { isAbsolute, join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   createFixture,
@@ -166,7 +166,8 @@ describe("createFixture", () => {
 
   it("resolves a pi binary that exists and is executable", () => {
     const fixture = newFixture();
-    expect(fixture.piBin.startsWith("/")).toBe(true);
+    // Absolute, not POSIX-rooted: on Windows the candidate is a drive path.
+    expect(isAbsolute(fixture.piBin)).toBe(true);
     expect(existsSync(fixture.piBin)).toBe(true);
   });
 
