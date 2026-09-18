@@ -1056,6 +1056,23 @@ export async function createChatSession(
           .then(undefined, () => {});
         break;
       }
+      case "setRunningSendBehavior":
+        // One global value, so every window agrees; the config listener pushes
+        // the fresh `displaySettings` back to the webview that asked.
+        void vscode.workspace
+          .getConfiguration("pi-agent-chat")
+          .update(
+            "chatRunningSendBehavior",
+            msg.value === "steer" ? "steer" : "queue",
+            vscode.ConfigurationTarget.Global,
+          )
+          .then(undefined, (e: unknown) => {
+            host.postMessage({
+              type: "error",
+              message: e instanceof Error ? e.message : String(e),
+            });
+          });
+        break;
       case "setPermission":
         void rpc
           .prompt(`/permission ${String(msg.mode ?? "")}`, streaming ? "steer" : undefined)

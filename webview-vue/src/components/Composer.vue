@@ -466,6 +466,50 @@ function onKeydown(ev: KeyboardEvent): void {
   }
 }
 
+// ------------------------------------------------------------------ intake
+
+/**
+ * Insert a trigger character and open its dropdown.
+ *
+ * The empty state used to spell the whole keyboard out; these two buttons are
+ * what replaced that lesson — `/` and `@` are now visible controls, so the
+ * placeholder only has to say "type here".
+ */
+function insertTrigger(trigger: "/" | "@"): void {
+  const el = inputEl.value;
+  if (!el) return;
+  el.focus();
+  const text = serializeInput(el);
+  const caret = getCaretOffset(el);
+  const next = text.slice(0, caret) + trigger + text.slice(caret);
+  composer.draft = next;
+  renderSegments(el, segmentsFromText(next), caret + 1);
+  autoGrow();
+  updateAutocomplete();
+}
+
+/**
+ * Running-send behavior, in the composer rather than only in the settings panel:
+ * 排队 holds the message here (deletable, steerable) and 插话 hands it to pi as
+ * a steering prompt right away. The value lives in the global config, so the
+ * host's `displaySettings` push is what moves this button.
+ */
+const runningSendLabel = computed(() =>
+  display.runningSendBehavior === "steer" ? t("Steer") : t("Queue"),
+);
+const runningSendHint = computed(() =>
+  display.runningSendBehavior === "steer"
+    ? t("Sent as a steer before the next model call")
+    : t("Queued until the agent stops"),
+);
+
+function toggleRunningSendBehavior(): void {
+  post({
+    type: "setRunningSendBehavior",
+    value: display.runningSendBehavior === "steer" ? "queue" : "steer",
+  });
+}
+
 // ------------------------------------------------------------------ attachments
 
 function isImageType(type: string): boolean {
@@ -620,7 +664,7 @@ function onSendClick(): void {
 
 // ------------------------------------------------------------------ toolbar state
 
-const placeholder = t("Ask anything…  (use / for commands, @ for files)");
+const placeholder = t("Ask anything…");
 
 const modelLabel = computed(() => {
   const model = session.model;
@@ -860,6 +904,36 @@ onUnmounted(() => {
           @click="onAttach"
         >
           <span class="codicon codicon-add"></span>
+        </button>
+        <!-- The two triggers as visible controls: discoverable without reading a
+             sentence about them. -->
+        <button
+          id="slash-btn"
+          class="icon-btn trigger-btn"
+          type="button"
+          :title="t('commands')"
+          @click="insertTrigger('/')"
+        >
+          <span class="trigger-glyph">/</span>
+        </button>
+        <button
+          id="at-btn"
+          class="icon-btn trigger-btn"
+          type="button"
+          :title="t('files')"
+          @click="insertTrigger('@')"
+        >
+          <span class="trigger-glyph">@</span>
+        </button>
+        <button
+          id="running-send-btn"
+          class="run-send-toggle"
+          :class="{ 'is-steer': display.runningSendBehavior === 'steer' }"
+          type="button"
+          :title="t('Running message delivery') + ' — ' + runningSendHint"
+          @click="toggleRunningSendBehavior"
+        >
+          {{ runningSendLabel }}
         </button>
         <div
           id="model-wrap"

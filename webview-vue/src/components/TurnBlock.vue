@@ -23,24 +23,61 @@ const overlays = useOverlaysStore();
 const session = useSessionStore();
 
 /**
- * The flow header's own title. When the display setting asks for it, the tool
- * call count leads the line ("Ran 5 tools · 3 Turns · Worked for 12s") — the
- * fold is the only place the count is visible, so it is worth the prefix.
+ * Outcome word of the turn, shared by the fold header and the closing status
+ * line. `stopReason` is written by `message_end`, so it is the one signal that
+ * says the assistant actually finished — a turn with no reason is still running.
+ */
+const outcome = computed(() => {
+  if (props.turn.errorMessage) return t("failed");
+  if (props.turn.stopReason === "aborted") return t("Stopped");
+  if (props.turn.stopReason == null) return t("Working…");
+  return t("Processed");
+});
+
+const outcomeClass = computed(() => {
+  if (props.turn.errorMessage) return "is-error";
+  if (props.turn.stopReason === "aborted") return "is-warn";
+  if (props.turn.stopReason == null) return "is-running";
+  return "is-done";
+});
+
+/**
+ * The flow header's own title. The board's wording leads with the outcome and
+ * the tool call count — "已处理 · 执行工具 5 次 · 3 Turns · Worked for 12s" —
+ * because the fold is the only place either number is visible.
  */
 const workTitle = computed(() => {
-  const title = formatWorkTitle({
-    turns: props.turn.workTurns,
-    duration:
-      props.turn.workStartedAt != null && props.turn.workEndedAt != null
-        ? formatDuration(props.turn.workEndedAt - props.turn.workStartedAt)
-        : "",
-    added: 0,
-    removed: 0,
-  });
-  if (!display.showToolCallCount) return title;
-  const tools = props.turn.workBlocks.filter((entry) => entry.block.kind === "tool").length;
-  return tools > 0 ? t("Ran {0} tools", tools) + " \u00b7 " + title : title;
+  const parts: string[] = [outcome.value];
+  if (display.showToolCallCount) {
+    const tools = props.turn.workBlocks.filter((entry) => entry.block.kind === "tool").length;
+    if (tools > 0) parts.push(t("Ran {0} tools", tools));
+  }
+  parts.push(
+    formatWorkTitle({
+      turns: props.turn.workTurns,
+      duration:
+        props.turn.workStartedAt != null && props.turn.workEndedAt != null
+          ? formatDuration(props.turn.workEndedAt - props.turn.workStartedAt)
+          : "",
+      added: 0,
+      removed: 0,
+    }),
+  );
+  return parts.join(" \u00b7 ");
 });
+
+/** Wall-clock duration of the turn: the user's message to the last block. */
+const turnDuration = computed(() => {
+  const end = props.turn.messageTime;
+  const start = props.turn.user?.timestamp ?? props.turn.workStartedAt;
+  if (end == null || start == null || end < start) return "";
+  return formatDuration(end - start);
+});
+
+/** The closing status line is only meaningful once the turn has content. */
+const hasContent = computed(
+  () => props.turn.workBlocks.length > 0 || props.turn.finalBlocks.length > 0,
+);
 
 const counts = computed(() => formatCounts(props.turn.added, props.turn.removed));
 
@@ -167,9 +204,13 @@ function revertToUser(): void {
     <BlockView :block="entry.block" />
   </div>
 
-  <!-- Every turn closes with its own timestamp, same `.msg-time` on both sides
-       (the user turn's sits after its action buttons). -->
-  <div v-if="turn.messageTime" class="msg-meta">
+  <!-- Every turn closes with its own status line: outcome, duration and the
+       timestamp, the same `.msg-time` the user side uses. -->
+  <div v-if="turn.messageTime" class="msg-meta msg-status-line">
+    <span v-if="hasContent" class="msg-outcome" :class="outcomeClass">{{ outcome }}</span>
+    <span v-if="hasContent && turnDuration" class="msg-duration">
+      {{ t("Worked for {0}", turnDuration) }}
+    </span>
     <span class="msg-time">{{ formatTime(turn.messageTime) }}</span>
   </div>
 </template>

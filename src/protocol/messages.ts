@@ -100,6 +100,12 @@ export type WebviewToExt =
   | { type: "toggleFavorite"; provider: string; modelId: string }
   | { type: "setThinking"; level: string }
   | { type: "setPermission"; mode: PermissionMode }
+  /**
+   * Flip `chatRunningSendBehavior` from the composer's own control. The write
+   * goes to the global config, so the follow-up `displaySettings` push (and any
+   * other window) sees the same value.
+   */
+  | { type: "setRunningSendBehavior"; value: "queue" | "steer" }
   | { type: "setSessionName"; name: string }
   | { type: "pickResource" }
   | { type: "searchFiles"; query: string }

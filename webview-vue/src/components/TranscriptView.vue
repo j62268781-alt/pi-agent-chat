@@ -70,19 +70,15 @@ const isMac = /Mac|iP(hone|ad|od)/i.test(navigator.platform || navigator.userAge
 /** Platform-aware modifier shown in the keycaps, `⌘` on macOS and `Ctrl+` elsewhere. */
 const mod = isMac ? "\u2318" : "Ctrl+";
 
-/** One keycap row of the new-session guide, ported from the legacy `getEmptyHtml`. */
+/** One keycap row of the new-session guide. Deliberately short: the `/` and `@`
+ * triggers and the running-send toggle now sit in the composer as buttons, so
+ * only the keys that have nowhere else to live are listed here. */
 const hints = computed(() => {
   const ctrlEnter = display.sendShortcut === "ctrlEnter";
   return [
-    { key: ctrlEnter ? `${mod}Enter` : "Enter", label: t("send / steer") },
+    { key: ctrlEnter ? `${mod}Enter` : "Enter", label: t("send") },
     { key: ctrlEnter ? "Enter" : "Shift+Enter", label: t("newline") },
-    { key: "Alt+Enter", label: t("follow-up") },
-    { key: "\u2191\u2193", label: t("history") },
-    { key: "/", label: t("commands") },
-    { key: "@", label: t("files") },
     { key: `${mod}V`, label: t("paste image") },
-    { key: "Tab", label: t("complete") },
-    { key: `${mod}U`, label: t("clear") },
   ];
 });
 
@@ -194,6 +190,7 @@ watch(
             {{ t("but this one is") }}
             <span class="empty-accent">{{ t("yours") }}</span>
           </div>
+          <div class="empty-guide">{{ t("Type below — / opens commands, @ cites files.") }}</div>
           <div class="empty-hints">
             <span v-for="hint in hints" :key="hint.label" class="empty-hint">
               <kbd>{{ hint.key }}</kbd

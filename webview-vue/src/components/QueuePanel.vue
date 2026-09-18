@@ -66,6 +66,10 @@ function clearHostQueue(): void {
       <span class="codicon codicon-chevron-right queue-lead"></span>
       <div class="queue-text" :title="item.text">{{ item.text }}</div>
       <span v-if="item.images.length > 0" class="queue-badge">+{{ item.images.length }}</span>
+      <!-- 类型标签: what this entry is, before its buttons say what can be done. -->
+      <span class="queue-type" :class="item.mode === 'steer' ? 'is-steer' : 'is-queue'">
+        {{ item.mode === "steer" ? t("Steer") : t("Queued") }}
+      </span>
       <span class="queue-time">{{ formatTime(item.createdAt) }}</span>
       <div class="queue-actions">
         <button
