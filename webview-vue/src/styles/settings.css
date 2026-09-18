@@ -625,6 +625,12 @@ body {
   display: flex;
   flex-direction: column;
   gap: var(--pi-sp-3);
+  /* Long item lists must scroll inside the tab, not stretch the panel:
+   * agents/skills/prompts can each grow well past one screen. */
+  max-height: min(60vh, 520px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 2px;
   margin-bottom: var(--pi-sp-5);
 }
 
@@ -1270,22 +1276,26 @@ body {
   margin-left: auto;
 }
 
-/* ── ecosystem package banner（pi-subagents / pi-mcp-adapter）────────────── */
+/* ── ecosystem package banner（pi-subagents / pi-mcp-adapter）──────────────
+ * 文案颜色跟随状态色：绿底配绿字、琥珀底配琥珀字（彬哥），深浅主题各自
+ * 用 --pi-success / 琥珀的 color-mix 保持可读。 */
 .eco-package {
   display: flex;
   align-items: flex-start;
   gap: 8px;
+  margin-bottom: var(--pi-sp-5);
   padding: 8px 10px;
   border-radius: 6px;
-  background: color-mix(in srgb, var(--pi-success, #2ba471) 12%, transparent);
-  border: 1px solid color-mix(in srgb, var(--pi-success, #2ba471) 35%, transparent);
+  background: color-mix(in srgb, var(--pi-success, #2ba471) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--pi-success, #2ba471) 40%, transparent);
+  color: color-mix(in srgb, var(--pi-success, #2ba471) 78%, var(--pi-text) 22%);
   font-size: var(--chat-fs-12);
-  color: var(--pi-text);
 }
 
 .eco-package.missing {
-  background: color-mix(in srgb, #d97706 12%, transparent);
-  border-color: color-mix(in srgb, #d97706 40%, transparent);
+  background: color-mix(in srgb, #d97706 14%, transparent);
+  border-color: color-mix(in srgb, #d97706 45%, transparent);
+  color: color-mix(in srgb, #d97706 72%, var(--pi-text) 28%);
 }
 
 .eco-dot {
@@ -1306,5 +1316,6 @@ body {
   font-family: Menlo, Consolas, monospace;
   padding: 1px 5px;
   border-radius: 4px;
-  background: var(--pi-bg-subtle, rgba(127, 127, 127, 0.15));
+  background: color-mix(in srgb, currentColor 14%, transparent);
+  color: inherit;
 }
