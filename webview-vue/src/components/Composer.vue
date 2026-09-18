@@ -771,7 +771,12 @@ onUnmounted(() => {
           <img
             :src="dataUrl(image)"
             :title="t('Click to preview')"
-            @click="overlays.openLightbox(dataUrl(image))"
+            @click="
+              overlays.openLightbox(
+                composer.images.map((img) => ({ src: dataUrl(img), alt: img.name })),
+                index,
+              )
+            "
           />
           <button
             class="attach-remove"

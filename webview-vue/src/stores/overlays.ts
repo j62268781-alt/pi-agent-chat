@@ -59,11 +59,21 @@ export const useOverlaysStore = defineStore("overlays", () => {
 
   const confirmState = ref<RewindConfirm | null>(null);
 
-  /** Full-screen image preview (`Lightbox`); `null` while closed. */
-  const lightbox = ref<{ src: string; alt?: string } | null>(null);
+  /**
+   * Full-screen image preview (`Lightbox`); `null` while closed. Carries the
+   * whole image batch so the lightbox can step between them.
+   */
+  const lightbox = ref<{ items: Array<{ src: string; alt?: string }>; index: number } | null>(null);
 
-  function openLightbox(src: string, alt?: string): void {
-    lightbox.value = { src, alt };
+  function openLightbox(items: Array<{ src: string; alt?: string }>, index = 0): void {
+    lightbox.value = { items, index };
+  }
+
+  /** Step between the batch's images, wrapping at both ends. */
+  function stepLightbox(dir: 1 | -1): void {
+    const lb = lightbox.value;
+    if (!lb || lb.items.length < 2) return;
+    lb.index = (lb.index + dir + lb.items.length) % lb.items.length;
   }
 
   function closeLightbox(): void {
@@ -136,6 +146,7 @@ export const useOverlaysStore = defineStore("overlays", () => {
     confirmState,
     lightbox,
     openLightbox,
+    stepLightbox,
     closeLightbox,
     toast,
     sticky,

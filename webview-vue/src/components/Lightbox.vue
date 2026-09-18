@@ -1,8 +1,9 @@
 <!--
   Full-screen image preview. Opened from the transcript's image strip and the
   composer's attachment tray (`overlays.openLightbox`). Chrome: an × button
-  top-right and the zoom control at the bottom. Closes on backdrop click or
-  Escape; the picture and the control don't propagate, so a stray click never
+  top-right, ‹ › steppers on the sides when the batch has more than one image,
+  and the zoom control pinned to the bottom. Closes on backdrop click or
+  Escape; the picture and the controls don't propagate, so a stray click never
   dismisses it.
 
   Zoom resizes the image's LAYOUT box (not `transform`): a scaled `transform`
@@ -17,7 +18,7 @@ import { useOverlaysStore } from "@/stores/overlays.ts";
 
 const overlays = useOverlaysStore();
 
-/** Relative to the fit-to-screen size; resets whenever a new image opens. */
+/** Relative to the fit-to-screen size; resets whenever the image changes. */
 const SCALE_MIN = 0.25;
 const SCALE_MAX = 4;
 const SCALE_STEP = 1.25;
@@ -27,7 +28,12 @@ const imgEl = ref<HTMLImageElement | null>(null);
 /** The fit-to-screen size, captured once the image has decoded. */
 const baseSize = ref<{ w: number; h: number } | null>(null);
 
+const multi = computed(() => (overlays.lightbox?.items.length ?? 0) > 1);
+const current = computed(() => overlays.lightbox?.items[overlays.lightbox.index] ?? null);
 const scaleLabel = computed(() => `${Math.round(scale.value * 100)}%`);
+const counterLabel = computed(
+  () => `${overlays.lightbox!.index + 1}/${overlays.lightbox!.items.length}`,
+);
 const canZoomOut = computed(() => scale.value > SCALE_MIN + 0.001);
 const canZoomIn = computed(() => scale.value < SCALE_MAX - 0.001);
 
@@ -49,8 +55,6 @@ const imgStyle = computed(() => {
 
 function measure(): void {
   const el = imgEl.value;
-  (window as unknown as { __base?: unknown }).__base = baseSize.value;
-  if (!el || !overlays.lightbox) return;
   if (!el || !overlays.lightbox) return;
   if (el.clientWidth === 0 || el.clientHeight === 0) return; // not laid out yet
   baseSize.value = { w: el.clientWidth, h: el.clientHeight };
@@ -65,11 +69,15 @@ function zoomIn(): void {
 }
 
 function onKey(ev: KeyboardEvent): void {
-  if (ev.key === "Escape" && overlays.lightbox) overlays.closeLightbox();
+  if (!overlays.lightbox) return;
+  if (ev.key === "Escape") overlays.closeLightbox();
+  else if (ev.key === "ArrowLeft" && multi.value) overlays.stepLightbox(-1);
+  else if (ev.key === "ArrowRight" && multi.value) overlays.stepLightbox(1);
 }
 
 watch(
-  () => overlays.lightbox?.src,
+  // A new image (new batch or a step) resets the zoom and the measurement.
+  () => current.value?.src,
   async () => {
     scale.value = 1;
     baseSize.value = null;
@@ -96,24 +104,48 @@ onUnmounted(() => window.removeEventListener("keydown", onKey));
       <span class="codicon codicon-close"></span>
     </button>
 
+    <button
+      v-if="multi"
+      class="lightbox-nav lightbox-prev"
+      type="button"
+      :title="t('Previous image')"
+      @click.stop="overlays.stepLightbox(-1)"
+    >
+      <span class="codicon codicon-chevron-left"></span>
+    </button>
+    <button
+      v-if="multi"
+      class="lightbox-nav lightbox-next"
+      type="button"
+      :title="t('Next image')"
+      @click.stop="overlays.stepLightbox(1)"
+    >
+      <span class="codicon codicon-chevron-right"></span>
+    </button>
+
     <img
+      v-if="current"
       ref="imgEl"
-      :src="overlays.lightbox.src"
-      :alt="overlays.lightbox.alt ?? ''"
-      :title="overlays.lightbox.alt"
+      :key="current.src"
+      :src="current.src"
+      :alt="current.alt ?? ''"
+      :title="current.alt"
       :style="imgStyle"
       @load="measure"
       @click.stop
     />
 
-    <div class="lightbox-zoom" @click.stop>
-      <button type="button" :title="t('Zoom out')" :disabled="!canZoomOut" @click="zoomOut">
-        <span class="codicon codicon-remove"></span>
-      </button>
-      <span class="lightbox-zoom-value">{{ scaleLabel }}</span>
-      <button type="button" :title="t('Zoom in')" :disabled="!canZoomIn" @click="zoomIn">
-        <span class="codicon codicon-add"></span>
-      </button>
+    <div class="lightbox-footer" @click.stop>
+      <span v-if="multi" class="lightbox-count">{{ counterLabel }}</span>
+      <div class="lightbox-zoom">
+        <button type="button" :title="t('Zoom out')" :disabled="!canZoomOut" @click="zoomOut">
+          <span class="codicon codicon-remove"></span>
+        </button>
+        <span class="lightbox-zoom-value">{{ scaleLabel }}</span>
+        <button type="button" :title="t('Zoom in')" :disabled="!canZoomIn" @click="zoomIn">
+          <span class="codicon codicon-add"></span>
+        </button>
+      </div>
     </div>
   </div>
 </template>

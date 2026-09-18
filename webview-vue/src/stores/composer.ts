@@ -14,6 +14,8 @@ export interface PendingImage {
   type: "image";
   data: string;
   mimeType: string;
+  /** Original file name, used as the lightbox image's alt/title. */
+  name?: string;
 }
 
 export type ComposerPopup = "model" | "thinking" | "permission" | "sessions" | null;

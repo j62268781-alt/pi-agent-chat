@@ -89,7 +89,15 @@ function revertToUser(): void {
           :key="index"
           :src="imageSrc(image)"
           :alt="turn.user.text || ''"
-          @click.stop="overlays.openLightbox(imageSrc(image), turn.user?.text || undefined)"
+          @click.stop="
+            overlays.openLightbox(
+              turn.user.images.map((img) => ({
+                src: imageSrc(img),
+                alt: turn.user?.text || undefined,
+              })),
+              index,
+            )
+          "
         />
       </div>
       <div v-if="turn.user.text" class="user-text">{{ turn.user.text }}</div>

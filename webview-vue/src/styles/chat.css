@@ -55,6 +55,12 @@
 .codicon-chevron-down::before {
   content: "\eab4";
 }
+.codicon-chevron-left::before {
+  content: "\eab5";
+}
+.codicon-chevron-right::before {
+  content: "\eab6";
+}
 .codicon-shield::before {
   content: "\eb53";
 }
@@ -4548,4 +4554,90 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 .session-item-del {
   width: 20px;
   height: 20px;
+}
+
+/* ── lightbox：多图切换与计数 ─────────────────────────────────────────────── */
+.lightbox-nav {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid var(--pi-border-divider);
+  border-radius: var(--pi-r-full, 999px);
+  background: var(--pi-bg-raised);
+  color: var(--pi-text);
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+}
+
+.lightbox-nav:hover {
+  background: var(--pi-bg-hover);
+}
+
+.lightbox-nav .codicon {
+  font-size: 14px;
+}
+
+.lightbox-prev {
+  left: 16px;
+}
+
+.lightbox-next {
+  right: 16px;
+}
+
+.lightbox-footer {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.lightbox-count {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 12px;
+  border-radius: var(--pi-r-full, 999px);
+  background: var(--pi-bg-raised);
+  color: var(--pi-text);
+  font-size: var(--chat-fs-12);
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+}
+
+/* ── 长滚动容器恢复细滚动条（全局 width:0 隐藏导致长内容无位置感知）──────── */
+.messages,
+#sessions-list,
+.lightbox {
+  scrollbar-width: thin;
+  scrollbar-color: var(--pi-scrollbar, rgba(127, 127, 127, 0.4)) transparent;
+}
+
+.messages::-webkit-scrollbar,
+#sessions-list::-webkit-scrollbar,
+.lightbox::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+  display: block;
+}
+
+.messages::-webkit-scrollbar-thumb,
+#sessions-list::-webkit-scrollbar-thumb,
+.lightbox::-webkit-scrollbar-thumb {
+  background: var(--pi-scrollbar, rgba(127, 127, 127, 0.4));
+  border-radius: 3px;
+}
+
+.messages::-webkit-scrollbar-track,
+#sessions-list::-webkit-scrollbar-track,
+.lightbox::-webkit-scrollbar-track {
+  background: transparent;
 }

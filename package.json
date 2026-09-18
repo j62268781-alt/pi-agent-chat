@@ -308,14 +308,10 @@
             "type": "string",
             "enum": [
               "vscode_get_diagnostics",
-              "todo",
-              "questionnaire",
-              "subagent"
+              "questionnaire"
             ]
           },
-          "default": [
-            "subagent"
-          ],
+          "default": [],
           "description": "%pi.config.disabledTools.desc%"
         },
         "pi-agent-chat.permission.mode": {
