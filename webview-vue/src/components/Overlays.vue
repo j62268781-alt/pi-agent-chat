@@ -3,7 +3,7 @@
   `extension_ui_request`, the info panel, and the message context menu.
 -->
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { post } from "@/lib/bridge.ts";
 import { renderMarkdown } from "@/lib/markdown.ts";
 import { t } from "@/lib/i18n.ts";
@@ -41,6 +41,32 @@ const dialogMessage = computed(() =>
 const dialogOptions = computed<string[]>(() =>
   Array.isArray(overlays.dialog?.options) ? (overlays.dialog.options as string[]) : [],
 );
+/**
+ * pi's permission gate asks via `ui.select(title, ["Allow", "Block"])` — a
+ * safety decision that deserves real buttons, not a native `<select>`. Small
+ * option sets (≤3) render as a button group; the negative choice ("Block")
+ * is styled as the danger action so "allow" is never the accidental default.
+ */
+const isChoiceDialog = computed(
+  () => overlays.dialog?.method === "select" && dialogOptions.value.length > 0,
+);
+const isDangerous = computed(() => /danger/i.test(dialogTitle.value));
+
+/** Focus the first action button when a choice dialog opens. */
+const actionsEl = ref<HTMLElement | null>(null);
+watch(dialogRequest, async () => {
+  if (!overlays.dialog) return;
+  dialogValue.value = String((overlays.dialog?.defaultValue as string | undefined) ?? "");
+  await nextTick();
+  actionsEl.value?.querySelector<HTMLElement>("button")?.focus();
+});
+
+function onDialogKeydown(ev: KeyboardEvent): void {
+  if (ev.key === "Escape") {
+    ev.preventDefault();
+    respondDialog({ cancelled: true });
+  }
+}
 
 // ------------------------------------------------------------- info panel
 
@@ -115,12 +141,22 @@ function menuRevert(): void {
 
   <!-- dialog requested by pi -->
   <div v-if="overlays.dialog" class="overlay">
-    <div class="dialog">
-      <h3 v-if="dialogTitle" class="dialog-title">{{ dialogTitle }}</h3>
+    <div
+      class="dialog"
+      :class="{ 'dialog-danger': isDangerous }"
+      role="dialog"
+      aria-modal="true"
+      :data-method="overlays.dialog.method"
+      @keydown="onDialogKeydown"
+    >
+      <h3 v-if="dialogTitle" class="dialog-title">
+        <span v-if="isDangerous" class="codicon codicon-warning dialog-warn-icon"></span>
+        <span class="dialog-title-text">{{ dialogTitle }}</span>
+      </h3>
       <p v-if="dialogMessage" class="dialog-message">{{ dialogMessage }}</p>
 
       <select
-        v-if="overlays.dialog.method === 'select'"
+        v-if="overlays.dialog.method === 'select' && !isChoiceDialog"
         v-model="dialogValue"
         class="dialog-select"
       >
@@ -129,29 +165,48 @@ function menuRevert(): void {
 
       <input
         v-else-if="overlays.dialog.method === 'input' || overlays.dialog.method === 'editor'"
+        ref="actionsEl"
         v-model="dialogValue"
         class="dialog-input"
         type="text"
         @keydown.enter.prevent="respondDialog({ value: dialogValue, confirmed: true })"
       />
 
-      <footer class="dialog-actions">
-        <button class="btn" type="button" @click="respondDialog({ cancelled: true })">
-          {{ t("Cancel") }}
-        </button>
-        <button
-          class="btn btn-primary"
-          type="button"
-          @click="
-            respondDialog(
-              overlays.dialog.method === 'confirm'
-                ? { confirmed: true }
-                : { value: dialogValue, confirmed: true },
-            )
-          "
-        >
-          {{ overlays.dialog.method === "confirm" ? t("Confirm") : t("OK") }}
-        </button>
+      <footer ref="actionsEl" class="dialog-actions" :class="{ 'choice-group': isChoiceDialog }">
+        <template v-if="isChoiceDialog">
+          <button
+            v-for="(option, index) in dialogOptions"
+            :key="option"
+            class="btn choice-btn"
+            :class="{
+              'choice-allow': /allow|yes|accept/i.test(option),
+              'choice-block':
+                /block|no|deny|cancel/i.test(option) || index === dialogOptions.length - 1,
+            }"
+            type="button"
+            @click="respondDialog({ value: option, confirmed: true })"
+          >
+            {{ option }}
+          </button>
+        </template>
+        <template v-else>
+          <button class="btn" type="button" @click="respondDialog({ cancelled: true })">
+            {{ t("Cancel") }}
+          </button>
+          <button
+            class="btn btn-primary"
+            type="button"
+            @click="
+              respondDialog(
+                overlays.dialog.method === 'confirm'
+                  ? { confirmed: true }
+                  : { value: dialogValue, confirmed: true },
+              )
+            "
+          >
+            {{ overlays.dialog.method === "confirm" ? t("Confirm") : t("OK") }}
+          </button>
+        </template>
       </footer>
     </div>
   </div>
