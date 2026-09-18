@@ -1,0 +1,13 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    // Only the ambient type sets differ from the root config: the suite runs
+    // under mocha inside the VS Code extension host, so `describe`/`it` come
+    // from @types/mocha. `module`/`moduleResolution` are inherited as nodenext
+    // because tsgo (TypeScript native preview) has removed `node10`, which is
+    // what `"moduleResolution": "node"` resolves to. The bundle is still emitted
+    // as CommonJS by rolldown; that is an output concern, not a typing one.
+    "types": ["node", "vscode", "mocha"]
+  },
+  "include": ["."]
+}

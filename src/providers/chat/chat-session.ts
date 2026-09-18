@@ -27,7 +27,7 @@ import type {
   RpcSessionEntry,
   RpcSessionStats,
 } from "../../protocol/rpc.ts";
-import type { SessionListItem } from "../../protocol/messages.ts";
+import type { SessionListItem, WebviewToExt } from "../../protocol/messages.ts";
 import { createRpcClient } from "../../services/rpc/client.ts";
 import { mergeBuiltinCommands, parseBuiltin } from "../../services/chat/builtin-commands.ts";
 import { readPiChangelog } from "../../utils/changelog.ts";
@@ -72,6 +72,8 @@ export interface ChatSession {
   sync(opts: ChatSessionUpdate): void;
   switchTo(sessionFile: string): Promise<void>;
   newSession(): Promise<void>;
+  /** Dev-harness stimulus: dispatch a message exactly as the webview would. */
+  sendFromWebview(msg: WebviewToExt): Promise<void>;
   dispose(): void;
 }
 
@@ -1275,6 +1277,7 @@ export async function createChatSession(
     sync,
     switchTo,
     newSession,
+    sendFromWebview: (msg) => onMessage(msg as { type: string; [k: string]: unknown }),
     dispose,
   };
   allSessions.add(session);

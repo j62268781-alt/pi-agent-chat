@@ -55,6 +55,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     bridgeConfig: currentBridgeConfig,
   });
 
+  const { shouldRegisterTestingCommands } = await import("./commands/testing-gate.ts");
+  if (shouldRegisterTestingCommands(context.extensionMode)) {
+    const { registerTestingCommands } = await import("./commands/testing.ts");
+    context.subscriptions.push(...registerTestingCommands());
+  }
+
   // In editor-panel mode, reopen whatever chat panels were alive last session.
   if (resolveUiMode() === "webview") restoreTrackedPanels(extensionUri, chatTracker);
 }

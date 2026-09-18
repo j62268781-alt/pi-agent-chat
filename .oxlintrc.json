@@ -2,5 +2,10 @@
   "$schema": "https://unpkg.com/oxlint/configuration_schema.json",
   "plugins": ["unicorn", "typescript", "oxc"],
   "rules": {},
-  "ignorePatterns": ["webview-vue/src/lib/model-icons-data.ts", "webview-vue/dist", "dist"]
+  "ignorePatterns": [
+    "webview-vue/src/lib/model-icons-data.ts",
+    "webview-vue/dist",
+    "dist",
+    "test/e2e/.build"
+  ]
 }
