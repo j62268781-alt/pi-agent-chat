@@ -72,15 +72,14 @@ export async function addSelectionToChat(): Promise<void> {
     toastNoChat();
     return;
   }
-  const rel = displayPath(editor.document.uri);
-  const start = editor.selection.start.line + 1;
-  const end = editor.selection.end.line + 1;
-  const text = editor.document.getText(editor.selection);
-  const lang = extensionLanguage(editor.document.uri);
-  const rangeLabel = start === end ? `${start}` : `${start}-${end}`;
-  const fence = "`".repeat(Math.max(3, longestBacktickRun(text) + 1));
-  const block = `**${rel}:${rangeLabel}**\n${fence}${lang}\n${text}\n${fence}\n`;
-  appendToChat(target, block);
+  const chip = {
+    id: `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`,
+    path: displayPath(editor.document.uri),
+    startLine: editor.selection.start.line + 1,
+    endLine: editor.selection.end.line + 1,
+  };
+  target.post({ type: "addContextChips", chips: [chip] });
+  target.reveal();
 }
 
 export async function addFileToChat(uri?: vscode.Uri): Promise<void> {
@@ -99,70 +98,4 @@ export async function addFileToChat(uri?: vscode.Uri): Promise<void> {
     return;
   }
   appendToChat(target, `@${displayPath(targetUri)} `);
-}
-
-function longestBacktickRun(s: string): number {
-  let max = 0;
-  let cur = 0;
-  for (let i = 0; i < s.length; i++) {
-    if (s.charAt(i) === "`") {
-      cur++;
-      if (cur > max) max = cur;
-    } else cur = 0;
-  }
-  return max;
-}
-
-function extensionLanguage(uri: vscode.Uri): string {
-  const ext = uri.path.slice(uri.path.lastIndexOf(".") + 1).toLowerCase();
-  const map: Record<string, string> = {
-    ts: "ts",
-    tsx: "tsx",
-    js: "js",
-    mjs: "js",
-    cjs: "js",
-    jsx: "jsx",
-    json: "json",
-    jsonc: "json",
-    css: "css",
-    scss: "scss",
-    less: "less",
-    html: "html",
-    htm: "html",
-    xml: "xml",
-    svg: "xml",
-    md: "md",
-    markdown: "md",
-    py: "python",
-    rb: "ruby",
-    go: "go",
-    rs: "rust",
-    java: "java",
-    kt: "kotlin",
-    swift: "swift",
-    c: "c",
-    h: "c",
-    cpp: "cpp",
-    cc: "cpp",
-    cxx: "cpp",
-    hpp: "cpp",
-    cs: "csharp",
-    php: "php",
-    sh: "bash",
-    bash: "bash",
-    zsh: "bash",
-    fish: "bash",
-    ps1: "powershell",
-    bat: "bat",
-    cmd: "bat",
-    sql: "sql",
-    yaml: "yaml",
-    yml: "yaml",
-    toml: "toml",
-    ini: "ini",
-    cfg: "ini",
-    vue: "vue",
-    svelte: "svelte",
-  };
-  return map[ext] ?? "";
 }

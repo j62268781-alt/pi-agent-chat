@@ -140,6 +140,10 @@ export function useHostLink() {
         composer.insert(message.text);
         break;
 
+      case "addContextChips":
+        composer.addContextChips(message.chips);
+        break;
+
       case "files":
         if (
           composer.autocomplete?.kind === "file" &&

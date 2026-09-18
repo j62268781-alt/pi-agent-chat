@@ -120,6 +120,7 @@ export type WebviewToExt =
   | { type: "deleteSession"; file: string }
   | { type: "newSession" }
   | { type: "openSettings" }
+  | { type: "openContextChip"; path: string; line: number }
   | { type: "rewindAccept" }
   | { type: "rewindAcceptFile"; id: number }
   | { type: "rewindRevert" }
@@ -131,6 +132,18 @@ export type WebviewToExt =
       sessionId: string;
       basename: string;
     };
+
+/** A code-context chip in the composer: a pointer to `path:L12-45`. The
+ * composer renders only the tag (never the code) and clicking it reveals the
+ * location in VS Code; the prompt text carries the same `[path:L]` tag line so
+ * the model reads that range with its read tool. */
+export interface ContextChip {
+  id: string;
+  /** Workspace-relative path (resolvable by the host for reveal). */
+  path: string;
+  startLine: number;
+  endLine: number;
+}
 
 // ---------------------------------------------------------------------------
 // extension -> webview
@@ -160,6 +173,7 @@ export type ExtToWebview =
   | { type: "error"; message: string }
   | { type: "prefillInput"; text: string }
   | { type: "appendInput"; text: string }
+  | { type: "addContextChips"; chips: ContextChip[] }
   | { type: "files"; query: string; files: string[] };
 
 /** Narrowing helper so both sides can `switch` on a discriminated union. */

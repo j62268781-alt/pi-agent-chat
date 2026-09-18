@@ -7,7 +7,7 @@
 
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
-import type { StreamingBehavior } from "@protocol/messages";
+import type { ContextChip, StreamingBehavior } from "@protocol/messages";
 import { segmentsFromText, serializeSegments, type Segment } from "@/lib/input-tokens";
 
 export interface PendingImage {
@@ -23,6 +23,8 @@ export type ComposerPopup = "model" | "thinking" | "permission" | "sessions" | n
 export const useComposerStore = defineStore("composer", () => {
   const draft = ref("");
   const images = ref<PendingImage[]>([]);
+  /** Code-context chips ("file:L12-45") added from the editor/explorer menus. */
+  const contextChips = ref<ContextChip[]>([]);
   const history = ref<string[]>([]);
   const historyCursor = ref(-1);
 
@@ -42,7 +44,9 @@ export const useComposerStore = defineStore("composer", () => {
   const streamingBehavior = ref<StreamingBehavior | undefined>(undefined);
 
   const segments = computed<Segment[]>(() => segmentsFromText(draft.value));
-  const hasContent = computed(() => draft.value.trim().length > 0 || images.value.length > 0);
+  const hasContent = computed(
+    () => draft.value.trim().length > 0 || images.value.length > 0 || contextChips.value.length > 0,
+  );
   const isEmpty = computed(() => !hasContent.value && autocomplete.value === null);
 
   /** Flat text sent to the host, with chips re-serialized as source syntax. */
@@ -61,6 +65,7 @@ export const useComposerStore = defineStore("composer", () => {
   function clear(): void {
     draft.value = "";
     images.value = [];
+    contextChips.value = [];
     autocomplete.value = null;
     historyCursor.value = -1;
   }
@@ -100,6 +105,14 @@ export const useComposerStore = defineStore("composer", () => {
     images.value = [...images.value, ...next];
   }
 
+  function addContextChips(next: ContextChip[]): void {
+    contextChips.value = [...contextChips.value, ...next];
+  }
+
+  function removeContextChip(id: string): void {
+    contextChips.value = contextChips.value.filter((chip) => chip.id !== id);
+  }
+
   function removeImage(index: number): void {
     images.value = images.value.filter((_, position) => position !== index);
   }
@@ -121,6 +134,7 @@ export const useComposerStore = defineStore("composer", () => {
   return {
     draft,
     images,
+    contextChips,
     history,
     openPopup,
     modelSearch,
@@ -138,6 +152,8 @@ export const useComposerStore = defineStore("composer", () => {
     recall,
     addImages,
     removeImage,
+    addContextChips,
+    removeContextChip,
     closePopups,
     togglePopup,
   };

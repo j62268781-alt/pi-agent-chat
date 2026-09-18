@@ -4641,3 +4641,68 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 .lightbox::-webkit-scrollbar-track {
   background: transparent;
 }
+
+/* ── context chips（编辑器"添加到聊天"的引用标记）────────────────────────────
+ * 输入框上方的轻量 tag：文件名 + 行号范围。pill 本体点击在编辑器中打开该位置
+ * （openContextChip），× 只负责移除。发送时 chips 序列化为一行
+ * `[path:L12-45]` tag 前缀，代码本体永远不进输入框或 transcript。 */
+.context-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0 2px;
+  margin-bottom: 6px;
+}
+
+.context-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 100%;
+  padding: 3px 4px 3px 8px;
+  border: 1px solid var(--pi-border);
+  border-radius: var(--pi-r-full, 999px);
+  background: var(--pi-bg-subtle);
+  font-size: var(--chat-fs-12);
+  cursor: pointer;
+  user-select: none;
+}
+
+.context-chip:hover {
+  border-color: var(--pi-brand);
+}
+
+.context-chip .codicon-file-text {
+  font-size: 12px;
+  color: var(--pi-brand);
+}
+
+.context-chip-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--pi-text);
+}
+
+.context-chip-x {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: none;
+  border-radius: var(--pi-r-full, 999px);
+  background: transparent;
+  color: var(--pi-text-secondary);
+  cursor: pointer;
+}
+
+.context-chip-x:hover {
+  background: var(--pi-bg-hover);
+  color: var(--pi-text);
+}
+
+.context-chip-x .codicon {
+  font-size: 11px;
+}

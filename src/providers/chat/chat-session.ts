@@ -1013,6 +1013,21 @@ export async function createChatSession(
       case "openSettings":
         void vscode.commands.executeCommand("pi-agent-chat.openSettings");
         break;
+      case "openContextChip": {
+        // Reveal the chip's file at its start line: `path` is workspace-
+        // relative (addSelectionToChat stored it that way), so resolve against
+        // the first workspace folder and fall back to an absolute file uri.
+        const folder = vscode.workspace.workspaceFolders?.[0];
+        const relPath = String(msg.path ?? "")
+          .split("/")
+          .join(sep);
+        const uri = folder ? vscode.Uri.joinPath(folder.uri, relPath) : vscode.Uri.file(relPath);
+        const line = Math.max(0, (Number(msg.line) || 1) - 1);
+        void vscode.window
+          .showTextDocument(uri, { selection: new vscode.Range(line, 0, line, 0), preview: true })
+          .then(undefined, () => {});
+        break;
+      }
       case "setPermission":
         void rpc
           .prompt(`/permission ${String(msg.mode ?? "")}`, streaming ? "steer" : undefined)

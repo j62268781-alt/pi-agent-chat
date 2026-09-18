@@ -27,6 +27,7 @@ import {
 import { getModelIcon, modelIconHtml } from "@/lib/model-icons.ts";
 import { shortenWorkspacePath } from "@/lib/paths.ts";
 import { useComposerStore, type PendingImage } from "@/stores/composer.ts";
+import type { ContextChip } from "@protocol/messages";
 import { useOverlaysStore } from "@/stores/overlays.ts";
 import { usePendingStore } from "@/stores/pending.ts";
 import { useSessionStore } from "@/stores/session.ts";
@@ -486,6 +487,14 @@ function addImageFile(file: File): void {
   reader.readAsDataURL(file);
 }
 
+/** Chip label: `App.tsx L12` / `App.tsx L12-L45` — path basename + line range. */
+function chipLabel(chip: ContextChip): string {
+  const base = chip.path.slice(chip.path.lastIndexOf("/") + 1);
+  const range =
+    chip.startLine === chip.endLine ? `L${chip.startLine}` : `L${chip.startLine}-L${chip.endLine}`;
+  return `${base} ${range}`;
+}
+
 function dataUrl(image: PendingImage): string {
   return `data:${image.mimeType};base64,${image.data}`;
 }
@@ -543,7 +552,14 @@ function sendPrompt(explicitQueue?: boolean): void {
     data: image.data,
     mimeType: image.mimeType,
   }));
-  if (!message.trim() && images.length === 0) return;
+  // Context chips serialize to a lightweight `[path:L12-45]` tag line in front
+  // of the text — the model reads that range itself; the code never enters the
+  // transcript, so there is nothing heavy to render.
+  const chipTags = composer.contextChips
+    .map((chip) => `[${chip.path}:${chip.startLine}-${chip.endLine}]`)
+    .join(" ");
+  const messageWithTagLine = chipTags ? `${chipTags}\n${message}` : message;
+  if (!messageWithTagLine.trim() && images.length === 0) return;
 
   const streaming = session.isStreaming;
   // While the agent works, `chatRunningSendBehavior` decides whether the
@@ -551,25 +567,25 @@ function sendPrompt(explicitQueue?: boolean): void {
   // steering prompt right away. Alt+Enter always holds it.
   const hold = streaming && (explicitQueue === true || display.runningSendBehavior === "queue");
 
-  composer.remember(message);
+  composer.remember(messageWithTagLine);
   composer.clear();
   historySnapshot = null;
   inputEl.value?.focus();
 
   if (hold) {
-    pending.enqueue(message, images);
+    pending.enqueue(messageWithTagLine, images);
     return;
   }
   if (streaming) {
     post({
       type: "prompt",
-      message,
+      message: messageWithTagLine,
       streamingBehavior: "steer",
       ...(images.length > 0 ? { images } : {}),
     });
     return;
   }
-  post({ type: "prompt", message, ...(images.length > 0 ? { images } : {}) });
+  post({ type: "prompt", message: messageWithTagLine, ...(images.length > 0 ? { images } : {}) });
 }
 
 const stopMode = computed(() => session.isStreaming);
@@ -766,6 +782,26 @@ onUnmounted(() => {
       @select="onAutocompleteSelect"
     />
     <div class="composer-box">
+      <div v-if="composer.contextChips.length > 0" class="context-chips">
+        <span
+          v-for="chip in composer.contextChips"
+          :key="chip.id"
+          class="context-chip"
+          :title="t('Open in editor')"
+          @click="post({ type: 'openContextChip', path: chip.path, line: chip.startLine })"
+        >
+          <span class="codicon codicon-file-text"></span>
+          <span class="context-chip-label">{{ chipLabel(chip) }}</span>
+          <button
+            class="context-chip-x"
+            type="button"
+            :aria-label="t('Remove')"
+            @click.stop="composer.removeContextChip(chip.id)"
+          >
+            <span class="codicon codicon-close"></span>
+          </button>
+        </span>
+      </div>
       <div v-if="composer.images.length > 0" id="attach-preview" class="attach-preview">
         <div v-for="(image, index) in composer.images" :key="index" class="attach-thumb">
           <img
