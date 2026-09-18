@@ -28,7 +28,6 @@
   "Clear queued messages": "清空待发送消息",
   "Close": "关闭",
   "Collapse": "折叠",
-  "commands": "命令",
   "Compacted from {0} tokens": "已压缩 {0} 个 token",
   "Compacting…": "正在压缩…",
   "[compaction]": "[压缩]",

@@ -200,17 +200,35 @@ function commandSuggestions(query: string): Suggestion[] {
   const scored: Array<{ suggestion: Suggestion; score: number; order: number }> = [];
   session.commands.forEach((command, order) => {
     const match = scoreCommand(command.name, needle);
-    if (!match) return;
+    if (match) {
+      scored.push({
+        suggestion: {
+          value: command.name,
+          name: `/${command.name}`,
+          detail: command.description ?? "",
+          source: command.source,
+          // The label carries the leading `/`, so shift the highlight indices.
+          matches: match.indices ? match.indices.map((index) => index + 1) : undefined,
+        },
+        score: match.score,
+        order,
+      });
+      return;
+    }
+    // No name hit: fall back to the description, so a half-remembered command
+    // can be found by what it does ("压缩" → /compact). Ranked below every name
+    // hit, ordered by where in the text the query sits.
+    const description = command.description ?? "";
+    const hit = needle ? description.toLowerCase().indexOf(needle) : -1;
+    if (hit < 0) return;
     scored.push({
       suggestion: {
         value: command.name,
         name: `/${command.name}`,
-        detail: command.description ?? "",
+        detail: description,
         source: command.source,
-        // The label carries the leading `/`, so shift the highlight indices.
-        matches: match.indices ? match.indices.map((index) => index + 1) : undefined,
       },
-      score: match.score,
+      score: 200 - hit,
       order,
     });
   });
@@ -469,19 +487,18 @@ function onKeydown(ev: KeyboardEvent): void {
 // ------------------------------------------------------------------ intake
 
 /**
- * Insert a trigger character and open its dropdown.
+ * Insert the `@` trigger and open its dropdown.
  *
- * The empty state used to spell the whole keyboard out; these two buttons are
- * what replaced that lesson — `/` and `@` are now visible controls, so the
- * placeholder only has to say "type here".
+ * Only `@` gets a button: `/` is a familiar first keystroke for a command list
+ * that is searchable anyway, so the toolbar keeps one trigger instead of two.
  */
-function insertTrigger(trigger: "/" | "@"): void {
+function insertAtTrigger(): void {
   const el = inputEl.value;
   if (!el) return;
   el.focus();
   const text = serializeInput(el);
   const caret = getCaretOffset(el);
-  const next = text.slice(0, caret) + trigger + text.slice(caret);
+  const next = text.slice(0, caret) + "@" + text.slice(caret);
   composer.draft = next;
   renderSegments(el, segmentsFromText(next), caret + 1);
   autoGrow();
@@ -905,23 +922,14 @@ onUnmounted(() => {
         >
           <span class="codicon codicon-add"></span>
         </button>
-        <!-- The two triggers as visible controls: discoverable without reading a
-             sentence about them. -->
-        <button
-          id="slash-btn"
-          class="icon-btn trigger-btn"
-          type="button"
-          :title="t('commands')"
-          @click="insertTrigger('/')"
-        >
-          <span class="trigger-glyph">/</span>
-        </button>
+        <!-- Only the `@` trigger is a button: `/` is a familiar first keystroke
+             and the command list is searchable, so it needs no chrome. -->
         <button
           id="at-btn"
           class="icon-btn trigger-btn"
           type="button"
           :title="t('files')"
-          @click="insertTrigger('@')"
+          @click="insertAtTrigger()"
         >
           <span class="trigger-glyph">@</span>
         </button>

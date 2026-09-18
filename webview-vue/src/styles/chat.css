@@ -4927,3 +4927,26 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   font-size: var(--chat-fs-12);
   color: var(--pi-text-muted);
 }
+
+/* ── 命令/文件补全弹窗收身 ───────────────────────────────────────────────────
+ * 240px 高 + 每行 8/12px 内边距的弹窗会盖住大半个侧栏。收到 ~160px、行内边距减半，
+ * 副标题与来源各自只占一行，超出直接省略号 —— 长 source（pi 扩展 id）此前会把行撑成
+ * 两三行，是弹窗"过高"的另一半原因。 */
+.autocomplete {
+  max-height: 160px;
+  padding: 4px;
+}
+
+.autocomplete-item {
+  min-width: 0;
+  padding: 4px 8px;
+}
+
+.autocomplete-item .ac-name,
+.autocomplete-item .ac-desc,
+.autocomplete-item .ac-source {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
