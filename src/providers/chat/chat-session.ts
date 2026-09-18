@@ -395,7 +395,9 @@ export async function createChatSession(
       list.sort(function (a, b) {
         return (b.modified?.getTime() ?? 0) - (a.modified?.getTime() ?? 0);
       });
-      items = list.slice(0, 30).map(function (s) {
+      // Full history, newest first — the list scrolls, no point truncating:
+      // real workspaces hold dozens of sessions, not hundreds (measured 21).
+      items = list.map(function (s) {
         return {
           file: s.path,
           name: s.name ?? "",

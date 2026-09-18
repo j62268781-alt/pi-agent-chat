@@ -5,9 +5,7 @@ export const BTW_EXTENSION_PATH = "pi-extensions/btw.ts";
 export const TODO_EXTENSION_PATH = "pi-extensions/todo.ts";
 export const PERMISSION_GATE_EXTENSION_PATH = "pi-extensions/permission-gate.ts";
 export const QUESTIONNAIRE_EXTENSION_PATH = "pi-extensions/questionnaire.ts";
-export const SUBAGENT_EXTENSION_PATH = "pi-extensions/subagent/index.ts";
 export const REWIND_CODE_EXTENSION_PATH = "pi-extensions/rewind-code.ts";
-export const BUILTIN_AGENTS_DIR = "pi-extensions/agents";
 
 export const BRIDGE_BOOTSTRAP_PROMPT =
   "You are running inside VS Code with a live IDE bridge. Prefer VS Code bridge tools over manual file reads or guesses: use them to get editor state, selection, diagnostics, symbols, definitions, hovers, references, code actions, workspace symbols, and open editors. After edits, check **vscode_get_diagnostics** for real-time type/lint errors from the IDE instead of running separate commands.";

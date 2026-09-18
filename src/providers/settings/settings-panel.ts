@@ -622,11 +622,11 @@ function computeSourceLabel(si: { origin: string; source: string; scope: string 
   return si.source || "other";
 }
 
-// Fork change: `pi-agent-chat.disabledTools` defaults to `["subagent"]`, so the bundled
-// subagent extension never registers a tool and `pi-extensions/agents/` feeds no live agent.
-// Point the Agents tab at a non-existent directory so `explore` / `general` stop being
-// reported as "built-in" (they now live in `~/.pi/agent/agents/` as pi-subagents-native
-// definitions) and stop blocking same-name creation in user / project scope.
+// Fork change: the bundled subagent extension and its built-in agent definitions
+// were removed — subagents come from the user-installed pi-subagents package, and
+// agent definitions live in `~/.pi/agent/agents/` (pi-subagents-native). Point the
+// Agents tab at a non-existent directory so nothing is reported as "built-in" and
+// user / project scope creation is never blocked by a same-name builtin.
 function getBuiltinAgentsDir(extensionUri: vscode.Uri): string {
   return join(extensionUri.fsPath, "pi-extensions", "agents.retired");
 }

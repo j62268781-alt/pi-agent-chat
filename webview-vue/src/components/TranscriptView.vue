@@ -30,6 +30,40 @@ const stuck = ref(true);
 /** Distance from the bottom within which the view is considered "at bottom". */
 const STICK_THRESHOLD_PX = 48;
 
+/** Scroll position that triggers unlocking one more batch of older turns. */
+const EXPAND_THRESHOLD_PX = 200;
+
+/** Guard against re-entrant expansion while a batch is still settling. */
+let expanding = false;
+
+/**
+ * Slack-style backwards paging: unlock one more batch of older turns and keep
+ * the viewport parked on the message the user is reading. The DOM grows at the
+ * TOP when the window moves, which would otherwise fling the user to the new
+ * bottom — so after the batch mounts, `scrollTop` is compensated by the exact
+ * height that was prepended (measured as `scrollHeight` delta, nextTick after
+ * the mount). Repeat while the view is still near the top, in case a batch is
+ * shorter than the trigger threshold.
+ */
+async function expandOlderBatch(): Promise<void> {
+  const el = scroller.value;
+  if (!el || expanding || !transcript.hasMoreAbove) return;
+  expanding = true;
+  try {
+    let guard = 0;
+    while (el.scrollTop < EXPAND_THRESHOLD_PX && transcript.hasMoreAbove && guard < 8) {
+      guard += 1;
+      const before = el.scrollHeight;
+      const offset = el.scrollTop;
+      transcript.expandOlder();
+      await nextTick();
+      el.scrollTop = offset + (el.scrollHeight - before);
+    }
+  } finally {
+    expanding = false;
+  }
+}
+
 let observer: ResizeObserver | undefined;
 
 const isMac = /Mac|iP(hone|ad|od)/i.test(navigator.platform || navigator.userAgent || "");
@@ -56,6 +90,10 @@ function onScroll(): void {
   const el = scroller.value;
   if (!el) return;
   stuck.value = el.scrollTop + el.clientHeight >= el.scrollHeight - STICK_THRESHOLD_PX;
+  // Near the top with history still unmounted: page in older turns. The
+  // compensation inside runs after nextTick, so this handler re-fires for the
+  // settled position; `expanding` serialises the batches.
+  void expandOlderBatch();
 }
 
 async function scrollToBottom(): Promise<void> {
@@ -164,7 +202,7 @@ watch(
           </div>
         </div>
 
-        <TurnBlock v-for="turn in transcript.turns" :key="turn.id" :turn="turn" />
+        <TurnBlock v-for="turn in transcript.visibleTurns" :key="turn.id" :turn="turn" />
       </div>
     </div>
 

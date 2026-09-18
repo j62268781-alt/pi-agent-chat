@@ -4,11 +4,9 @@ import * as vscode from "vscode";
 import {
   BRIDGE_EXTENSION_PATH,
   BTW_EXTENSION_PATH,
-  BUILTIN_AGENTS_DIR,
   PERMISSION_GATE_EXTENSION_PATH,
   QUESTIONNAIRE_EXTENSION_PATH,
   REWIND_CODE_EXTENSION_PATH,
-  SUBAGENT_EXTENSION_PATH,
   TODO_EXTENSION_PATH,
 } from "../../utils/constants.ts";
 import { resolvePiBinary } from "./binary.ts";
@@ -91,8 +89,6 @@ export function createPiShellArgs(options: {
     "-e",
     join(options.extensionUri.fsPath, QUESTIONNAIRE_EXTENSION_PATH),
     "-e",
-    join(options.extensionUri.fsPath, SUBAGENT_EXTENSION_PATH),
-    "-e",
     join(options.extensionUri.fsPath, BTW_EXTENSION_PATH),
     "-e",
     join(options.extensionUri.fsPath, PERMISSION_GATE_EXTENSION_PATH),
@@ -131,9 +127,6 @@ export function createPiEnvironment(
     if (bridgeConfig.socketPath) env.PI_VSCODE_BRIDGE_SOCKET = bridgeConfig.socketPath;
     else if (bridgeConfig.url) env.PI_VSCODE_BRIDGE_URL = bridgeConfig.url;
   }
-  if (extensionUri) {
-    env.PI_VSCODE_BUILTIN_AGENTS_DIR = join(extensionUri.fsPath, BUILTIN_AGENTS_DIR);
-  }
   return env;
 }
 
@@ -151,8 +144,6 @@ export function createRpcShellArgs(options: {
     join(options.extensionUri.fsPath, TODO_EXTENSION_PATH),
     "-e",
     join(options.extensionUri.fsPath, QUESTIONNAIRE_EXTENSION_PATH),
-    "-e",
-    join(options.extensionUri.fsPath, SUBAGENT_EXTENSION_PATH),
     "-e",
     join(options.extensionUri.fsPath, BTW_EXTENSION_PATH),
     "-e",

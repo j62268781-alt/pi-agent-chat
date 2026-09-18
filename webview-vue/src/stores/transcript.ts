@@ -193,6 +193,24 @@ export const useTranscriptStore = defineStore("transcript", () => {
 
   const isEmpty = computed(() => messages.value.length === 0);
 
+  /**
+   * Sliding render window (Slack-style): the full history stays in memory while
+   * only the tail `visibleCount` turns mount. Scrolling near the top grows the
+   * window (`expandOlder`) with a scroll-position compensation, so opening a
+   * 1000+ turn session renders ~50 turns instead of ~2362 message rows.
+   */
+  const INITIAL_VISIBLE_TURNS = 50;
+  const visibleCount = ref(INITIAL_VISIBLE_TURNS);
+
+  const hasMoreAbove = computed(() => visibleCount.value < turns.value.length);
+
+  const visibleTurns = computed(() => turns.value.slice(-visibleCount.value));
+
+  /** Unlock one more batch of older turns; capped by what exists. */
+  function expandOlder(batch = 50): void {
+    visibleCount.value = Math.min(visibleCount.value + batch, turns.value.length);
+  }
+
   /** Group messages into turns and fold tool/thinking work behind a summary. */
   const turns = computed<Turn[]>(() => {
     const result: Turn[] = [];
@@ -281,6 +299,7 @@ export const useTranscriptStore = defineStore("transcript", () => {
 
   function reset(): void {
     messages.value = [];
+    visibleCount.value = INITIAL_VISIBLE_TURNS;
     queue.value = { steering: [], followUp: [] };
     historyAvailable.value = false;
     historyMessages.value = [];
@@ -754,6 +773,9 @@ export const useTranscriptStore = defineStore("transcript", () => {
     activeAssistant,
     isEmpty,
     turns,
+    visibleTurns,
+    hasMoreAbove,
+    expandOlder,
     hasWorkToFold,
     reset,
     hydrate,

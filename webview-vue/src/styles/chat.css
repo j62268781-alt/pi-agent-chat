@@ -575,6 +575,16 @@ body {
   flex-direction: column;
   gap: 4px;
 }
+
+/* Session switcher list. It must scroll on its own: an unbounded list (real
+ * workspaces accumulate dozens of sessions) would otherwise stretch the popup
+ * past the viewport — `.sessions-list` had NO styles at all before this. */
+#sessions-list {
+  max-height: 320px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
 .sessions-list {
   max-height: 420px;
   overflow-y: auto;
@@ -4574,6 +4584,13 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 
 .lightbox-close .codicon {
   font-size: 14px;
+}
+
+/* The transcript is a windowed render: paging in older turns prepends DOM at
+ * the top, and Chrome's native scroll anchoring would double-compensate with
+ * the manual `scrollTop` adjustment in TranscriptView — turn it off. */
+.messages {
+  overflow-anchor: none;
 }
 
 /* Bottom-center zoom control — a sibling of the scrolling image, so it stays
