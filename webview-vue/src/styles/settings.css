@@ -185,6 +185,17 @@ body {
   padding: 0;
 }
 
+/* Vue mounts into an extra `#app` div. Without a definite size on it,
+ * `.app { height: 100% }` resolves against `auto` and `.content` grows past the
+ * viewport instead of scrolling — `body { overflow: hidden }` then clips it, so
+ * the settings page cannot be scrolled at all. The chat build carries the same
+ * rule in chat.css; each page ships its own stylesheet, so it must exist here
+ * too. */
+#app {
+  width: 100%;
+  height: 100%;
+}
+
 body {
   font-family: var(--pi-font);
   font-size: var(--fs);
