@@ -251,30 +251,35 @@ const suggestions = computed<Suggestion[]>(() => {
   return state.items.map((item) => fileSuggestion(item.value));
 });
 
-/** `/` only starts a command on the very first line, like the legacy parser. */
-function slashToken(text: string, caret: number): { token: string } | null {
+/** Offset where the word under the caret begins (just past the last whitespace). */
+function wordStart(text: string, caret: number): number {
   const before = text.slice(0, caret);
-  const lineStart = before.lastIndexOf("\n") + 1;
-  if (lineStart !== 0) return null;
-  const lineTail = before.slice(lineStart);
-  if (lineTail.charAt(0) !== "/") return null;
-  const token = lineTail.slice(1);
-  if (token.includes(" ")) return null;
-  return { token };
+  for (let i = before.length - 1; i >= 0; i--) {
+    if (/\s/.test(before.charAt(i))) return i + 1;
+  }
+  return 0;
+}
+
+/**
+ * `/` starts a command token wherever it opens a word — the same rule `@`
+ * follows. It used to be stricter (only at the very head of the message: the
+ * first line, no space in the token), which meant one `/partial ` poisoned the
+ * caret for the rest of the draft, and a second `/` could never reopen the list.
+ * pi only honours a command at the start of a message, so a completion typed
+ * mid-sentence is plain text — which is exactly what those characters are.
+ */
+function slashToken(text: string, caret: number): { token: string; start: number } | null {
+  const start = wordStart(text, caret);
+  const token = text.slice(start, caret);
+  if (token.charAt(0) !== "/") return null;
+  return { token: token.slice(1), start };
 }
 
 function atToken(text: string, caret: number): { query: string; start: number } | null {
-  const before = text.slice(0, caret);
-  let wordStart = 0;
-  for (let i = before.length - 1; i >= 0; i--) {
-    if (/\s/.test(before.charAt(i))) {
-      wordStart = i + 1;
-      break;
-    }
-  }
-  const token = before.slice(wordStart, caret);
+  const start = wordStart(text, caret);
+  const token = text.slice(start, caret);
   if (token.charAt(0) !== "@") return null;
-  return { query: token.slice(1), start: wordStart };
+  return { query: token.slice(1), start };
 }
 
 function clearFileTimer(): void {
@@ -366,7 +371,14 @@ function complete(suggestion: Suggestion): void {
     start = at.start;
     replacement = `@${shortenWorkspacePath(suggestion.value)} `;
   } else {
-    start = text.slice(0, caret).lastIndexOf("\n") + 1;
+    // Replace the `/word` under the caret, not the whole line: the token can now
+    // sit anywhere, and the text around it has to survive the completion.
+    const slash = slashToken(text, caret);
+    if (!slash) {
+      hideAutocomplete();
+      return;
+    }
+    start = slash.start;
     replacement = `/${suggestion.value} `;
   }
   const next = text.slice(0, start) + replacement + text.slice(caret);
