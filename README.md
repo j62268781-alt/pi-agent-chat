@@ -20,7 +20,6 @@ gate, file rewind) that work out of the box.
   | `pi-extensions/questionnaire.ts` | interactive multi-question forms |
   | `pi-extensions/permission-gate.ts` | approval gate for dangerous bash commands |
   | `pi-extensions/rewind-code.ts` | sha256 file snapshots + rewind/accept UI |
-  | `pi-extensions/btw.ts` | `/btw` side questions |
 - **Settings panel** — models, agents, prompt templates, skills, MCP servers, commit message
   generation, system prompt and general settings, plus install-state banners for the optional
   ecosystem packages below.

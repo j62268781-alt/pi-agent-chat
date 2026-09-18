@@ -119,9 +119,7 @@ export type WebviewToExt =
   /** Remove one recorded session (its JSONL transcript) from disk. */
   | { type: "deleteSession"; file: string }
   | { type: "newSession" }
-  | { type: "todoClear" }
   | { type: "openSettings" }
-  | { type: "btwAbort"; id: string }
   | { type: "rewindAccept" }
   | { type: "rewindAcceptFile"; id: number }
   | { type: "rewindRevert" }
@@ -159,7 +157,6 @@ export type ExtToWebview =
   | { type: "widget"; widgetKey?: string; widgetLines?: string[] }
   | { type: "toast"; text: string; kind?: ToastKind }
   | { type: "infoPanel"; title: string; markdown: string }
-  | { type: "btwAbortReady"; id: string }
   | { type: "error"; message: string }
   | { type: "prefillInput"; text: string }
   | { type: "appendInput"; text: string }

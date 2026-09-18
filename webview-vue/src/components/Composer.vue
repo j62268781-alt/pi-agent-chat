@@ -572,29 +572,19 @@ function sendPrompt(explicitQueue?: boolean): void {
   post({ type: "prompt", message, ...(images.length > 0 ? { images } : {}) });
 }
 
-const btwStopId = computed(() =>
-  overlays.btwActive && overlays.btwAbortId ? overlays.btwAbortId : null,
-);
-const stopMode = computed(() => session.isStreaming || btwStopId.value !== null);
+const stopMode = computed(() => session.isStreaming);
 const sendDisabled = computed(
   () => session.isCompacting || (!stopMode.value && !composer.hasContent),
 );
 const sendTitle = computed(() =>
   session.isCompacting
     ? t("Context is being compacted")
-    : btwStopId.value !== null
-      ? t("Stop /btw")
-      : session.isStreaming
-        ? t("Stop generation")
-        : t("Send message"),
+    : session.isStreaming
+      ? t("Stop generation")
+      : t("Send message"),
 );
 
 function onSendClick(): void {
-  const btwId = btwStopId.value;
-  if (btwId) {
-    post({ type: "btwAbort", id: btwId });
-    return;
-  }
   if (session.isStreaming) {
     post({ type: "abort" });
     return;

@@ -1,8 +1,6 @@
 export const TERMINAL_TITLE = "PI Code";
 
 export const BRIDGE_EXTENSION_PATH = "pi-extensions/pi-vscode-bridge.js";
-export const BTW_EXTENSION_PATH = "pi-extensions/btw.ts";
-export const TODO_EXTENSION_PATH = "pi-extensions/todo.ts";
 export const PERMISSION_GATE_EXTENSION_PATH = "pi-extensions/permission-gate.ts";
 export const QUESTIONNAIRE_EXTENSION_PATH = "pi-extensions/questionnaire.ts";
 export const REWIND_CODE_EXTENSION_PATH = "pi-extensions/rewind-code.ts";

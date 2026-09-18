@@ -56,8 +56,6 @@ export const useOverlaysStore = defineStore("overlays", () => {
   const rewindFiles = ref<RewindFile[]>([]);
   const rewindSessionId = ref("");
   const rewindBaselineHash = ref<string | null>(null);
-  const btwAbortId = ref<string | null>(null);
-  const btwActive = ref(false);
 
   const confirmState = ref<RewindConfirm | null>(null);
 
@@ -135,8 +133,6 @@ export const useOverlaysStore = defineStore("overlays", () => {
     rewindFiles,
     rewindSessionId,
     rewindBaselineHash,
-    btwAbortId,
-    btwActive,
     confirmState,
     lightbox,
     openLightbox,

@@ -3,11 +3,9 @@ import { join } from "node:path";
 import * as vscode from "vscode";
 import {
   BRIDGE_EXTENSION_PATH,
-  BTW_EXTENSION_PATH,
   PERMISSION_GATE_EXTENSION_PATH,
   QUESTIONNAIRE_EXTENSION_PATH,
   REWIND_CODE_EXTENSION_PATH,
-  TODO_EXTENSION_PATH,
 } from "../../utils/constants.ts";
 import { resolvePiBinary } from "./binary.ts";
 import type { BridgeConfig } from "../bridge/types.ts";
@@ -85,11 +83,7 @@ export function createPiShellArgs(options: {
     "-e",
     join(options.extensionUri.fsPath, BRIDGE_EXTENSION_PATH),
     "-e",
-    join(options.extensionUri.fsPath, TODO_EXTENSION_PATH),
-    "-e",
     join(options.extensionUri.fsPath, QUESTIONNAIRE_EXTENSION_PATH),
-    "-e",
-    join(options.extensionUri.fsPath, BTW_EXTENSION_PATH),
     "-e",
     join(options.extensionUri.fsPath, PERMISSION_GATE_EXTENSION_PATH),
     "-e",
@@ -141,11 +135,7 @@ export function createRpcShellArgs(options: {
     "-e",
     join(options.extensionUri.fsPath, BRIDGE_EXTENSION_PATH),
     "-e",
-    join(options.extensionUri.fsPath, TODO_EXTENSION_PATH),
-    "-e",
     join(options.extensionUri.fsPath, QUESTIONNAIRE_EXTENSION_PATH),
-    "-e",
-    join(options.extensionUri.fsPath, BTW_EXTENSION_PATH),
     "-e",
     join(options.extensionUri.fsPath, PERMISSION_GATE_EXTENSION_PATH),
     "-e",

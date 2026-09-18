@@ -108,8 +108,6 @@ export function formatToolSummary(name: string, args: Record<string, unknown> | 
     if (glob) s += " (" + glob + ")";
     const limit = scalar(args.limit);
     if (limit != null) s += " " + t("limit {0}", limit);
-  } else if (name === "todo") {
-    s = toolStr(args.action) || "...";
   } else if (name === "subagent") {
     const tasks = Array.isArray(args.tasks) ? args.tasks : null;
     const agent = toolStr(args.agent);

@@ -16,7 +16,6 @@ import Lightbox from "@/components/Lightbox.vue";
 import QueuePanel from "@/components/QueuePanel.vue";
 import RewindWidget from "@/components/RewindWidget.vue";
 import TranscriptView from "@/components/TranscriptView.vue";
-import WidgetPanel from "@/components/WidgetPanel.vue";
 import { useHostLink } from "@/composables/useHostLink.ts";
 import { useComposerStore } from "@/stores/composer";
 import { useOverlaysStore } from "@/stores/overlays";
@@ -61,7 +60,6 @@ onUnmounted(() => {
     <ChatToolbar />
     <TranscriptView />
     <RewindWidget />
-    <WidgetPanel />
     <QueuePanel />
     <Composer />
   </div>

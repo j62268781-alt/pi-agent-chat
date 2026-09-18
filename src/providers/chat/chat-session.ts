@@ -76,7 +76,6 @@ export interface ChatSession {
 }
 
 const MCP_STATUS_MARKER = "__mcp_status__";
-const BTW_ABORT_TITLE = "Pi Btw Abort";
 const DIFF_PANEL_TITLE = "Pi Diff";
 
 const allSessions = new Set<ChatSession>();
@@ -614,10 +613,6 @@ export async function createChatSession(
   }
 
   function handleExtUiRequest(req: ExtensionUiRequest): void {
-    if (req.method === "confirm" && req.title === BTW_ABORT_TITLE) {
-      if (!sessionDisposed) host.postMessage({ type: "btwAbortReady", id: req.id });
-      return;
-    }
     if (
       req.method === "select" ||
       req.method === "confirm" ||
@@ -1015,9 +1010,6 @@ export async function createChatSession(
         })();
         break;
       }
-      case "todoClear":
-        void rpc.prompt("/todo-clear", streaming ? "steer" : undefined).catch(() => {});
-        break;
       case "openSettings":
         void vscode.commands.executeCommand("pi-agent-chat.openSettings");
         break;
@@ -1025,9 +1017,6 @@ export async function createChatSession(
         void rpc
           .prompt(`/permission ${String(msg.mode ?? "")}`, streaming ? "steer" : undefined)
           .catch(() => {});
-        break;
-      case "btwAbort":
-        rpc.respondExtensionUi(String(msg.id ?? ""), { confirmed: true });
         break;
       case "rewindAccept":
         if (streaming) {

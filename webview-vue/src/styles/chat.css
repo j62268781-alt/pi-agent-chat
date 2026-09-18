@@ -1496,65 +1496,6 @@ body {
   font-size: var(--chat-fs-12);
   padding: 4px 0;
 }
-.btw-block {
-  display: flex;
-  flex-direction: column;
-  border: 1px solid var(--pi-border);
-  border-left: 3px solid var(--pi-warning);
-  border-radius: 6px;
-  background: transparent;
-  padding: 4px 8px;
-  font-size: var(--chat-fs-12);
-}
-.btw-block > summary {
-  cursor: pointer;
-  opacity: 0.85;
-  list-style: none;
-  user-select: none;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.btw-block > summary::-webkit-details-marker {
-  display: none;
-}
-.btw-block > summary:before {
-  content: "\25b6";
-  font-size: var(--chat-fs-9);
-  opacity: 0.6;
-}
-.btw-block[open] > summary:before {
-  content: "\25bc";
-}
-.btw-label {
-  font-weight: 600;
-  opacity: 0.8;
-  flex: 0 0 auto;
-}
-.btw-q {
-  flex: 1 1 auto;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.btw-body {
-  margin-top: 6px;
-  line-height: 1.55;
-  padding: 2px 0;
-  font-size: var(--chat-fs);
-  max-height: 340px;
-  overflow-y: auto;
-}
-.btw-body > :last-child {
-  margin-bottom: 0;
-}
-.btw-loading-text {
-  opacity: 0.7;
-  font-size: var(--chat-fs-12);
-}
-
 .work-block {
   background: transparent;
   overflow: hidden;
@@ -2424,10 +2365,6 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   border-bottom-width: 2px;
   border-radius: 4px;
 }
-.widget {
-  flex-shrink: 0;
-  padding: 6px 8px 0;
-}
 .widget-card {
   border: 1px solid var(--pi-border);
   border-radius: 6px;
@@ -2438,166 +2375,6 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
     transparent
   );
   backdrop-filter: var(--pi-bg-blur, none);
-}
-.widget-head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: var(--chat-fs-12);
-  margin-bottom: 6px;
-}
-.widget-toggle {
-  background: transparent;
-  border: none;
-  color: var(--pi-text);
-  opacity: 0.7;
-  cursor: pointer;
-  flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 16px;
-  padding: 0;
-  transition: transform 0.15s;
-}
-.widget-toggle:hover {
-  opacity: 1;
-}
-.widget-toggle .codicon {
-  font-size: 12px;
-  line-height: 1;
-}
-.widget-card.is-collapsed .widget-toggle {
-  transform: rotate(0deg);
-}
-.widget-card:not(.is-collapsed) .widget-toggle {
-  transform: rotate(90deg);
-}
-.widget-card.is-collapsed .todo-list {
-  display: none;
-}
-.widget-title {
-  font-weight: 600;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  flex: 0 0 auto;
-}
-.widget-title svg {
-  width: 14px;
-  height: 14px;
-  display: block;
-  opacity: 0.9;
-}
-.widget-title .codicon {
-  font-size: 12px;
-  line-height: 1;
-  opacity: 0.9;
-}
-.widget-stats {
-  font-size: var(--chat-fs-11);
-  opacity: 0.7;
-  flex: 0 0 auto;
-  font-variant-numeric: tabular-nums;
-}
-.widget-clear {
-  background: transparent;
-  color: var(--pi-text);
-  opacity: 0.7;
-  border: none;
-  padding: 2px 4px;
-  font-size: var(--chat-fs-11);
-  font-family: inherit;
-  cursor: pointer;
-  flex: 0 0 auto;
-  margin-left: auto;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-.widget-clear .codicon {
-  font-size: 13px;
-  line-height: 1;
-  display: block;
-}
-.widget-clear:hover {
-  opacity: 1;
-  background: var(--pi-bg-hover);
-}
-.widget-body {
-  margin: 0;
-  font-family: var(--pi-mono);
-  font-size: var(--chat-fs-12);
-  white-space: pre;
-  line-height: 1.5;
-}
-.todo-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  margin: 0;
-}
-.todo-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  padding: 3px 4px;
-  border-radius: 4px;
-  font-size: var(--chat-fs-12);
-  line-height: 1.45;
-  transition: background 0.12s;
-}
-.todo-item:hover {
-  background: var(--pi-bg-hover);
-}
-.todo-check {
-  flex-shrink: 0;
-  width: 15px;
-  height: 15px;
-  margin-top: 1px;
-  border-radius: 4px;
-  border: 1.5px solid var(--pi-text-muted);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  transition:
-    background 0.15s,
-    border-color 0.15s;
-}
-.todo-check svg {
-  width: 11px;
-  height: 11px;
-  display: block;
-}
-.todo-check .codicon {
-  font-size: 10px;
-  line-height: 1;
-}
-.todo-item.is-done .todo-check {
-  background: var(--pi-success);
-  border-color: var(--pi-success);
-  color: var(--pi-bg-page);
-}
-.todo-id {
-  flex-shrink: 0;
-  font-family: var(--pi-mono);
-  font-size: var(--chat-fs-11);
-  color: var(--pi-text-brand);
-  opacity: 0.8;
-  margin-top: 1px;
-  font-variant-numeric: tabular-nums;
-}
-.todo-text {
-  flex: 1 1 auto;
-  min-width: 0;
-  word-break: break-word;
-}
-.todo-item.is-done .todo-text {
-  text-decoration: line-through;
-  text-decoration-color: var(--pi-text-disabled);
-  opacity: 0.5;
 }
 .queue {
   flex-shrink: 0;
@@ -3597,7 +3374,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   stroke: var(--pi-danger);
 }
 
-/* ── F · widgets: queue, todo, rewind ────────────────────────────────────── */
+/* ── F · widgets: queue, rewind ────────────────────────────────────── */
 
 .queue,
 .widget-card,
@@ -3615,7 +3392,6 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 }
 
 .queue-item,
-.todo-item,
 .rewind-row {
   padding: var(--pi-sp-2) var(--pi-sp-3);
   border-radius: var(--pi-r-sm);
@@ -3635,21 +3411,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 }
 
 .queue-clear,
-.widget-head button {
-  padding: 5px var(--pi-sp-4);
-  border: none;
-  border-radius: var(--pi-r-sm);
-  background: var(--pi-bg-subtle);
-  color: var(--pi-text-secondary);
-  font-size: var(--fs-11);
-  cursor: pointer;
-}
-
 .queue-clear:hover,
-.widget-head button:hover {
-  background: var(--pi-bg-hover);
-}
-
 /* Streaming and loading are already carried by `.text-block.is-streaming` and
  * the boot splash further up; the boards' F/W8 caret has no class in the
  * markup, so nothing is declared for it here. */

@@ -111,12 +111,7 @@ export function useHostLink() {
         break;
 
       case "widget":
-        if (message.widgetKey === "btw") {
-          overlays.btwActive = (message.widgetLines?.length ?? 0) > 0;
-          overlays.applyWidget(message.widgetKey, message.widgetLines);
-        } else {
-          overlays.applyWidget(message.widgetKey, message.widgetLines);
-        }
+        overlays.applyWidget(message.widgetKey, message.widgetLines);
         break;
 
       case "toast":
@@ -125,11 +120,6 @@ export function useHostLink() {
 
       case "infoPanel":
         overlays.infoPanel = { title: message.title, markdown: message.markdown };
-        break;
-
-      case "btwAbortReady":
-        overlays.btwAbortId = message.id;
-        overlays.btwActive = true;
         break;
 
       case "error":
