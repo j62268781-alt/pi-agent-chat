@@ -48,7 +48,6 @@
   "Expand": "展开",
   "running": "运行中",
   "failed": "失败",
-  "files": "文件",
   "Files will be restored to their last accepted state. Conversation history is not affected.": "文件将恢复到上次接受的状态。对话历史不受影响。",
   "Follow-up": "追问",
   "Pending": "待发送",

@@ -4886,18 +4886,9 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   color: var(--pi-info);
 }
 
-/* ── 首页可发现入口：/ 与 @ 触发按钮 + 运行中发送方式切换 ──────────────────────
- * 空状态不再逐条教键盘；这两个触发器与「排队/插话」开关做成输入器里的实体控件，
- * 引导文案因此缩到一行。 */
-.trigger-btn {
-  font-family: var(--pi-mono);
-}
-
-.trigger-glyph {
-  font-size: var(--chat-fs-12);
-  line-height: 1;
-}
-
+/* ── 运行中发送方式切换 ──────────────────────────────────────────────────────
+ * 空状态不再逐条教键盘；/ 与 @ 靠输入触发（弹窗可搜索），输入器里只留这一个
+ * 「排队 / 插话」实体控件，引导文案因此缩到一行。 */
 .run-send-toggle {
   display: inline-flex;
   align-items: center;

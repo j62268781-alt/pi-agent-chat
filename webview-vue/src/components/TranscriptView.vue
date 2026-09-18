@@ -70,9 +70,9 @@ const isMac = /Mac|iP(hone|ad|od)/i.test(navigator.platform || navigator.userAge
 /** Platform-aware modifier shown in the keycaps, `⌘` on macOS and `Ctrl+` elsewhere. */
 const mod = isMac ? "\u2318" : "Ctrl+";
 
-/** One keycap row of the new-session guide. Deliberately short: the `/` and `@`
- * triggers and the running-send toggle now sit in the composer as buttons, so
- * only the keys that have nowhere else to live are listed here. */
+/** One keycap row of the new-session guide. Deliberately short: `/` and `@` are
+ * self-describing first keystrokes (and the `/` list is searchable), so only the
+ * keys that have nowhere else to live are listed here. */
 const hints = computed(() => {
   const ctrlEnter = display.sendShortcut === "ctrlEnter";
   return [

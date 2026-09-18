@@ -487,25 +487,6 @@ function onKeydown(ev: KeyboardEvent): void {
 // ------------------------------------------------------------------ intake
 
 /**
- * Insert the `@` trigger and open its dropdown.
- *
- * Only `@` gets a button: `/` is a familiar first keystroke for a command list
- * that is searchable anyway, so the toolbar keeps one trigger instead of two.
- */
-function insertAtTrigger(): void {
-  const el = inputEl.value;
-  if (!el) return;
-  el.focus();
-  const text = serializeInput(el);
-  const caret = getCaretOffset(el);
-  const next = text.slice(0, caret) + "@" + text.slice(caret);
-  composer.draft = next;
-  renderSegments(el, segmentsFromText(next), caret + 1);
-  autoGrow();
-  updateAutocomplete();
-}
-
-/**
  * Running-send behavior, in the composer rather than only in the settings panel:
  * 排队 holds the message here (deletable, steerable) and 插话 hands it to pi as
  * a steering prompt right away. The value lives in the global config, so the
@@ -819,8 +800,15 @@ watch([() => composer.openPopup, () => composer.modelSubview], async () => {
  */
 function onDocumentMouseDown(ev: MouseEvent): void {
   const target = ev.target as Node | null;
+  if (!target) return;
+  // The suggestion dropdown is derived state, not an "open" flag: dismissing it
+  // here only hides it — the next keystroke re-opens it for the same `/cmd` or
+  // `@file` token, filtered by whatever the token reads at that moment.
+  const inDropdown = target instanceof Element && target.closest("#autocomplete") !== null;
+  if (!inDropdown && !inputEl.value?.contains(target)) hideAutocomplete();
+
   const open = composer.openPopup;
-  if (!target || !open) return;
+  if (!open) return;
   const wrap =
     open === "model" ? modelWrapEl.value : open === "permission" ? permissionWrapEl.value : null;
   if (wrap?.contains(target)) return;
@@ -921,17 +909,6 @@ onUnmounted(() => {
           @click="onAttach"
         >
           <span class="codicon codicon-add"></span>
-        </button>
-        <!-- Only the `@` trigger is a button: `/` is a familiar first keystroke
-             and the command list is searchable, so it needs no chrome. -->
-        <button
-          id="at-btn"
-          class="icon-btn trigger-btn"
-          type="button"
-          :title="t('files')"
-          @click="insertAtTrigger()"
-        >
-          <span class="trigger-glyph">@</span>
         </button>
         <button
           id="running-send-btn"
