@@ -1,0 +1,16 @@
+# Line endings.
+#
+# `.editorconfig` already asks for LF, but git was left on its own defaults
+# (`core.autocrlf=true` on the Windows checkout writes CRLF back on every
+# checkout, while oxfmt writes LF). The two fought each other: each `pnpm run
+# fmt` left dozens of files that `git status` called modified while `git diff`
+# showed nothing at all. `eol=lf` pins the bytes on disk to the bytes the
+# formatter writes, and `text=auto` keeps the repository blobs normalised.
+* text=auto eol=lf
+
+# Binary assets: excluded from the text filters above so they are never
+# normalised, diffed as text, or merged line-wise.
+*.png binary
+*.woff2 binary
+*.ico binary
+*.vsix binary
