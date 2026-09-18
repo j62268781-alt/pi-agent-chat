@@ -202,8 +202,22 @@ export async function createRpcClient(options: CreateRpcClientOptions): Promise<
         ...(streamingBehavior ? { streamingBehavior } : {}),
         ...(images && images.length ? { images } : {}),
       }),
+    steer: (message, images) =>
+      request<void>({
+        type: "steer",
+        message,
+        ...(images && images.length ? { images } : {}),
+      }),
+    followUp: (message, images) =>
+      request<void>({
+        type: "follow_up",
+        message,
+        ...(images && images.length ? { images } : {}),
+      }),
     abort: () => request<void>({ type: "abort" }),
     clearQueue: () => request<{ steering: string[]; followUp: string[] }>({ type: "clear_queue" }),
+    setSteeringMode: (mode) => request<void>({ type: "set_steering_mode", mode }),
+    setFollowUpMode: (mode) => request<void>({ type: "set_follow_up_mode", mode }),
     setModel: (provider, modelId) => request<RpcModel>({ type: "set_model", provider, modelId }),
     setThinkingLevel: (level) => request<void>({ type: "set_thinking_level", level }),
     getAvailableModels: () =>

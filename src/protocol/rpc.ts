@@ -100,6 +100,12 @@ export interface RpcImage {
   mimeType: string;
 }
 
+/**
+ * When a delivery mode's queued entries are released: `"all"` at once,
+ * `"one-at-a-time"` — the head only, the rest once the agent comes back.
+ */
+export type RpcQueueMode = "all" | "one-at-a-time";
+
 /** Typed client over a `pi --mode rpc` subprocess. */
 export interface RpcClient {
   send(command: Record<string, unknown>): void;
@@ -109,8 +115,17 @@ export interface RpcClient {
     streamingBehavior?: "steer" | "followUp",
     images?: RpcImage[],
   ): Promise<void>;
+  /**
+   * Bare `steer` / `follow_up` commands. The composer deliberately sends
+   * through `prompt` + `streamingBehavior` instead — pi rejects its own
+   * extension commands (`/…`) on these two, and the input box accepts them.
+   */
+  steer(message: string, images?: RpcImage[]): Promise<void>;
+  followUp(message: string, images?: RpcImage[]): Promise<void>;
   abort(): Promise<void>;
   clearQueue(): Promise<{ steering: string[]; followUp: string[] }>;
+  setSteeringMode(mode: RpcQueueMode): Promise<void>;
+  setFollowUpMode(mode: RpcQueueMode): Promise<void>;
   setModel(provider: string, modelId: string): Promise<RpcModel>;
   setThinkingLevel(level: string): Promise<void>;
   getAvailableModels(): Promise<RpcModel[]>;
