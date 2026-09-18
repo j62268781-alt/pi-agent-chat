@@ -3,9 +3,10 @@
   reasoning and folds once the answer starts. A manual toggle sticks, so the
   user's collapse is never undone by the next delta.
 
-  The folded header previews the reasoning's first line, the way Qoder's does.
-  While the block is still streaming the text is moving under the cursor, so it
-  keeps the bare label until the reasoning settles.
+  The folded header reads like the board's row: a state glyph, the label
+  (「思考中」/「已思考」) and the reasoning's first line as the preview. While the
+  block is still streaming the text is moving under the cursor, so the preview
+  keeps updating rather than freezing mid-word.
 -->
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
@@ -24,12 +25,12 @@ const pinnedByUser = ref(false);
 /** Characters of the reasoning kept in the folded header. */
 const PREVIEW_MAX = 60;
 
-const label = computed(() => {
-  if (props.block.running) return t("Thinking");
+const label = computed(() => (props.block.running ? t("Thinking…") : t("Thought")));
+
+const preview = computed(() => {
   const line = (props.block.text.split("\n", 1)[0] ?? "").trim();
-  if (!line) return t("Thinking");
-  const preview = line.length > PREVIEW_MAX ? line.slice(0, PREVIEW_MAX) + "\u2026" : line;
-  return t("Thought about {0}", preview);
+  if (!line) return "";
+  return line.length > PREVIEW_MAX ? line.slice(0, PREVIEW_MAX) + "\u2026" : line;
 });
 
 watch(
@@ -51,9 +52,20 @@ watch(
 </script>
 
 <template>
-  <details class="thinking-block" :open="open" @toggle="pinnedByUser = true">
+  <details
+    class="thinking-block"
+    :class="block.running ? 'is-running' : 'is-done'"
+    :open="open"
+    @toggle="pinnedByUser = true"
+  >
     <summary>
+      <span
+        class="row-state"
+        :class="block.running ? 'is-running' : 'codicon codicon-check is-done'"
+        aria-hidden="true"
+      ></span>
       <span class="thinking-label">{{ label }}</span>
+      <span v-if="preview" class="row-preview">{{ preview }}</span>
     </summary>
     <div class="thinking-body">{{ block.text }}</div>
   </details>

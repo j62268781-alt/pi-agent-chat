@@ -4949,3 +4949,160 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   right: auto;
   margin-left: -15px;
 }
+
+/* ── Qoder 式会话流：行首状态图标 / 工具分段 / 思考限高滚动 / 底部实时状态 ──────
+ * 全部只追加：折叠头文案与行的结构由组件决定，这里给它们外观。
+ * 行首统一一个 14px 宽的状态位（✓ 完成 / ✕ 失败 / 转圈 进行中），宽度固定是为了让
+ * 每一行的标签在纵向上对齐；进行中的圆环沿用既有 .thinking-block 那套纯 CSS 实现，
+ * 不新增 codicon 字形（chat.css 的图标是手工子集，见 7bf60fb 的教训）。 */
+.row-state {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  font-size: var(--chat-fs-11);
+  line-height: 1;
+}
+
+.row-state.is-done {
+  color: var(--pi-success);
+}
+
+.row-state.is-error {
+  color: var(--pi-danger);
+}
+
+.row-state.is-running {
+  width: 9px;
+  height: 9px;
+  margin: 0 2.5px;
+  border: 1.5px solid var(--pi-info);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: tool-spin 0.7s linear infinite;
+  font-size: 0;
+}
+
+/* 行内文案：标签正常色、预览弱化并单行截断（「已思考 · <首行>」）。 */
+.row-preview {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 400;
+  color: var(--pi-text-muted);
+}
+
+.row-preview:before {
+  content: " \00b7  ";
+}
+
+/* 思考行：状态图标取代原来那个装饰性字形，避免行首出现两个图标。 */
+.thinking-block > summary:before {
+  content: none;
+}
+
+.thinking-block > summary {
+  gap: 6px;
+}
+
+/* 展开后的思考正文：限高 + 内部滚动（彬哥：过长的推理不该把整条会话流撑开），
+ * 底色沿用弹窗正文的浅底 + 圆角。 */
+.thinking-body {
+  max-height: 220px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--pi-bg-subtle);
+  border: 1px solid var(--pi-border-divider);
+  border-radius: var(--pi-r-sm);
+  padding: 8px 10px;
+}
+
+.thinking-block[open] .thinking-body {
+  border-left: 1px solid var(--pi-border-divider);
+  padding-left: 10px;
+  margin-left: 0;
+}
+
+/* 折叠内容的树状缩进：一条竖向导引线，区分「步骤」与外面的正文。 */
+.work-body {
+  border-left: 1px solid var(--pi-border-divider);
+  margin-left: 11px;
+  padding-left: 9px;
+}
+
+/* 连续工具调用分段（「执行工具 N 次」），嵌套在「已处理」里的第二层折叠。 */
+.tool-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.tool-group > .tool-group-head {
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 6px;
+  font-size: var(--chat-fs-11);
+  color: var(--pi-text-muted);
+}
+
+.tool-group > .tool-group-head::-webkit-details-marker {
+  display: none;
+}
+
+/* 折叠箭头沿用 work-head 那两个已验证的字形（eab6 收起 / eab4 展开）。 */
+.tool-group > .tool-group-head:before {
+  content: "\eab6";
+  font-family: codicon;
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.tool-group[open] > .tool-group-head:before {
+  content: "\eab4";
+}
+
+.tool-group-body {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  border-left: 1px solid var(--pi-border-divider);
+  margin-left: 10px;
+  padding-left: 9px;
+}
+
+/* 底部实时状态行（「深度思考中 / 正在回复中」）：3×3 点阵图标 + 弱化文案，
+ * 只在 agent 工作时出现。 */
+.status-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 2px 0;
+  color: var(--pi-text-muted);
+  font-size: var(--chat-fs-12);
+}
+
+.status-dots {
+  flex-shrink: 0;
+  width: 12px;
+  height: 12px;
+  background-image: radial-gradient(currentColor 1.1px, transparent 1.1px);
+  background-size: 4px 4px;
+  opacity: 0.75;
+  animation: status-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes status-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.85;
+  }
+}

@@ -17,15 +17,31 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { post } from "@/lib/bridge.ts";
 import { t } from "@/lib/i18n.ts";
 import { useDisplayStore } from "@/stores/display";
+import { useSessionStore } from "@/stores/session";
 import { useTranscriptStore } from "@/stores/transcript";
 import TurnBlock from "./TurnBlock.vue";
 
 const transcript = useTranscriptStore();
 const display = useDisplayStore();
+const session = useSessionStore();
 
 const scroller = ref<HTMLElement | null>(null);
 const inner = ref<HTMLElement | null>(null);
 const stuck = ref(true);
+
+/**
+ * Bottom status row, alive only while the agent works. The wording follows what
+ * the running assistant is actually doing: its last block decides between
+ * reasoning and answering (the session list popup uses the same two phrases).
+ */
+const activeBlock = computed(() => {
+  const blocks = transcript.activeAssistant?.blocks ?? [];
+  return blocks[blocks.length - 1] ?? null;
+});
+const liveLabel = computed(() => {
+  if (!session.isStreaming) return "";
+  return activeBlock.value?.kind === "thinking" ? t("Deep thinking…") : t("Replying…");
+});
 
 /** Distance from the bottom within which the view is considered "at bottom". */
 const STICK_THRESHOLD_PX = 48;
@@ -199,7 +215,14 @@ watch(
           </div>
         </div>
 
-        <TurnBlock v-for="turn in transcript.visibleTurns" :key="turn.id" :turn="turn" />
+        <TurnBlock v-for="turn in transcript.turns" :key="turn.id" :turn="turn" />
+
+        <!-- Live status row: the dotted grid + what the agent is doing right
+             now. It leaves as soon as the agent settles. -->
+        <div v-if="liveLabel" class="status-row">
+          <span class="status-dots" aria-hidden="true"></span>
+          <span class="status-text">{{ liveLabel }}</span>
+        </div>
       </div>
     </div>
 

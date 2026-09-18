@@ -6,9 +6,9 @@
   derived structure, so it re-folds correctly while streaming.
 -->
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, onUnmounted, ref, watch } from "vue";
 import { post } from "@/lib/bridge.ts";
-import { formatCounts, formatDuration, formatTime, formatWorkTitle } from "@/lib/format.ts";
+import { formatCounts, formatDuration, formatTime } from "@/lib/format.ts";
 import { t } from "@/lib/i18n.ts";
 import { useDisplayStore } from "@/stores/display";
 import { useOverlaysStore } from "@/stores/overlays";
@@ -23,48 +23,91 @@ const overlays = useOverlaysStore();
 const session = useSessionStore();
 
 /**
- * Outcome word of the turn, shared by the fold header and the closing status
- * line. `stopReason` is written by `message_end`, so it is the one signal that
- * says the assistant actually finished — a turn with no reason is still running.
+ * `stopReason` is written by `message_end`, so an assistant that has not reported
+ * one yet is the turn currently being generated — which is what decides between
+ * 「正在执行中」 and 「已处理」.
  */
+const running = computed(() => session.isStreaming && props.turn.stopReason == null);
+
+/** Ticks only while this turn is the running one, so the head counts up live. */
+const now = ref(Date.now());
+let ticker: number | undefined;
+
+watch(
+  running,
+  (value) => {
+    if (ticker !== undefined) {
+      clearInterval(ticker);
+      ticker = undefined;
+    }
+    if (value) ticker = window.setInterval(() => (now.value = Date.now()), 1000);
+  },
+  { immediate: true },
+);
+
+onUnmounted(() => {
+  if (ticker !== undefined) clearInterval(ticker);
+});
+
+/** Outcome word of a settled turn, shared by the fold head and the status line. */
 const outcome = computed(() => {
   if (props.turn.errorMessage) return t("failed");
   if (props.turn.stopReason === "aborted") return t("Stopped");
-  if (props.turn.stopReason == null) return t("Working…");
   return t("Processed");
 });
 
 const outcomeClass = computed(() => {
   if (props.turn.errorMessage) return "is-error";
   if (props.turn.stopReason === "aborted") return "is-warn";
-  if (props.turn.stopReason == null) return "is-running";
   return "is-done";
 });
 
 /**
- * The flow header's own title. The board's wording leads with the outcome and
- * the tool call count — "已处理 · 执行工具 5 次 · 3 Turns · Worked for 12s" —
- * because the fold is the only place either number is visible.
+ * Fold header. The board keeps the head to one phrase: the outcome once the turn
+ * is done, the elapsed time while it runs. Per-turn counters (turns, duration,
+ * diff size) were dropped from the line — the diff counters still sit on the
+ * right, and the closing status line carries the duration.
  */
 const workTitle = computed(() => {
-  const parts: string[] = [outcome.value];
-  if (display.showToolCallCount) {
-    const tools = props.turn.workBlocks.filter((entry) => entry.block.kind === "tool").length;
-    if (tools > 0) parts.push(t("Ran {0} tools", tools));
-  }
-  parts.push(
-    formatWorkTitle({
-      turns: props.turn.workTurns,
-      duration:
-        props.turn.workStartedAt != null && props.turn.workEndedAt != null
-          ? formatDuration(props.turn.workEndedAt - props.turn.workStartedAt)
-          : "",
-      added: 0,
-      removed: 0,
-    }),
-  );
-  return parts.join(" \u00b7 ");
+  if (!running.value) return outcome.value;
+  const start = props.turn.workStartedAt ?? props.turn.user?.timestamp ?? now.value;
+  return t("Running for {0}", formatDuration(Math.max(0, now.value - start)));
 });
+
+/** One block of the fold, or a run of consecutive tool calls. */
+interface Segment {
+  id: string;
+  tools?: Array<{
+    block: Turn["workBlocks"][number]["block"];
+    message: Turn["workBlocks"][number]["message"];
+  }>;
+  entry?: Turn["workBlocks"][number];
+}
+
+/**
+ * Consecutive tool calls read as a single step, so they collapse into one
+ * segment ("执行工具 N 次"); anything else (thinking, prose) stays its own row.
+ * With `chatShowToolCallCount` off the run renders flat — the group header exists
+ * only to carry the count.
+ */
+const segments = computed<Segment[]>(() => {
+  const out: Segment[] = [];
+  for (const entry of props.turn.workBlocks) {
+    const last = out[out.length - 1];
+    if (entry.block.kind === "tool") {
+      if (last?.tools) last.tools.push(entry);
+      else out.push({ id: entry.block.id, tools: [entry] });
+    } else {
+      out.push({ id: entry.block.id, entry });
+    }
+  }
+  return out;
+});
+
+/** A run only earns a header when it groups more than one call. */
+function isGrouped(segment: Segment): boolean {
+  return display.showToolCallCount && (segment.tools?.length ?? 0) > 1;
+}
 
 /** Wall-clock duration of the turn: the user's message to the last block. */
 const turnDuration = computed(() => {
@@ -187,9 +230,28 @@ function revertToUser(): void {
         </span>
       </summary>
       <div class="work-body">
-        <div v-for="entry in turn.workBlocks" :key="entry.block.id" class="msg assistant">
-          <BlockView :block="entry.block" />
-        </div>
+        <template v-for="segment in segments" :key="segment.id">
+          <!-- The run's own header is a label, not a second thing to click: it opens with
+             the fold, the way the board's screenshot shows it. -->
+          <details v-if="isGrouped(segment)" class="tool-group" open>
+            <summary class="tool-group-head">
+              {{ t("Ran {0} tools", segment.tools?.length ?? 0) }}
+            </summary>
+            <div class="tool-group-body">
+              <div v-for="entry in segment.tools" :key="entry.block.id" class="msg assistant">
+                <BlockView :block="entry.block" />
+              </div>
+            </div>
+          </details>
+          <template v-else-if="segment.tools">
+            <div v-for="entry in segment.tools" :key="entry.block.id" class="msg assistant">
+              <BlockView :block="entry.block" />
+            </div>
+          </template>
+          <div v-else-if="segment.entry" class="msg assistant">
+            <BlockView :block="segment.entry.block" />
+          </div>
+        </template>
       </div>
     </details>
 
@@ -204,9 +266,10 @@ function revertToUser(): void {
     <BlockView :block="entry.block" />
   </div>
 
-  <!-- Every turn closes with its own status line: outcome, duration and the
-       timestamp, the same `.msg-time` the user side uses. -->
-  <div v-if="turn.messageTime" class="msg-meta msg-status-line">
+  <!-- Every settled turn closes with its own status line: outcome, duration and
+       the timestamp. While the turn runs the head already counts the seconds, so
+       the line stays out of the way until there is an outcome to report. -->
+  <div v-if="turn.messageTime && !running" class="msg-meta msg-status-line">
     <span v-if="hasContent" class="msg-outcome" :class="outcomeClass">{{ outcome }}</span>
     <span v-if="hasContent && turnDuration" class="msg-duration">
       {{ t("Worked for {0}", turnDuration) }}

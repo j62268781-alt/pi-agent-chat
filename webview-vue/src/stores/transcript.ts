@@ -106,7 +106,6 @@ export interface Turn {
   workBlocks: Array<{ message: AssistantMessage; block: Block }>;
   /** Blocks rendered in the clear (the final answer). */
   finalBlocks: Array<{ message: AssistantMessage; block: Block }>;
-  workTurns: number;
   workStartedAt: number | null;
   workEndedAt: number | null;
   added: number;
@@ -223,7 +222,6 @@ export const useTranscriptStore = defineStore("transcript", () => {
         leading: [],
         workBlocks: [],
         finalBlocks: [],
-        workTurns: 0,
         workStartedAt: null,
         workEndedAt: null,
         added: 0,
@@ -247,10 +245,6 @@ export const useTranscriptStore = defineStore("transcript", () => {
         continue;
       }
 
-      const assistants = [message];
-      for (const assistant of assistants) {
-        if (assistant.blocks.length > 0) current.workTurns += 1;
-      }
       current.messageTime = message.timestamp ?? current.messageTime;
       if (message.stopReason) current.stopReason = message.stopReason;
       if (message.errorMessage) current.errorMessage = message.errorMessage;
@@ -274,7 +268,6 @@ export const useTranscriptStore = defineStore("transcript", () => {
         else current.workBlocks.push({ message, block });
       }
       if (!foldable && blocks.length > 0) {
-        current.workTurns = 0;
         current.finalBlocks.push(...current.workBlocks.splice(0));
       }
     }

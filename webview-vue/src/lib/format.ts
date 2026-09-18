@@ -1,11 +1,10 @@
-// Formatting helpers shared by the chat transcript: timestamps, token counts,
-// durations, and the work-segment title.
+// Formatting helpers shared by the chat transcript: timestamps, token counts and
+// durations.
 //
 // Ported from the vanilla-TS chat bundle (`globals.ts`: `formatTime`,
-// `formatTokens`; `messages.ts`: `formatDuration`, `formatWorkTitle`).
-// Difference from the original: `formatWorkTitle` returned inline HTML
-// (`<span style="color:var(--pi-success)">+N</span>`); here it returns plain
-// text only and the component renders the counters in its own spans.
+// `formatTokens`; `messages.ts`: `formatDuration`). `formatWorkTitle` was dropped
+// with the fold-header rework: the head is a single phrase now, so the
+// turns/duration counters it assembled have no call site left.
 
 import { t } from "./i18n.ts";
 
@@ -60,24 +59,4 @@ export function formatCounts(added: number, removed: number): string {
   if (added > 0) parts.push("+" + added);
   if (removed > 0) parts.push("-" + removed);
   return parts.join(" ");
-}
-
-/** Inputs for a work-block title. `duration` is already localized (or `""`). */
-export interface WorkTitleParts {
-  turns: number;
-  duration: string;
-  added: number;
-  removed: number;
-}
-
-/**
- * Plain-text part of a work-block title, e.g.
- * `"3 Turns · Worked for 12s · +45 -12"` — no markup, the caller styles it.
- */
-export function formatWorkTitle(parts: WorkTitleParts): string {
-  let title = parts.turns + " " + (parts.turns === 1 ? t("Turn") : t("Turns"));
-  if (parts.duration) title += " \u00b7 " + t("Worked for {0}", parts.duration);
-  const counts = formatCounts(parts.added, parts.removed);
-  if (counts) title += " \u00b7 " + counts;
-  return title;
 }

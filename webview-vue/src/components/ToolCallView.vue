@@ -81,7 +81,7 @@ const summary = computed(() => {
     if (command) return t("Ran") + " \u00b7 " + truncate(firstLine(command), COMMAND_PREVIEW_MAX);
   } else if (isRead.value) {
     const base = basenameOf(shortenWorkspacePath(toolPathArg(args)));
-    if (base) return t("View read details for {0}", base);
+    if (base) return t("Read {0}", base);
   } else if (isSubagent.value) {
     return subagentTitle(args);
   } else if (name.value === "write" || name.value === "edit") {
@@ -111,11 +111,12 @@ function subagentTitle(args: Record<string, unknown>): string {
   parts.push(subagentState.value);
   return parts.join(" \u00b7 ");
 }
-const statusLabel = computed(() => {
-  if (props.block.status === "running") return "●";
-  if (props.block.status === "error") return "✕";
-  return props.block.durationMs != null ? formatMs(props.block.durationMs) : "✓";
-});
+/** Elapsed time only: the row's leading glyph already carries the state. */
+const statusLabel = computed(() =>
+  props.block.status === "running" || props.block.durationMs == null
+    ? ""
+    : formatMs(props.block.durationMs),
+);
 
 const diffRows = computed(() => (props.block.diffText ? parseDiffRows(props.block.diffText) : []));
 const writeLines = computed(() => {
@@ -194,11 +195,18 @@ function onHeadClick(event: MouseEvent): void {
     @toggle="pinnedByUser = true"
   >
     <summary class="tool-head" @click="onHeadClick">
+      <span
+        class="row-state"
+        :class="{
+          'codicon codicon-check is-done': block.status === 'done',
+          'codicon codicon-close is-error': block.status === 'error',
+          'is-running': block.status === 'running',
+        }"
+        aria-hidden="true"
+      ></span>
       <span v-if="displayName" class="tool-name">{{ displayName }}</span>
       <span class="tool-summary">{{ summary }}</span>
-      <span class="tool-status" :class="{ 'is-running': block.status === 'running' }">
-        {{ statusLabel }}
-      </span>
+      <span v-if="statusLabel" class="tool-status">{{ statusLabel }}</span>
     </summary>
 
     <!-- 终端命令: 命令说明 + `$` + 完整命令 + 输出 -->
