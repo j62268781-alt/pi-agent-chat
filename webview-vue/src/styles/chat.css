@@ -4941,3 +4941,11 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* 「回到底部」按钮水平居中（彬哥：原先贴右边）。用负 margin 抵消半宽而不是
+ * translateX —— transform 那三个属性已经归 show/hover 的过渡与缩放了。 */
+.scroll-bottom-btn {
+  left: 50%;
+  right: auto;
+  margin-left: -15px;
+}
