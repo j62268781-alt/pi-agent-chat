@@ -613,13 +613,28 @@ export async function createChatSession(
   }
 
   function handleExtUiRequest(req: ExtensionUiRequest): void {
+    // Split a multi-line dialog title (e.g. the permission gate packs
+    // "Dangerous Command:\n\n  rm -rf ..." into `select`'s title, because pi's
+    // select has no message parameter) into title + message, so the payload
+    // renders as the dialog's body instead of a giant one-liner heading.
+    // Only fills `message` when the request doesn't carry one already.
+    function splitDialogTitleMessage(request: ExtensionUiRequest): ExtensionUiRequest {
+      const title = String(request.title ?? "");
+      const nl = title.indexOf("\n");
+      if (nl < 0 || request.message) return request;
+      const heading = title.slice(0, nl).trim();
+      const body = title.slice(nl + 1).trim();
+      if (!heading || !body) return request;
+      return { ...request, title: heading, message: body } as ExtensionUiRequest;
+    }
+
     if (
       req.method === "select" ||
       req.method === "confirm" ||
       req.method === "input" ||
       req.method === "editor"
     ) {
-      host.postMessage({ type: "dialog", request: req });
+      host.postMessage({ type: "dialog", request: splitDialogTitleMessage(req) });
     } else if (req.method === "setWidget") {
       if (!sessionDisposed)
         host.postMessage({

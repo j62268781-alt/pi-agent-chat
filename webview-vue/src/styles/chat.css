@@ -4759,3 +4759,15 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 .choice-btn.choice-block:hover {
   background: color-mix(in srgb, var(--pi-danger, #d14343) 14%, transparent);
 }
+
+/* 权限弹窗的命令正文：等宽 + 代码块底色（宿主把多行 title 拆出的 message） */
+.dialog-danger .dialog-message {
+  font-family: Menlo, Consolas, monospace;
+  font-size: var(--chat-fs-12);
+  background: var(--pi-bg-subtle);
+  border: 1px solid var(--pi-border-divider);
+  border-radius: 6px;
+  padding: 8px 10px;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
