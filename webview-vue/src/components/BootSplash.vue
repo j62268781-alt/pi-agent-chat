@@ -2,13 +2,18 @@
   Boot splash: covers the empty transcript until the first history/event lands,
   and doubles as the failure card when the sidebar cannot start a session (the
   retry button asks the host to spawn one).
+
+  The card also comes up on its own when nothing arrives in time
+  (`startBootWatchdog`), so a session stuck behind pi's package installs shows a
+  way out instead of an endless splash; retrying puts the splash back and re-arms
+  the deadline, which the user can repeat as often as they like.
 -->
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import piLogoSvg from "../../../resources/icon.svg?raw";
 import { post } from "@/lib/bridge.ts";
 import { t } from "@/lib/i18n.ts";
-import { bootFailure, isBooting } from "@/composables/useHostLink.ts";
+import { bootFailure, isBooting, startBootWatchdog } from "@/composables/useHostLink.ts";
 
 const retrying = ref(false);
 
@@ -19,7 +24,10 @@ const visible = computed(() => failed.value || isBooting.value);
 function retry(): void {
   retrying.value = true;
   bootFailure.value = "";
+  // Back to the splash first, then ask the host for a fresh session: the same
+  // shape as a cold boot, so a second timeout is possible and visible.
   post({ type: "startSession" });
+  startBootWatchdog();
 }
 </script>
 

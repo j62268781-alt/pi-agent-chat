@@ -7,6 +7,7 @@ import type { ExtToWebview } from "@protocol/messages";
 import type { RpcCommand, RpcContextUsage, RpcModel, RpcState } from "@protocol/rpc";
 import { ref } from "vue";
 import { onHostMessage, post } from "@/lib/bridge";
+import { t } from "@/lib/i18n";
 import { useComposerStore } from "@/stores/composer";
 import { useDisplayStore } from "@/stores/display";
 import { useOverlaysStore } from "@/stores/overlays";
@@ -19,6 +20,45 @@ export const bootFailure = ref("");
 
 /** True until the first transcript or error arrives, so the splash stays up. */
 export const isBooting = ref(true);
+
+/**
+ * How long the splash waits for the host's first content message before it gives
+ * up and offers a retry.
+ *
+ * pi only answers after it has synced the `packages` listed in
+ * `~/.pi/agent/settings.json` — those are npm installs performed during startup,
+ * and on a cold cache (or a slow registry) they take minutes. While they run the
+ * host has nothing to report, so without this deadline the splash just sits
+ * there with no way out.
+ */
+const BOOT_TIMEOUT_MS = 30_000;
+
+let bootTimer: number | undefined;
+
+/** The session produced something: stop waiting and drop the deadline. */
+function settleBoot(): void {
+  isBooting.value = false;
+  if (bootTimer !== undefined) {
+    clearTimeout(bootTimer);
+    bootTimer = undefined;
+  }
+}
+
+/**
+ * Arm the deadline. Called when the link opens and again on every retry, so the
+ * failure card and the splash can trade places as often as the user retries.
+ */
+export function startBootWatchdog(): void {
+  if (bootTimer !== undefined) clearTimeout(bootTimer);
+  bootTimer = window.setTimeout(() => {
+    bootTimer = undefined;
+    if (!isBooting.value) return;
+    bootFailure.value = t(
+      "pi has not answered in {0}s — it may still be installing its packages. Retry, or watch the Pi Chat output.",
+      Math.round(BOOT_TIMEOUT_MS / 1000),
+    );
+  }, BOOT_TIMEOUT_MS);
+}
 
 export function useHostLink() {
   const session = useSessionStore();
@@ -44,7 +84,7 @@ export function useHostLink() {
 
       case "sessionFailed":
         bootFailure.value = message.message;
-        isBooting.value = false;
+        settleBoot();
         break;
 
       case "models":
@@ -82,7 +122,7 @@ export function useHostLink() {
         session.pendingNew = false;
         transcript.hydrate(message.messages);
         transcript.historyAvailable = message.historyAvailable === true;
-        isBooting.value = false;
+        settleBoot();
         break;
 
       case "history":
@@ -93,7 +133,7 @@ export function useHostLink() {
         transcript.applyEvent(message.event);
         // The turn just settled, so the head of the pending queue is deliverable.
         if ((message.event as { type?: string }).type === "agent_settled") pending.flushNext();
-        isBooting.value = false;
+        settleBoot();
         break;
       }
 
@@ -128,7 +168,7 @@ export function useHostLink() {
         // An optimistic switch that never got its content: put the previous
         // session back on screen (the host has already toasted the reason).
         session.rollbackSwitch(transcript);
-        isBooting.value = false;
+        settleBoot();
         overlays.toast(message.message || "Error", "error");
         break;
 
@@ -169,6 +209,7 @@ export function useHostLink() {
     const detach = onHostMessage(handle);
     // The host answers `webviewReady` with the hydration burst.
     post({ type: "webviewReady" });
+    startBootWatchdog();
     return detach;
   }
 
