@@ -110,7 +110,6 @@ pnpm run typecheck      # extension host, pi extensions, webviews
 pnpm run lint           # oxlint + oxfmt --check
 pnpm run test:unit      # vitest
 pnpm run test           # lint + typecheck + unit tests
-pnpm run test:e2e       # launch an isolated VS Code and drive the real pi
 pnpm run package        # produce a .vsix
 ```
 
@@ -125,7 +124,7 @@ type-checking against the pi packages:
 
 ```bash
 node scripts/typecheck-pi-extensions.mjs                  # everything
-node scripts/typecheck-pi-extensions.mjs pi-extensions/btw.ts   # one file
+node scripts/typecheck-pi-extensions.mjs pi-extensions/questionnaire.ts   # one file
 ```
 
 This runs as part of `pnpm run typecheck`.
@@ -139,47 +138,17 @@ and the pi SDK only loads when a chat surface opens.
 The `webview-vue` build must run **before** the rolldown build, because the host inlines the webview
 HTML at bundle time.
 
-### End-to-end tests
+### Stimulating the webview from the host
 
-`pnpm run test:e2e` launches a **separate** VS Code instance against a throwaway fixture workspace
-and drives the real `pi` binary. It never touches your daily VS Code profile, extensions or sign-in
-state — `--user-data-dir` and `--extensions-dir` both point into a temp directory — and pi's session
-storage is redirected away from `~/.pi/agent` via `PI_CODING_AGENT_SESSION_DIR`.
+The chat panel cannot be driven from outside its own document, so `src/commands/testing.ts` exposes
+`pi-agent-chat.__webviewMessage`, which dispatches a message exactly as the webview would; an
+automated check can also observe the run through the `Pi Chat RPC` output channel that
+`pi-agent-chat.rpcTrace` mirrors to disk.
 
-Not part of `pnpm run test`: e2e runs are local-only and need working pi credentials.
-
-```bash
-pnpm run test:e2e                                 # build, then run all 12 cases (full-path wall time not recorded)
-node test/e2e/.build/runner.cjs --skip-build      # iterate without rebuilding (mocha suite time: 16–37s recorded)
-node test/e2e/.build/runner.cjs --no-offline      # let pi do startup network calls
-```
-
-| variable        | purpose                      | default                                                                |
-| --------------- | ---------------------------- | ---------------------------------------------------------------------- |
-| `PI_E2E_VSCODE` | VS Code executable to launch | the macOS install, else a download into `.vscode-test/`                |
-| `PI_E2E_PI`     | pi binary path               | `<repo>/node_modules/.bin/pi`, else `which pi`, else `~/.local/bin/pi` |
-
-The model is pinned to `solar/qoder/qwen3.8-flash` in `test/e2e/fixture.ts`, and assertions are
-structural only — never on model output text. The suite drives two real turns: the fastest recorded
-turn settled in 4.4s, runs cluster at 5.9–7.9s, and the slowest took 20.6s, so case timeouts are
-120s.
-
-Cases that need the extension to _send_ something (a prompt, an abort) go through
-`pi-agent-chat.__webviewMessage`, a dev-only command registered only when the extension is
-not installed from a vsix. Observation needs no such hook: cases read the `Pi Chat RPC`
-output channel, which `rpcTrace` mirrors to disk.
-
-The suite is TypeScript bundled to CommonJS by `test/e2e/rolldown.config.ts`, because VS Code's
-extension host `require()`s whatever `extensionTestsPath` points at. `test/e2e/fixture.ts` is the one
-piece shared with the outer runner; it has ordinary vitest coverage in `fixture.test.ts`, which runs
-as part of `pnpm run test:unit`.
-
-On success the fixture directory is deleted. On failure it is kept and its path printed, because the
-`user-data-dir` — including the rpcTrace output under `user-data/logs/` — is the only way to diagnose
-a launch that never got as far as reporting.
-
-`test/e2e/FINDINGS.md` records the measured answers to the questions this harness had to settle, plus
-the environment quirks it hit.
+`shouldRegisterTestingCommands()` keeps the command off the air unless the extension is running in
+dev mode, so an install from a VSIX never registers it. Nothing in the repo uses it right now: the
+end-to-end harness that drove it was removed on 2026-09-19 and is meant to return once the feature
+set settles.
 
 ## Configuration
 

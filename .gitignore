@@ -19,10 +19,3 @@ webview-vue/src/lib/model-icons-data.ts
 
 # agent working notes (same convention as pi-agent-studio)
 .workbuddy/
-
-# e2e harness build output
-test/e2e/.build/
-
-# VS Code copies downloaded by @vscode/test-electron (only when PI_E2E_VSCODE
-# is unset and no local install is found)
-.vscode-test/
