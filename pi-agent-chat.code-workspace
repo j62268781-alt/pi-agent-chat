@@ -1,0 +1,13 @@
+{
+  // Open this file instead of the folder, for the sake of `Run Extension`.
+  //
+  // VS Code refuses to open one folder in two windows: it just focuses the window
+  // that already holds it. So while the window you press F5 in has the repo open as
+  // a *folder*, the Extension Development Host can never take that same folder, and
+  // it comes up on the welcome page with no workspace — which means no `cwd`, which
+  // means pi has no per-project sessions and the Pi panel renders empty.
+  //
+  // A workspace window does not hold its folders, so the F5 host can open the repo
+  // normally, and `.vscode/launch.json` passes ${workspaceFolder} to it.
+  "folders": [{ "path": "." }]
+}

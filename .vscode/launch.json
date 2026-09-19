@@ -5,7 +5,7 @@
       "name": "Run Extension",
       "type": "extensionHost",
       "request": "launch",
-      "args": ["--extensionDevelopmentPath=${workspaceFolder}"],
+      "args": ["--extensionDevelopmentPath=${workspaceFolder}", "${workspaceFolder}"],
       "outFiles": ["${workspaceFolder}/dist/**/*.cjs"],
       "preLaunchTask": "build"
     },
@@ -13,7 +13,7 @@
       "name": "Run Extension (skip build)",
       "type": "extensionHost",
       "request": "launch",
-      "args": ["--extensionDevelopmentPath=${workspaceFolder}"],
+      "args": ["--extensionDevelopmentPath=${workspaceFolder}", "${workspaceFolder}"],
       "outFiles": ["${workspaceFolder}/dist/**/*.cjs"]
     }
   ]
