@@ -11,7 +11,8 @@
   `data-has-file` is set — `chat.css` styles that affordance with `:has()`.
 -->
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, watch } from "vue";
+import { useFoldState } from "@/composables/useFoldState.ts";
 import { post } from "@/lib/bridge.ts";
 import { parseDiffRows } from "@/lib/diff.ts";
 import { formatDuration } from "@/lib/format.ts";
@@ -30,8 +31,8 @@ const COMMAND_PREVIEW_MAX = 70;
 
 const display = useDisplayStore();
 
-const open = ref(display.expandToolCalls);
-const pinnedByUser = ref(false);
+const fold = useFoldState(display.expandToolCalls);
+const { open } = fold;
 
 // A live switch, not a creation-time seed: flipping `chatExpandToolCalls` in the
 // settings panel re-applies to every card the user has not opened or folded by
@@ -39,7 +40,7 @@ const pinnedByUser = ref(false);
 watch(
   () => display.expandToolCalls,
   (value) => {
-    if (!pinnedByUser.value) open.value = value;
+    fold.set(value);
   },
 );
 
@@ -177,7 +178,7 @@ function formatMs(ms: number): string {
 }
 
 function onHeadClick(event: MouseEvent): void {
-  pinnedByUser.value = true;
+  fold.pin();
   if ((event.ctrlKey || event.metaKey) && props.block.filePath) {
     event.preventDefault();
     post({ type: "openFile", filePath: props.block.filePath, line: props.block.fileLine });
@@ -192,7 +193,7 @@ function onHeadClick(event: MouseEvent): void {
     :data-has-file="block.filePath ? '1' : undefined"
     :data-added="block.added || undefined"
     :data-removed="block.removed || undefined"
-    @toggle="pinnedByUser = true"
+    @toggle="fold.onToggle"
   >
     <summary class="tool-head" @click="onHeadClick">
       <span

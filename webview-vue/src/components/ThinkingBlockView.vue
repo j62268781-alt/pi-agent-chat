@@ -9,18 +9,18 @@
   keeps updating rather than freezing mid-word.
 -->
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, watch } from "vue";
+import { useFoldState } from "@/composables/useFoldState.ts";
 import { t } from "@/lib/i18n.ts";
-import { useDisplayStore } from "@/stores/display";
 import type { ThinkingBlock } from "@/stores/transcript";
+import { useDisplayStore } from "@/stores/display";
 
 const props = defineProps<{ block: ThinkingBlock }>();
 
 const display = useDisplayStore();
 
-const open = ref(props.block.open);
-/** Set once the user touches the summary; from then on `running` is ignored. */
-const pinnedByUser = ref(false);
+const fold = useFoldState(props.block.open);
+const { open } = fold;
 
 /** Characters of the reasoning kept in the folded header. */
 const PREVIEW_MAX = 60;
@@ -36,9 +36,8 @@ const preview = computed(() => {
 watch(
   () => props.block.running,
   (running) => {
-    if (pinnedByUser.value) return;
     // `expandThinking` keeps a finished block open instead of folding it away.
-    open.value = running || display.expandThinking;
+    fold.set(running || display.expandThinking);
   },
   { immediate: true },
 );
@@ -46,7 +45,7 @@ watch(
 watch(
   () => props.block.text,
   () => {
-    if (!pinnedByUser.value && props.block.running) open.value = true;
+    if (props.block.running) fold.set(true);
   },
 );
 </script>
@@ -56,7 +55,7 @@ watch(
     class="thinking-block"
     :class="block.running ? 'is-running' : 'is-done'"
     :open="open"
-    @toggle="pinnedByUser = true"
+    @toggle="fold.onToggle"
   >
     <summary>
       <span
