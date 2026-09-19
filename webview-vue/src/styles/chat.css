@@ -1079,9 +1079,8 @@ body {
   max-width: 100%;
   flex-shrink: 0;
 }
-.msg.user {
-  align-items: flex-end;
-}
+/* `.msg.user`'s alignment lives with the rest of the turn layout below; a second
+ * copy here only invited the two to disagree. */
 .msg.assistant {
   align-items: stretch;
 }
@@ -1090,7 +1089,6 @@ body {
   opacity: 0.5;
   white-space: nowrap;
   flex-shrink: 0;
-  align-self: flex-end;
 }
 .msg-time .model-icon-avatar {
   vertical-align: -0.2em;
@@ -1109,14 +1107,6 @@ body {
   background: var(--pi-brand);
   color: var(--pi-text-on-solid);
 }
-.user-bubble.is-collapsible {
-  max-height: 220px;
-  overflow-y: auto;
-}
-.user-bubble.is-collapsible.is-expanded {
-  max-height: none;
-  overflow: visible;
-}
 .user-bubble .bubble-imgs {
   display: flex;
   flex-wrap: wrap;
@@ -1132,31 +1122,6 @@ body {
   max-width: 100%;
   border-radius: 4px;
   display: block;
-}
-.expand-btn {
-  align-self: flex-end;
-  margin-top: 2px;
-  padding: 2px 6px;
-  font-size: var(--chat-fs-11);
-  font-family: inherit;
-  background: transparent;
-  color: var(--pi-text);
-  opacity: 0.7;
-  border: none;
-  border-radius: 3px;
-  cursor: pointer;
-}
-.expand-btn:hover {
-  opacity: 1;
-  background: var(--pi-bg-hover);
-}
-.text-block.is-collapsible {
-  max-height: 340px;
-  overflow-y: auto;
-}
-.text-block.is-collapsible.is-expanded {
-  max-height: none;
-  overflow: visible;
 }
 .assistant .text-block {
   line-height: 1.55;
@@ -3406,20 +3371,27 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   gap: 20px;
 }
 
-/* The board lays both turns out flush left — the AI turn is a fixed 640px
- * column, so the conversation frame aligns its children to the start. The user
- * bubble is a soft grey pill, not a solid block, and its time sits underneath
- * it rather than off to the right. */
+/* Both turns share one left-aligned frame, except the user's: the bubble, its
+ * actions and its timestamp hug the right edge, and the bubble may grow to the
+ * full column width so a long prompt reads as one block instead of a narrow
+ * ragged strip. The assistant turn keeps the 640px reading column. */
 .msg {
   gap: 6px;
 }
 
 .msg.user {
-  align-items: flex-start;
+  align-items: flex-end;
+}
+
+.msg.user .bubble {
+  max-width: 100%;
+}
+
+.msg.user .msg-time {
+  align-self: flex-end;
 }
 
 .msg-time {
-  align-self: flex-start;
   font-size: var(--chat-fs-12);
   color: var(--pi-text-muted);
   opacity: 1;
@@ -3489,6 +3461,10 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 
 .thinking-label {
   font-size: var(--chat-fs-13);
+  /* A three-character label like 已思考 must not break across lines to make room
+   * for the preview; the preview is the part that can give. */
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .thinking-body {
@@ -3510,14 +3486,15 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 
 /* ── flow card (work-block) ──────────────────────────────────────────────── */
 
+/* Flat: the fold used to sit in a raised, bordered card with a vertical guide
+ * line inside it, which read as two nested boxes around ordinary text. The
+ * disclosure triangle and the indentation carry the structure on their own. */
 .work-block {
-  border: 1px solid var(--pi-border-divider);
-  border-radius: var(--pi-r-lg);
-  background: var(--pi-bg-raised);
+  background: transparent;
 }
 
 .work-head {
-  padding: 10px 12px;
+  padding: 4px 0;
   gap: 8px;
   font-size: var(--chat-fs-13);
   font-weight: 500;
@@ -3540,7 +3517,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 
 .work-body {
   gap: 8px;
-  padding: 0 12px 10px;
+  padding: 0;
 }
 
 /* ── tool row ────────────────────────────────────────────────────────────── */
@@ -4964,22 +4941,18 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   overflow-y: auto;
   overscroll-behavior: contain;
   background: var(--pi-bg-subtle);
-  border: 1px solid var(--pi-border-divider);
   border-radius: var(--pi-r-sm);
   padding: 8px 10px;
 }
 
 .thinking-block[open] .thinking-body {
-  border-left: 1px solid var(--pi-border-divider);
   padding-left: 10px;
   margin-left: 0;
 }
 
-/* 折叠内容的树状缩进：一条竖向导引线，区分「步骤」与外面的正文。 */
+/* 折叠内容只留一点缩进，不再画竖向导引线。 */
 .work-body {
-  border-left: 1px solid var(--pi-border-divider);
-  margin-left: 11px;
-  padding-left: 9px;
+  margin-left: 6px;
 }
 
 /* 连续工具调用分段（「执行工具 N 次」），嵌套在「已处理」里的第二层折叠。 */
@@ -5016,13 +4989,26 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   content: "\eab4";
 }
 
+/* 计数徽标：把「几次」提到行首，正文只留一句说明。 */
+.tool-count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: var(--pi-r-sm);
+  background: var(--pi-bg-subtle);
+  color: var(--pi-text-muted);
+  font-size: var(--chat-fs-10);
+  font-variant-numeric: tabular-nums;
+}
+
 .tool-group-body {
   display: flex;
   flex-direction: column;
   gap: 5px;
-  border-left: 1px solid var(--pi-border-divider);
-  margin-left: 10px;
-  padding-left: 9px;
+  margin-left: 6px;
 }
 
 /* 底部实时状态行（「深度思考中 / 正在回复中」）：3×3 点阵图标 + 弱化文案，

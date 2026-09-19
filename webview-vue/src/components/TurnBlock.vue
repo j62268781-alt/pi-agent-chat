@@ -225,7 +225,8 @@ async function forkTurn(): Promise<void> {
              the fold, the way the board's screenshot shows it. -->
           <details v-if="isGrouped(segment)" class="tool-group" open>
             <summary class="tool-group-head">
-              {{ t("Ran {0} tools", segment.tools?.length ?? 0) }}
+              <span class="tool-count-badge">{{ segment.tools?.length ?? 0 }}</span>
+              <span>{{ t("Ran {0} tools", segment.tools?.length ?? 0) }}</span>
             </summary>
             <div class="tool-group-body">
               <div v-for="entry in segment.tools" :key="entry.block.id" class="msg assistant">
