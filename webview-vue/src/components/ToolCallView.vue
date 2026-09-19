@@ -19,7 +19,14 @@ import { formatDuration } from "@/lib/format.ts";
 import { t } from "@/lib/i18n.ts";
 import { basenameOf, shortenWorkspacePath } from "@/lib/paths.ts";
 import { answerText } from "@/lib/questionnaire.ts";
-import { formatToolSummary, toolDisplayName, toolPathArg, toolStr } from "@/lib/tool-format.ts";
+import {
+  formatToolSummary,
+  isMcpTool,
+  mcpServerOf,
+  toolDisplayName,
+  toolPathArg,
+  toolStr,
+} from "@/lib/tool-format.ts";
 import { useDisplayStore } from "@/stores/display";
 import type { ToolBlock } from "@/stores/transcript";
 import QuestionnaireCard from "./QuestionnaireCard.vue";
@@ -52,6 +59,16 @@ const isBash = computed(() => name.value === "bash");
 const isRead = computed(() => name.value === "read");
 const isEdit = computed(() => name.value === "write" || name.value === "edit");
 const isSubagent = computed(() => name.value === "subagent");
+
+/**
+ * MCP tools are the ones whose name carries the `mcp__server__tool` structure —
+ * that is the only thing that tells them apart from a built-in, so the row shows
+ * the server as a badge and the title stays a human name.
+ */
+const isMcp = computed(() => isMcpTool(props.block.name || ""));
+
+/** Server behind an MCP call: the row badges it, so the title can stay human. */
+const mcpServer = computed(() => mcpServerOf(props.block.name || ""));
 
 /**
  * Title of the row. One vocabulary for every step type, so a glance down the
@@ -163,9 +180,34 @@ const writeLines = computed(() => {
   return lines;
 });
 const argsText = computed(() => clamp(props.block.argsText));
+/** Arguments as indented JSON: one long line of it cannot be read by eye. */
+const argsPretty = computed(() => {
+  const args = props.block.args;
+  if (!args) return argsText.value;
+  try {
+    return clamp(JSON.stringify(args, null, 2));
+  } catch {
+    return argsText.value;
+  }
+});
 const outputText = computed(() =>
   diffRows.value.length || writeLines.value.length ? "" : clamp(props.block.output),
 );
+
+/**
+ * An MCP result is JSON, and JSON on one line is a wall. Anything that does not
+ * parse stays as it came — a server is free to answer with prose.
+ */
+const outputJson = computed(() => {
+  if (!isMcp.value || !outputText.value) return "";
+  const text = outputText.value.trim();
+  if (!text.startsWith("{") && !text.startsWith("[")) return "";
+  try {
+    return clamp(JSON.stringify(JSON.parse(text), null, 2));
+  } catch {
+    return "";
+  }
+});
 
 // ---- bash: the command, then its output ------------------------------------
 
@@ -234,6 +276,7 @@ function onHeadClick(event: MouseEvent): void {
 <template>
   <details
     class="tool-block"
+    :class="{ 'is-mcp': isMcp }"
     :open="open"
     :data-has-file="block.filePath ? '1' : undefined"
     :data-added="block.added || undefined"
@@ -250,6 +293,9 @@ function onHeadClick(event: MouseEvent): void {
         }"
         aria-hidden="true"
       ></span>
+      <span v-if="isMcp && mcpServer" class="tool-badge" :title="'MCP · ' + mcpServer">
+        {{ mcpServer }}
+      </span>
       <span v-if="displayName" class="tool-name">{{ displayName }}</span>
       <!-- 文件类：一个小 tag（只有文件名 + 后缀），点击在编辑器里打开 —— 行里不
            放完整路径（彬哥）。`prevent` 免得点 tag 顺手把折叠翻开。 -->
@@ -310,9 +356,9 @@ function onHeadClick(event: MouseEvent): void {
     <QuestionnaireCard v-else-if="block.questionnaire" :result="block.questionnaire" />
 
     <template v-else>
-      <!-- 文件类不再回显参数（行上的 tag 已经说明改的是哪个文件，彬哥）；其余工具
-           的参数仍然是唯一能说明「它调了什么」的东西，保留。 -->
-      <pre v-if="argsText && !isEdit" class="tool-args">{{ argsText }}</pre>
+      <!-- 参数与 JSON 结果都按缩进后的 JSON 放进浅底卡：MCP 的调用与返回都是
+           JSON，挤成一行谁也读不出来（彬哥）。 -->
+      <pre v-if="argsText && !isEdit" class="tool-args">{{ argsPretty }}</pre>
 
       <div v-if="diffRows.length" class="diff-block">
         <div v-for="(row, index) in diffRows" :key="index" class="diff-line" :class="row.kind">
@@ -334,6 +380,7 @@ function onHeadClick(event: MouseEvent): void {
         </div>
       </div>
 
+      <pre v-if="outputJson" class="tool-json">{{ outputJson }}</pre>
       <pre v-else-if="outputText" class="tool-result">{{ outputText }}</pre>
 
       <pre v-else-if="block.status === 'running'" class="tool-result">…</pre>

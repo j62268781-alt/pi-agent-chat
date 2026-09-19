@@ -1533,18 +1533,23 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   font-weight: 600;
   font-family: var(--pi-mono);
 }
-.tool-block.is-mcp > .tool-head .tool-name::before {
-  content: "MCP";
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  background: var(--pi-info-soft);
-  color: var(--pi-info);
+/* MCP 调用的来源服务器：标题保持人话（`Symbol search`），来源放进这个小 pill，
+ * 悬停给完整的 `MCP · lens`。原先这条是画在 `.tool-name::before` 上的死代码 ——
+ * 组件从来没给块加过 `is-mcp`。 */
+.tool-badge {
+  flex: none;
   padding: 0 4px;
   border-radius: 3px;
-  margin-right: 5px;
-  vertical-align: 1px;
+  background: var(--pi-info-soft);
+  color: var(--pi-info);
+  font-family: var(--pi-mono);
+  font-size: var(--chat-fs-10);
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
 }
+
+/* 参数与 JSON 结果的卡片样式在文件末尾（那里才盖得住历史上那几条 .tool-args）。 */
 .tool-summary {
   font-family: var(--pi-mono);
   color: var(--pi-text);
@@ -4576,12 +4581,15 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 
 /* ── 长滚动容器恢复细滚动条（全局 width:0 隐藏导致长内容无位置感知）────────
  * `.thinking-body` 是限高可滚的推理框：没有滚动条就只剩一小截可见内容、也没有
- * 位置感知（彬哥：右侧有一个小小的滚动条）。 */
+ * 位置感知（彬哥：右侧有一个小小的滚动条）。读取块 / 参数 / JSON 卡片同理。 */
 .messages,
 #sessions-list,
 .lightbox,
 .thinking-body,
-.term-output {
+.term-output,
+.code-block,
+.tool-args,
+.tool-json {
   scrollbar-width: thin;
   scrollbar-color: var(--pi-scrollbar, rgba(127, 127, 127, 0.4)) transparent;
 }
@@ -4590,7 +4598,10 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 #sessions-list::-webkit-scrollbar,
 .lightbox::-webkit-scrollbar,
 .thinking-body::-webkit-scrollbar,
-.term-output::-webkit-scrollbar {
+.term-output::-webkit-scrollbar,
+.code-block::-webkit-scrollbar,
+.tool-args::-webkit-scrollbar,
+.tool-json::-webkit-scrollbar {
   width: 6px;
   height: 6px;
   display: block;
@@ -4600,7 +4611,10 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 #sessions-list::-webkit-scrollbar-thumb,
 .lightbox::-webkit-scrollbar-thumb,
 .thinking-body::-webkit-scrollbar-thumb,
-.term-output::-webkit-scrollbar-thumb {
+.term-output::-webkit-scrollbar-thumb,
+.code-block::-webkit-scrollbar-thumb,
+.tool-args::-webkit-scrollbar-thumb,
+.tool-json::-webkit-scrollbar-thumb {
   background: var(--pi-scrollbar, rgba(127, 127, 127, 0.4));
   border-radius: 3px;
 }
@@ -4609,7 +4623,10 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 #sessions-list::-webkit-scrollbar-track,
 .lightbox::-webkit-scrollbar-track,
 .thinking-body::-webkit-scrollbar-track,
-.term-output::-webkit-scrollbar-track {
+.term-output::-webkit-scrollbar-track,
+.code-block::-webkit-scrollbar-track,
+.tool-args::-webkit-scrollbar-track,
+.tool-json::-webkit-scrollbar-track {
   background: transparent;
 }
 
@@ -5321,4 +5338,29 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 #boot-retry:disabled {
   opacity: 0.6;
   cursor: default;
+}
+
+/* ── 参数与 JSON 结果的卡片（必须放最后）──────────────────────────────────
+ * 历史上 `.tool-args` / `.tool-result` 被追加过好几条（边框、内边距、颜色），
+ * 只有写在文件末尾才盖得住；`is-diff` / `is-subagent` 那两条 `display: none`
+ * 是刻意的，这里不碰 display。
+ *
+ * 为什么是卡片：MCP 的调用参数和返回都是 JSON，挤成一行谁也读不出来（彬哥），
+ * 所以统一缩进后放进和读取块同一套浅底代码卡。 */
+.tool-args,
+.tool-json {
+  margin: 0;
+  padding: 10px 12px;
+  max-height: 340px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: none;
+  border-radius: var(--pi-r-lg);
+  background: var(--pi-bg-surface);
+  color: var(--pi-text-muted);
+  font-family: var(--pi-mono);
+  font-size: var(--chat-fs-12);
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
 }

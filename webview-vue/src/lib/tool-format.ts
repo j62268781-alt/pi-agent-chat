@@ -46,14 +46,58 @@ export function isMcpTool(name: string): boolean {
   return name.startsWith("mcp__") || name.startsWith("mcp_tool_");
 }
 
-/** `"mcp__server__tool"` -> `"server/tool"`; other names pass through. */
+/** `"mcp__server__tool"` -> `"Tool name"`; other names pass through. */
 export function toolDisplayName(name: string): string {
   if (name.startsWith("mcp__")) {
     const rest = name.slice(5);
     const idx = rest.indexOf("__");
-    if (idx > 0) return `${rest.slice(0, idx)}/${rest.slice(idx + 2)}`;
+    if (idx > 0) return humanizeToolName(rest.slice(idx + 2));
   }
   return name;
+}
+
+/** The server behind an MCP tool name, for the row's badge. */
+export function mcpServerOf(name: string): string {
+  if (!name.startsWith("mcp__")) return "";
+  const rest = name.slice(5);
+  const idx = rest.indexOf("__");
+  return idx > 0 ? rest.slice(0, idx) : "";
+}
+
+/** Initialisms that read wrong when title-cased ("Lsp diagnostics"). */
+const INITIALISMS = new Set([
+  "ai",
+  "api",
+  "ast",
+  "cli",
+  "css",
+  "ctx",
+  "db",
+  "fs",
+  "html",
+  "http",
+  "io",
+  "json",
+  "llm",
+  "lsp",
+  "mcp",
+  "sql",
+  "ui",
+  "uri",
+  "url",
+]);
+
+/** `symbol_search` -> `Symbol search`, `lsp_diagnostics` -> `LSP diagnostics`. */
+export function humanizeToolName(name: string): string {
+  const words = name.split(/[_\-\s]+/).filter(Boolean);
+  if (words.length === 0) return name;
+  return words
+    .map((word, index) => {
+      const lower = word.toLowerCase();
+      if (INITIALISMS.has(lower)) return lower.toUpperCase();
+      return index === 0 ? lower.charAt(0).toUpperCase() + lower.slice(1) : lower;
+    })
+    .join(" ");
 }
 
 /** Split a `server_tool` handle on its first underscore. */
@@ -63,15 +107,45 @@ function mcpHandleParts(handle: string): { server: string; tool: string } {
   return { server: handle.slice(0, idx), tool: handle.slice(idx + 1) };
 }
 
-/** Compact JSON preview of MCP arguments, capped at 80 chars. */
-function mcpArgsPreview(args: unknown): string {
-  if (!args || typeof args !== "object") return "";
-  try {
-    const json = JSON.stringify(args);
-    return json.length > 80 ? json.slice(0, 80) + "\u2026" : json;
-  } catch {
-    return "";
+/**
+ * Arguments of a call we have no wording for (an MCP tool, mostly), as one line.
+ *
+ * These arrived as raw JSON ("{\"query\":\"x\"}"), which is noise in a row that
+ * is 300px wide: the value of the one argument that matters says more. When
+ * nothing is scalar, the count does.
+ */
+const PREVIEW_KEYS = [
+  "query",
+  "q",
+  "path",
+  "file",
+  "file_path",
+  "prompt",
+  "text",
+  "command",
+  "url",
+  "name",
+  "title",
+  "id",
+];
+
+export function argsPreview(args: unknown): string {
+  if (!args || typeof args !== "object" || Array.isArray(args)) return "";
+  const record = args as Record<string, unknown>;
+  const keys = Object.keys(record);
+  if (keys.length === 0) return "";
+
+  for (const key of PREVIEW_KEYS) {
+    const value = scalar(record[key]);
+    if (value) return truncate(value, 80);
   }
+  for (const key of keys) {
+    const value = scalar(record[key]);
+    if (value) return truncate(value, 80);
+  }
+  const first = record[keys[0] as string];
+  if (Array.isArray(first)) return t("{0} items", first.length);
+  return t("{0} arguments", keys.length);
 }
 
 /** One-line summary for a tool call; `""` when there is nothing to show. */
@@ -133,7 +207,7 @@ export function formatToolSummary(name: string, args: Record<string, unknown> | 
         ? String(questions) + (questions > 1 ? " " + t("questions") : " " + t("question"))
         : t("questionnaire");
   } else if (name.startsWith("mcp__")) {
-    s = mcpArgsPreview(args);
+    s = argsPreview(args);
   } else if (name === "mcp_tool_call") {
     const handle = toolStr(args.tool);
     if (handle) {
