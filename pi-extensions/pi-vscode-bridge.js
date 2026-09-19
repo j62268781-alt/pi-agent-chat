@@ -296,6 +296,258 @@ export default function (pi) {
     execute: async (_toolCallId, params) => jsonResult("getDiagnostics", params),
   });
 
+  // ── IDE navigation and actions ───────────────────────────────────────────
+  //
+  // The host has implemented these all along; nothing reached them, so the agent
+  // could only read files and guess. Positions are 0-based `{line, character}`,
+  // the same convention `vscode_selection` and the diagnostics report, so a
+  // position from one tool can be fed straight back into another.
+
+  const FILE_PATH = { type: "string", description: "Absolute or workspace-relative file path" };
+  const LINE = { type: "number", description: "0-based line number" };
+  const CHARACTER = { type: "number", description: "0-based character offset in the line" };
+
+  /** The shape every position-taking method wants. */
+  const withPosition = (extra = {}) => ({
+    type: "object",
+    properties: { filePath: FILE_PATH, line: LINE, character: CHARACTER, ...extra },
+    required: ["filePath", "line", "character"],
+    additionalProperties: false,
+  });
+
+  const atPosition = (params) => ({
+    filePath: params.filePath,
+    position: { line: params.line, character: params.character },
+  });
+
+  registerToolIfEnabled({
+    name: "vscode_selection",
+    label: "VS Code Selection",
+    description:
+      "The editor's current selection — file, text and 0-based coordinates. Falls back to the most recent selection when no editor is focused.",
+    promptSnippet: "Read what the user has selected in VS Code.",
+    parameters: {
+      type: "object",
+      properties: {
+        latest: { type: "boolean", description: "Use the most recent selection even if an editor is focused" },
+      },
+      additionalProperties: false,
+    },
+    execute: async (_toolCallId, params) =>
+      jsonResult(params.latest ? "getLatestSelection" : "getCurrentSelection"),
+  });
+
+  registerToolIfEnabled({
+    name: "vscode_open_editors",
+    label: "VS Code Open Editors",
+    description: "Files open in the editor right now, with language and dirty state.",
+    promptSnippet: "List the files the user has open.",
+    parameters: { type: "object", properties: {}, additionalProperties: false },
+    execute: async () => jsonResult("getOpenEditors"),
+  });
+
+  registerToolIfEnabled({
+    name: "vscode_document_symbols",
+    label: "VS Code Document Symbols",
+    description:
+      "Outline one file: functions, classes and methods with their ranges. Cheaper than reading the whole file.",
+    promptSnippet: "Outline a file's symbols instead of reading it whole.",
+    parameters: {
+      type: "object",
+      properties: { filePath: FILE_PATH },
+      required: ["filePath"],
+      additionalProperties: false,
+    },
+    execute: async (_toolCallId, params) => jsonResult("getDocumentSymbols", { filePath: params.filePath }),
+  });
+
+  registerToolIfEnabled({
+    name: "vscode_workspace_symbols",
+    label: "VS Code Workspace Symbols",
+    description: "Search symbols across the workspace by name — the fastest way to find where something lives.",
+    promptSnippet: "Find a symbol across the workspace.",
+    parameters: {
+      type: "object",
+      properties: { query: { type: "string", description: "Symbol name or fragment" } },
+      required: ["query"],
+      additionalProperties: false,
+    },
+    execute: async (_toolCallId, params) => jsonResult("getWorkspaceSymbols", { query: params.query }),
+  });
+
+  registerToolIfEnabled({
+    name: "vscode_definition",
+    label: "VS Code Definition",
+    description: "Jump from a position to what it refers to: the definition, its type, an implementation or a declaration.",
+    promptSnippet: "Go to the definition/type/implementation of a symbol.",
+    parameters: withPosition({
+      kind: {
+        type: "string",
+        enum: ["definition", "type", "implementation", "declaration"],
+        description: "Which relationship to follow (default: definition)",
+      },
+    }),
+    execute: async (_toolCallId, params) => {
+      switch (params.kind) {
+        case "type":
+          return jsonResult("getTypeDefinitions", atPosition(params));
+        case "implementation":
+          return jsonResult("getImplementations", atPosition(params));
+        case "declaration":
+          return jsonResult("getDeclarations", atPosition(params));
+        default:
+          return jsonResult("getDefinitions", atPosition(params));
+      }
+    },
+  });
+
+  registerToolIfEnabled({
+    name: "vscode_references",
+    label: "VS Code References",
+    description: "Everything that references the symbol at a position, across the workspace.",
+    promptSnippet: "Find every reference to a symbol.",
+    parameters: withPosition(),
+    execute: async (_toolCallId, params) => jsonResult("getReferences", atPosition(params)),
+  });
+
+  registerToolIfEnabled({
+    name: "vscode_hover",
+    label: "VS Code Hover",
+    description: "The type, signature and docs the language server shows at a position.",
+    promptSnippet: "Read the type/docs at a position.",
+    parameters: withPosition(),
+    execute: async (_toolCallId, params) => jsonResult("getHover", atPosition(params)),
+  });
+
+  registerToolIfEnabled({
+    name: "vscode_code_actions",
+    label: "VS Code Code Actions",
+    description:
+      "Quick fixes and refactors the language server offers for a position or range, each with an id for vscode_apply_code_action.",
+    promptSnippet: "List the quick fixes available at a position.",
+    parameters: withPosition({
+      endLine: { type: "number", description: "0-based end line, for a range (default: the same position)" },
+      endCharacter: { type: "number", description: "0-based end character, for a range" },
+    }),
+    execute: async (_toolCallId, params) => {
+      const start = { line: params.line, character: params.character };
+      const hasRange = typeof params.endLine === "number" && typeof params.endCharacter === "number";
+      const end = hasRange ? { line: params.endLine, character: params.endCharacter } : start;
+      return jsonResult("getCodeActions", {
+        filePath: params.filePath,
+        selection: { start, end },
+      });
+    },
+  });
+
+  registerToolIfEnabled({
+    name: "vscode_apply_code_action",
+    label: "VS Code Apply Code Action",
+    description:
+      "Run one of the actions vscode_code_actions returned, by its id. This edits files through the real IDE, so it is a write.",
+    promptSnippet: "Apply a code action by id.",
+    parameters: {
+      type: "object",
+      properties: { actionId: { type: "string", description: "Id from vscode_code_actions" } },
+      required: ["actionId"],
+      additionalProperties: false,
+    },
+    execute: async (_toolCallId, params) => jsonResult("executeCodeAction", { actionId: params.actionId }),
+  });
+
+  registerToolIfEnabled({
+    name: "vscode_open_file",
+    label: "VS Code Open File",
+    description: "Open a file in the editor, optionally revealing a position — how you show the user where something is.",
+    promptSnippet: "Open a file (and position) in the editor.",
+    parameters: {
+      type: "object",
+      properties: {
+        filePath: FILE_PATH,
+        line: LINE,
+        character: CHARACTER,
+        preview: { type: "boolean", description: "Reuse the preview tab (default: a normal tab)" },
+      },
+      required: ["filePath"],
+      additionalProperties: false,
+    },
+    execute: async (_toolCallId, params) => {
+      const body = { filePath: params.filePath };
+      if (typeof params.preview === "boolean") body.preview = params.preview;
+      if (typeof params.line === "number") {
+        const at = { line: params.line, character: typeof params.character === "number" ? params.character : 0 };
+        body.selection = { start: at, end: at };
+      }
+      return jsonResult("openFile", body);
+    },
+  });
+
+  registerToolIfEnabled({
+    name: "vscode_save_file",
+    label: "VS Code Save File",
+    description: "Save a file through the editor and report whether it had unsaved changes.",
+    promptSnippet: "Save a file through the editor.",
+    parameters: {
+      type: "object",
+      properties: { filePath: FILE_PATH },
+      required: ["filePath"],
+      additionalProperties: false,
+    },
+    execute: async (_toolCallId, params) => jsonResult("saveDocument", { filePath: params.filePath }),
+  });
+
+  registerToolIfEnabled({
+    name: "vscode_format",
+    label: "VS Code Format",
+    description: "Format a file — or a range of it — with the formatter the editor is configured to use.",
+    promptSnippet: "Format a file or range with the editor's formatter.",
+    parameters: {
+      type: "object",
+      properties: {
+        filePath: FILE_PATH,
+        startLine: LINE,
+        startCharacter: CHARACTER,
+        endLine: LINE,
+        endCharacter: CHARACTER,
+      },
+      required: ["filePath"],
+      additionalProperties: false,
+    },
+    execute: async (_toolCallId, params) => {
+      const hasRange = typeof params.startLine === "number" && typeof params.endLine === "number";
+      if (!hasRange) return jsonResult("formatDocument", { filePath: params.filePath });
+      return jsonResult("formatRange", {
+        filePath: params.filePath,
+        selection: {
+          start: { line: params.startLine, character: typeof params.startCharacter === "number" ? params.startCharacter : 0 },
+          end: { line: params.endLine, character: typeof params.endCharacter === "number" ? params.endCharacter : 0 },
+        },
+      });
+    },
+  });
+
+  registerToolIfEnabled({
+    name: "vscode_notifications",
+    label: "VS Code Notifications",
+    description:
+      "Recent VS Code notifications — errors another extension surfaced, for instance — optionally clearing them.",
+    promptSnippet: "Read (or clear) VS Code notifications.",
+    parameters: {
+      type: "object",
+      properties: {
+        limit: { type: "number", description: "How many to return (default 20, max 100)" },
+        since: { type: "number", description: "Only entries newer than this timestamp" },
+        clear: { type: "boolean", description: "Clear them after reading" },
+      },
+      additionalProperties: false,
+    },
+    execute: async (_toolCallId, params) => {
+      const result = await jsonResult("getNotifications", { limit: params.limit, since: params.since });
+      if (params.clear) await callBridge("clearNotifications");
+      return result;
+    },
+  });
+
   // ── Slash commands ──
 
   const resolveCurrentContext = async () => {

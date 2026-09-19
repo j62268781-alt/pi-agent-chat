@@ -2,6 +2,7 @@ import { accessSync, constants } from "node:fs";
 import { join } from "node:path";
 import * as vscode from "vscode";
 import {
+  BRIDGE_BOOTSTRAP_PROMPT,
   BRIDGE_EXTENSION_PATH,
   PERMISSION_GATE_EXTENSION_PATH,
   QUESTIONNAIRE_EXTENSION_PATH,
@@ -71,6 +72,12 @@ export async function ensurePiBinary(): Promise<string | undefined> {
 }
 
 /**
+ * Every pi session is told the bridge exists, so the agent uses the IDE instead
+ * of guessing. Both entry points load the same extensions, so both get it.
+ */
+const BRIDGE_PROMPT_ARGS = ["--append-system-prompt", BRIDGE_BOOTSTRAP_PROMPT];
+
+/**
  * Build the pi CLI argument list (without the binary itself).
  */
 export function createPiShellArgs(options: {
@@ -94,10 +101,11 @@ export function createPiShellArgs(options: {
         "--session",
         options.sessionFile,
         ...extensionArgs,
+        ...BRIDGE_PROMPT_ARGS,
         ...userArgs,
         ...(options.extraArgs ?? []),
       ]
-    : [...extensionArgs, ...userArgs, ...(options.extraArgs ?? [])];
+    : [...extensionArgs, ...BRIDGE_PROMPT_ARGS, ...userArgs, ...(options.extraArgs ?? [])];
   return args;
 }
 
@@ -148,10 +156,11 @@ export function createRpcShellArgs(options: {
         options.sessionFile,
         ...extensionArgs,
         ...base,
+        ...BRIDGE_PROMPT_ARGS,
         ...userArgs,
         ...(options.extraArgs ?? []),
       ]
-    : [...extensionArgs, ...base, ...userArgs, ...(options.extraArgs ?? [])];
+    : [...extensionArgs, ...base, ...BRIDGE_PROMPT_ARGS, ...userArgs, ...(options.extraArgs ?? [])];
 }
 
 /** User-provided env overrides (merged over process.env by the spawner). */
