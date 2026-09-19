@@ -27,7 +27,7 @@ import type {
   RpcSessionEntry,
   RpcSessionStats,
 } from "../../protocol/rpc.ts";
-import type { SessionListItem, WebviewToExt } from "../../protocol/messages.ts";
+import type { SessionListItem, ToastKind, WebviewToExt } from "../../protocol/messages.ts";
 import { createRpcClient } from "../../services/rpc/client.ts";
 import { mergeBuiltinCommands, parseBuiltin } from "../../services/chat/builtin-commands.ts";
 import { readPiChangelog } from "../../utils/changelog.ts";
@@ -322,7 +322,7 @@ export async function createChatSession(
     void sendContextUsage();
   }
 
-  function toast(text: string, kind?: "info" | "success" | "error" | "warning"): void {
+  function toast(text: string, kind?: ToastKind): void {
     if (sessionDisposed) return;
     host.postMessage({ type: "toast", text, ...(kind ? { kind } : {}) });
   }
@@ -393,25 +393,34 @@ export async function createChatSession(
    */
   async function postSessionsList(): Promise<void> {
     let items: SessionListItem[] = [];
-    try {
-      const list = cwd ? await SessionManager.list(cwd) : [];
-      list.sort(function (a, b) {
-        return (b.modified?.getTime() ?? 0) - (a.modified?.getTime() ?? 0);
-      });
-      // Full history, newest first — the list scrolls, no point truncating:
-      // real workspaces hold dozens of sessions, not hundreds (measured 21).
-      items = list.map(function (s) {
-        return {
-          file: s.path,
-          name: s.name ?? "",
-          firstMessage: s.firstMessage ?? "",
-          modified:
-            s.modified instanceof Date ? s.modified.toISOString() : String(s.modified ?? ""),
-          messageCount: s.messageCount ?? 0,
-        };
-      });
-    } catch {
-      // leave items empty; the popup shows its empty state
+    if (!cwd) {
+      // pi records sessions per project, so "no folder open" is indistinguishable
+      // from "this project has no sessions" unless it is said out loud.
+      toast(t("Open a folder to list its sessions."), "error");
+    } else {
+      try {
+        const list = await SessionManager.list(cwd);
+        list.sort(function (a, b) {
+          return (b.modified?.getTime() ?? 0) - (a.modified?.getTime() ?? 0);
+        });
+        // Full history, newest first — the list scrolls, no point truncating:
+        // real workspaces hold dozens of sessions, not hundreds (measured 21).
+        items = list.map(function (s) {
+          return {
+            file: s.path,
+            name: s.name ?? "",
+            firstMessage: s.firstMessage ?? "",
+            modified:
+              s.modified instanceof Date ? s.modified.toISOString() : String(s.modified ?? ""),
+            messageCount: s.messageCount ?? 0,
+          };
+        });
+      } catch (e) {
+        toast(
+          t("Could not read the session list: {0}", e instanceof Error ? e.message : String(e)),
+          "error",
+        );
+      }
     }
     if (!sessionDisposed) {
       host.postMessage({

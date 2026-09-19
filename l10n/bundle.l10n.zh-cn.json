@@ -7,6 +7,8 @@
   "Checking environment…": "正在检查环境…",
   "Pi exited{0}": "Pi 已退出{0}",
   "Cannot find the pi executable. Set \"pi-agent-chat.path\" to its absolute path.": "找不到 pi 可执行文件。请把 \"pi-agent-chat.path\" 设为它的绝对路径。",
+  "Open a folder to list its sessions.": "请先打开一个文件夹，才能列出该项目的会话。",
+  "Could not read the session list: {0}": "读取会话列表失败：{0}",
   "Choose the UI mode (terminal, webview, or sidebar)": "选择界面模式（终端、Webview 面板或侧边栏）",
   "Configure a model provider and API key": "配置模型提供商和 API 密钥",
   "Copied": "已复制",
