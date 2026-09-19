@@ -257,18 +257,18 @@ export const useTranscriptStore = defineStore("transcript", () => {
 
       const blocks = message.blocks.filter((block) => block.kind !== null);
       const last = blocks[blocks.length - 1];
-      const isStreamingTail = message === activeAssistant.value;
-      const foldable = !isStreamingTail && blocks.length > 0 && last?.kind === "text";
+      // The trailing prose is the answer, everything before it is the work — and
+      // the rule no longer relaxes while a message streams. It used to: a
+      // streaming message was rendered in the clear block by block, which left
+      // the turn with no fold at all until it settled, so the running head
+      // ("正在执行中 · 24s") could never be seen while the agent worked.
+      // `TurnBlock` opens the fold for as long as the turn runs instead.
+      const foldable = blocks.length > 0 && last?.kind === "text";
 
       for (const block of blocks) {
-        // While streaming, or when the answer does not end in prose, nothing is
-        // folded — the user should see the work as it happens.
         if (foldable && block !== last) current.workBlocks.push({ message, block });
         else if (foldable) current.finalBlocks.push({ message, block });
         else current.workBlocks.push({ message, block });
-      }
-      if (!foldable && blocks.length > 0) {
-        current.finalBlocks.push(...current.workBlocks.splice(0));
       }
     }
 

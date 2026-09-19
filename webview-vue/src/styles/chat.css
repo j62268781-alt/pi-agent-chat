@@ -5106,3 +5106,47 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
     opacity: 0.85;
   }
 }
+
+/* ── 启动失败卡片：左右留白 + 居中 + 大圆角按钮 ────────────────────────────────
+ * 之前这套样式挂的是类名（.boot-error-msg / .boot-retry），而模板给的是 id，
+ * 所以按钮是浏览器默认样式、文案直接顶到侧栏两边。这里按 id 再来一遍，并把文案
+ * 居中、限宽 + 左右留白（窄侧栏下长句不再贴边），按钮圆角加大。 */
+#boot-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  padding: 0 24px;
+  text-align: center;
+}
+
+#boot-error-msg {
+  margin: 0;
+  max-width: 420px;
+  color: var(--pi-text-danger);
+  font-size: var(--chat-fs-13);
+  line-height: 1.6;
+  text-align: center;
+  text-wrap: pretty;
+}
+
+#boot-retry {
+  padding: 8px 22px;
+  border: none;
+  border-radius: var(--pi-r-full, 999px);
+  background: var(--pi-brand);
+  color: var(--pi-text-on-solid);
+  font-family: inherit;
+  font-size: var(--chat-fs-13);
+  cursor: pointer;
+}
+
+#boot-retry:hover {
+  filter: brightness(1.08);
+}
+
+#boot-retry:disabled {
+  opacity: 0.6;
+  cursor: default;
+}

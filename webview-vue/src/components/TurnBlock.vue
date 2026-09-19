@@ -16,18 +16,20 @@ import { useSessionStore } from "@/stores/session";
 import type { Turn } from "@/stores/transcript";
 import BlockView from "./BlockView.vue";
 
-const props = defineProps<{ turn: Turn }>();
+const props = defineProps<{ turn: Turn; isLast?: boolean }>();
 
 const display = useDisplayStore();
 const overlays = useOverlaysStore();
 const session = useSessionStore();
 
 /**
- * `stopReason` is written by `message_end`, so an assistant that has not reported
- * one yet is the turn currently being generated — which is what decides between
- * 「正在执行中」 and 「已处理」.
+ * A turn is running when it is the newest one and the session is streaming.
+ *
+ * `stopReason` is not the signal: a turn that uses tools is several assistant
+ * messages, and the first `message_end` already writes a stop reason, so a
+ * reason-based test flips to 「已处理」 while the turn is still working.
  */
-const running = computed(() => session.isStreaming && props.turn.stopReason == null);
+const running = computed(() => props.isLast === true && session.isStreaming);
 
 /** Ticks only while this turn is the running one, so the head counts up live. */
 const now = ref(Date.now());
@@ -220,7 +222,10 @@ function revertToUser(): void {
   <!-- `chatCollapseWork: false` drops the fold entirely: the work blocks render
        in the clear, in their original order, as if nothing had been grouped. -->
   <template v-if="turn.workBlocks.length">
-    <details v-if="display.collapseWork" class="work-block">
+    <!-- While the turn runs its fold stays open, so the steps are watchable as they
+         happen and the head's live counter is actually on screen; it falls shut
+         when the turn settles, leaving 已处理 · <answer>. -->
+    <details v-if="display.collapseWork" class="work-block" :open="running">
       <summary class="work-head">
         <span>{{ workTitle }}</span>
         <span v-if="counts" class="work-counts">

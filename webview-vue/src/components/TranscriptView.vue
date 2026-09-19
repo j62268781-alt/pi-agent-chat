@@ -215,7 +215,12 @@ watch(
           </div>
         </div>
 
-        <TurnBlock v-for="turn in transcript.turns" :key="turn.id" :turn="turn" />
+        <TurnBlock
+          v-for="(turn, index) in transcript.turns"
+          :key="turn.id"
+          :turn="turn"
+          :is-last="index === transcript.turns.length - 1"
+        />
 
         <!-- Live status row: the dotted grid + what the agent is doing right
              now. It leaves as soon as the agent settles. -->

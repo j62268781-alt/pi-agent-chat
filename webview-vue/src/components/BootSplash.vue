@@ -41,8 +41,16 @@ function retry(): void {
       <div class="boot-logo" v-html="piLogoSvg"></div>
       <div v-if="!failed" class="boot-dots"><span></span><span></span><span></span></div>
       <div v-if="failed" id="boot-error">
-        <p id="boot-error-msg">{{ bootFailure || t("Failed to start the session.") }}</p>
-        <button id="boot-retry" type="button" :disabled="retrying" @click="retry">
+        <p id="boot-error-msg" class="boot-error-msg">
+          {{ bootFailure || t("Failed to start the session.") }}
+        </p>
+        <button
+          id="boot-retry"
+          class="boot-retry"
+          type="button"
+          :disabled="retrying"
+          @click="retry"
+        >
           {{ t("Retry") }}
         </button>
       </div>
