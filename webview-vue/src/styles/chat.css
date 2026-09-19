@@ -3434,14 +3434,15 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 
 /* ── thinking card (board: r12, #F7F7FA, header + body) ──────────────────── */
 
+/* 思考行就是一行文案，不套卡片（彬哥：每个思考会话不要那个圆角，就单纯的文案）。
+ * 只有展开出来的正文才是被框住的内容 —— 见下面的 `.thinking-body`。 */
 .thinking-block {
-  border: 1px solid var(--pi-border-divider);
-  border-left: 1px solid var(--pi-border-divider);
-  border-radius: var(--pi-r-lg);
-  background: var(--pi-bg-think);
+  border: none;
+  border-radius: 0;
+  background: transparent;
   padding: 0;
   margin: 0;
-  overflow: hidden;
+  overflow: visible;
   font-size: var(--chat-fs-13);
 }
 
@@ -3530,14 +3531,26 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   overflow: visible;
 }
 
+/* 与「已处理」「已思考」行同一节奏：27px 一行（彬哥：工具行也收到 27px）。原先
+ * 8px 的上下内边距配 24px 的图标块把这一行顶到了 40px。内容自己只长到 24px（16px
+ * 的图标块 + 8px 内边距），所以用 min-height 补齐到思考行的高度，不靠换行撑。 */
 .tool-head {
-  padding: 8px 0;
-  gap: 10px;
+  padding: 4px 0;
+  gap: 6px;
+  min-height: 27px;
   font-size: var(--chat-fs-13);
 }
 
-/* The board gives every tool row a 24x24 rounded chip on #F2F3F5. The markup
- * has no icon element of its own, so the chip is drawn on the name. */
+/* 一行就是一行：标签和摘要都不换行，超宽由各自的 overflow 裁掉。不锁的话
+ * 「Terminal command」或长命令会把这一行折成 38px。 */
+.tool-name,
+.tool-summary {
+  white-space: nowrap;
+}
+
+/* The board gives every tool row a rounded chip on #F2F3F5. The markup
+ * has no icon element of its own, so the chip is drawn on the name. 16px keeps
+ * the row on the 27px rhythm; the glyph scales with it. */
 .tool-name {
   display: inline-flex;
   align-items: center;
@@ -3551,13 +3564,13 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: 24px;
-  height: 24px;
-  margin-right: 10px;
+  width: 16px;
+  height: 16px;
+  margin-right: 8px;
   border-radius: var(--pi-r-sm);
   background: var(--pi-bg-subtle);
   color: var(--pi-icon);
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 400;
 }
 
@@ -4544,17 +4557,21 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
 }
 
-/* ── 长滚动容器恢复细滚动条（全局 width:0 隐藏导致长内容无位置感知）──────── */
+/* ── 长滚动容器恢复细滚动条（全局 width:0 隐藏导致长内容无位置感知）────────
+ * `.thinking-body` 是限高可滚的推理框：没有滚动条就只剩一小截可见内容、也没有
+ * 位置感知（彬哥：右侧有一个小小的滚动条）。 */
 .messages,
 #sessions-list,
-.lightbox {
+.lightbox,
+.thinking-body {
   scrollbar-width: thin;
   scrollbar-color: var(--pi-scrollbar, rgba(127, 127, 127, 0.4)) transparent;
 }
 
 .messages::-webkit-scrollbar,
 #sessions-list::-webkit-scrollbar,
-.lightbox::-webkit-scrollbar {
+.lightbox::-webkit-scrollbar,
+.thinking-body::-webkit-scrollbar {
   width: 6px;
   height: 6px;
   display: block;
@@ -4562,14 +4579,16 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 
 .messages::-webkit-scrollbar-thumb,
 #sessions-list::-webkit-scrollbar-thumb,
-.lightbox::-webkit-scrollbar-thumb {
+.lightbox::-webkit-scrollbar-thumb,
+.thinking-body::-webkit-scrollbar-thumb {
   background: var(--pi-scrollbar, rgba(127, 127, 127, 0.4));
   border-radius: 3px;
 }
 
 .messages::-webkit-scrollbar-track,
 #sessions-list::-webkit-scrollbar-track,
-.lightbox::-webkit-scrollbar-track {
+.lightbox::-webkit-scrollbar-track,
+.thinking-body::-webkit-scrollbar-track {
   background: transparent;
 }
 
