@@ -4563,7 +4563,8 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 .messages,
 #sessions-list,
 .lightbox,
-.thinking-body {
+.thinking-body,
+.term-output {
   scrollbar-width: thin;
   scrollbar-color: var(--pi-scrollbar, rgba(127, 127, 127, 0.4)) transparent;
 }
@@ -4571,7 +4572,8 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 .messages::-webkit-scrollbar,
 #sessions-list::-webkit-scrollbar,
 .lightbox::-webkit-scrollbar,
-.thinking-body::-webkit-scrollbar {
+.thinking-body::-webkit-scrollbar,
+.term-output::-webkit-scrollbar {
   width: 6px;
   height: 6px;
   display: block;
@@ -4580,7 +4582,8 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 .messages::-webkit-scrollbar-thumb,
 #sessions-list::-webkit-scrollbar-thumb,
 .lightbox::-webkit-scrollbar-thumb,
-.thinking-body::-webkit-scrollbar-thumb {
+.thinking-body::-webkit-scrollbar-thumb,
+.term-output::-webkit-scrollbar-thumb {
   background: var(--pi-scrollbar, rgba(127, 127, 127, 0.4));
   border-radius: 3px;
 }
@@ -4588,7 +4591,8 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 .messages::-webkit-scrollbar-track,
 #sessions-list::-webkit-scrollbar-track,
 .lightbox::-webkit-scrollbar-track,
-.thinking-body::-webkit-scrollbar-track {
+.thinking-body::-webkit-scrollbar-track,
+.term-output::-webkit-scrollbar-track {
   background: transparent;
 }
 
@@ -4759,40 +4763,99 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   font-variant-numeric: tabular-nums;
 }
 
-/* bash：命令说明 + `$` + 完整命令（跟随既有 .tool-result 的等宽与边框）。 */
-.tool-command {
-  border-top: 1px solid var(--pi-border);
-  padding: 6px 8px;
+/* ── 终端卡（bash）：一条命令就是一个终端窗口 ──────────────────────────────
+ * 设计来自彬哥给的 SVG：深色卡（#1F2329，与 code/diff 卡同一套 token）、头部一个
+ * 终端字形 + 名称 + 复制按钮、`$ 命令`、输出，末尾一行绿色（失败红色）结果。
+ * 整张卡走 code 调色板，所以卡内的行文字要按深色底重涂一遍。 */
+.tool-block[data-tool="bash"] {
+  border-radius: var(--pi-r-lg);
+  background: var(--pi-code-bg);
+  color: var(--pi-code-fg);
 }
 
-.tool-command-label {
-  font-size: var(--chat-fs-10);
-  font-weight: 600;
-  letter-spacing: 0.3px;
-  color: var(--pi-text-muted);
-  margin-bottom: 4px;
+.tool-block[data-tool="bash"] > .tool-head {
+  padding: 4px 12px;
+  gap: 8px;
+  min-height: 0;
 }
 
-.tool-command-line {
+/* 复制按钮：卡头的高度由它决定，32px 的通用尺寸会把卡头顶到 44px（设计稿约
+ * 30px），收到 24px 仍是个够用的点击目标。 */
+.tool-block[data-tool="bash"] .tool-copy {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+}
+
+/* 卡头一个裸的终端字形，不是那个 16px 的浅底方块。 */
+.tool-block[data-tool="bash"] .tool-name:before {
+  content: "\ea85";
+  width: auto;
+  height: auto;
+  background: transparent;
+  border-radius: 0;
+  color: var(--pi-code-muted);
+  font-size: 15px;
+}
+
+.tool-block[data-tool="bash"] .tool-name {
+  color: var(--pi-code-fg);
+}
+
+.tool-block[data-tool="bash"] .tool-summary,
+.tool-block[data-tool="bash"] .tool-status,
+.tool-block[data-tool="bash"] .tool-copy {
+  color: var(--pi-code-muted);
+}
+
+.term {
+  padding: 0 12px 10px;
+  font-family: var(--pi-mono);
+  font-size: var(--chat-fs-12);
+}
+
+.term-line {
   display: flex;
   align-items: flex-start;
   gap: 6px;
-  font-family: var(--pi-mono);
-  font-size: var(--chat-fs-12);
   line-height: 1.5;
-  color: var(--pi-text);
+  color: var(--pi-code-fg);
 }
 
-.tool-command-prompt {
+.term-prompt {
   flex-shrink: 0;
-  color: var(--pi-success);
+  color: var(--pi-code-muted);
   user-select: none;
 }
 
-.tool-command-text {
+.term-command {
   min-width: 0;
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+/* 输出限高：一条 `npm test` 能刷几百行，不该把会话流撑开。 */
+.term-output {
+  margin: 6px 0 0;
+  max-height: 260px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--pi-code-fg);
+}
+
+.term-result {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  color: var(--pi-code-added-gutter);
+}
+
+.term-result.is-error {
+  color: var(--pi-code-removed-gutter);
 }
 
 /* read：输入与响应各自带一个小标签，响应沿用 .code-block 的带行号排版。 */

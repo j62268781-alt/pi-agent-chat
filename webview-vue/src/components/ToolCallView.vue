@@ -20,6 +20,7 @@ import { t } from "@/lib/i18n.ts";
 import { basenameOf, shortenWorkspacePath } from "@/lib/paths.ts";
 import { formatToolSummary, toolDisplayName, toolPathArg, toolStr } from "@/lib/tool-format.ts";
 import { useDisplayStore } from "@/stores/display";
+import { useOverlaysStore } from "@/stores/overlays";
 import type { ToolBlock } from "@/stores/transcript";
 
 const props = defineProps<{ block: ToolBlock }>();
@@ -30,6 +31,7 @@ const MAX_INLINE = 12000;
 const COMMAND_PREVIEW_MAX = 70;
 
 const display = useDisplayStore();
+const overlays = useOverlaysStore();
 
 const fold = useFoldState(display.expandToolCalls);
 const { open } = fold;
@@ -136,6 +138,21 @@ const outputText = computed(() =>
 
 const bashCommand = computed(() => (isBash.value ? toolStr(props.block.args?.command) : ""));
 
+/**
+ * The console's closing line. The board's command card ends on a green line
+ * ("✓ 6 passed (1.4s)"); here it carries the two facts we own — the outcome and
+ * the elapsed time — rather than repeating the tail of the output.
+ */
+const bashResult = computed(() => {
+  const outcome = props.block.status === "error" ? t("failed") : t("Processed");
+  return statusLabel.value ? `${outcome} \u00b7 ${statusLabel.value}` : outcome;
+});
+
+function copyCommand(): void {
+  post({ type: "copy", text: bashCommand.value });
+  overlays.toast(t("Copied"), "success");
+}
+
 // ---- read: the call's input, then a numbered file body ----------------------
 //
 // pi's `read` returns raw text with no line numbers (only its truncation notice
@@ -190,6 +207,7 @@ function onHeadClick(event: MouseEvent): void {
   <details
     class="tool-block"
     :open="open"
+    :data-tool="isBash ? 'bash' : undefined"
     :data-has-file="block.filePath ? '1' : undefined"
     :data-added="block.added || undefined"
     :data-removed="block.removed || undefined"
@@ -208,19 +226,41 @@ function onHeadClick(event: MouseEvent): void {
       <span v-if="displayName" class="tool-name">{{ displayName }}</span>
       <span class="tool-summary">{{ summary }}</span>
       <span v-if="statusLabel" class="tool-status">{{ statusLabel }}</span>
+      <!-- The console's own affordance: copying the command is what the card is
+           for. `prevent` keeps the click from folding the card open/shut. -->
+      <button
+        v-if="isBash && bashCommand"
+        class="icon-btn tool-copy"
+        type="button"
+        :title="t('Copy command')"
+        @click.stop.prevent="copyCommand"
+      >
+        <span class="codicon codicon-copy"></span>
+      </button>
     </summary>
 
-    <!-- 终端命令: 命令说明 + `$` + 完整命令 + 输出 -->
+    <!-- 终端命令：`$` + 完整命令 + 输出 + 结果行，整张卡是深色的终端窗口。 -->
     <template v-if="isBash">
-      <div class="tool-command">
-        <div class="tool-command-label">{{ t("Terminal command") }}</div>
-        <div class="tool-command-line">
-          <span class="tool-command-prompt">$</span>
-          <span class="tool-command-text">{{ bashCommand || "…" }}</span>
+      <div class="term">
+        <div class="term-line">
+          <span class="term-prompt">$</span>
+          <span class="term-command">{{ bashCommand || "…" }}</span>
+        </div>
+        <pre v-if="outputText" class="term-output">{{ outputText }}</pre>
+        <pre v-else-if="block.status === 'running'" class="term-output">…</pre>
+        <div
+          v-if="block.status !== 'running'"
+          class="term-result"
+          :class="block.status === 'error' ? 'is-error' : 'is-done'"
+        >
+          <span
+            class="codicon"
+            :class="block.status === 'error' ? 'codicon-close' : 'codicon-check'"
+            aria-hidden="true"
+          ></span>
+          <span>{{ bashResult }}</span>
         </div>
       </div>
-      <pre v-if="outputText" class="tool-result">{{ outputText }}</pre>
-      <pre v-else-if="block.status === 'running'" class="tool-result">…</pre>
     </template>
 
     <!-- 文件读取: 输入(JSON) + 响应(带行号代码) -->
