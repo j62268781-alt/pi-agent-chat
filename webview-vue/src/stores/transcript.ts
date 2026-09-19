@@ -215,9 +215,9 @@ export const useTranscriptStore = defineStore("transcript", () => {
     const result: Turn[] = [];
     let current: Turn | null = null;
 
-    const startTurn = (user: UserMessage | null): Turn => {
+    const startTurn = (user: UserMessage | null, seedId: string): Turn => {
       const turn: Turn = {
-        id: nextId("turn"),
+        id: seedId,
         user,
         leading: [],
         workBlocks: [],
@@ -234,12 +234,16 @@ export const useTranscriptStore = defineStore("transcript", () => {
       return turn;
     };
 
+    // A turn is identified by its first message, not by a freshly drawn id:
+    // `turns` recomputes on every arriving message, and a new id each time made
+    // every `:key` change — remounting the whole list, discarding scroll
+    // position and the folds the user had opened.
     for (const message of messages.value) {
       if (message.kind === "user") {
-        current = startTurn(message);
+        current = startTurn(message, message.id);
         continue;
       }
-      if (!current) current = startTurn(null);
+      if (!current) current = startTurn(null, message.id);
       if (message.kind === "system") {
         current.leading.push(message);
         continue;

@@ -216,10 +216,10 @@ watch(
         </div>
 
         <TurnBlock
-          v-for="(turn, index) in transcript.turns"
+          v-for="(turn, index) in transcript.visibleTurns"
           :key="turn.id"
           :turn="turn"
-          :is-last="index === transcript.turns.length - 1"
+          :is-last="index === transcript.visibleTurns.length - 1"
         />
 
         <!-- Live status row: the dotted grid + what the agent is doing right
