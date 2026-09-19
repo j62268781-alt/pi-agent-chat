@@ -310,7 +310,9 @@ function onHeadClick(event: MouseEvent): void {
     <QuestionnaireCard v-else-if="block.questionnaire" :result="block.questionnaire" />
 
     <template v-else>
-      <pre v-if="argsText" class="tool-args">{{ argsText }}</pre>
+      <!-- 文件类不再回显参数（行上的 tag 已经说明改的是哪个文件，彬哥）；其余工具
+           的参数仍然是唯一能说明「它调了什么」的东西，保留。 -->
+      <pre v-if="argsText && !isEdit" class="tool-args">{{ argsText }}</pre>
 
       <div v-if="diffRows.length" class="diff-block">
         <div v-for="(row, index) in diffRows" :key="index" class="diff-line" :class="row.kind">
