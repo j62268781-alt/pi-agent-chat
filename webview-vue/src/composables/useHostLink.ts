@@ -22,16 +22,20 @@ export const bootFailure = ref("");
 export const isBooting = ref(true);
 
 /**
- * How long the splash waits for the host's first content message before it gives
- * up and offers a retry.
+ * How long the splash waits for the host's first content message before it offers
+ * a way out.
  *
- * pi only answers after it has synced the `packages` listed in
- * `~/.pi/agent/settings.json` — those are npm installs performed during startup,
- * and on a cold cache (or a slow registry) they take minutes. While they run the
- * host has nothing to report, so without this deadline the splash just sits
- * there with no way out.
+ * pi answers in ~4.5s when its packages are already in place. It answers much
+ * later when it decides a declared `packages` entry is behind the registry: a
+ * reconciliation measured 20-40s here, and one cold run went past 90s. (An
+ * earlier note here claimed the installs happened on *every* boot — they do not;
+ * pinning the versions in `settings.json` removes them entirely.)
+ *
+ * Without a deadline the splash would just sit there. The card is now dismissed
+ * by the first real content, so a too-eager deadline costs a flash rather than
+ * burying the session.
  */
-const BOOT_TIMEOUT_MS = 30_000;
+const BOOT_TIMEOUT_MS = 60_000;
 
 let bootTimer: number | undefined;
 
@@ -54,7 +58,7 @@ export function startBootWatchdog(): void {
     bootTimer = undefined;
     if (!isBooting.value) return;
     bootFailure.value = t(
-      "pi has not answered in {0}s — it may still be installing its packages. Retry, or watch the Pi Chat output.",
+      "pi has not answered in {0}s — it may still be installing its packages. Wait a little longer, or retry.",
       Math.round(BOOT_TIMEOUT_MS / 1000),
     );
   }, BOOT_TIMEOUT_MS);
@@ -127,6 +131,9 @@ export function useHostLink() {
         session.endSwitch();
         session.pendingNew = false;
         session.piFailure = "";
+        // The watchdog may already have fired while pi was installing its
+        // packages; this is the proof it came back, so the card has to go.
+        bootFailure.value = "";
         transcript.hydrate(message.messages);
         transcript.historyAvailable = message.historyAvailable === true;
         settleBoot();
@@ -137,6 +144,8 @@ export function useHostLink() {
         break;
 
       case "event": {
+        // An event is just as much proof of life as a message burst.
+        bootFailure.value = "";
         transcript.applyEvent(message.event);
         // The turn just settled, so the head of the pending queue is deliverable.
         if ((message.event as { type?: string }).type === "agent_settled") pending.flushNext();

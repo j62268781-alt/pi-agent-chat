@@ -99,7 +99,7 @@
   "Result": "结果",
   "Retry": "重试",
   "Retrying {0}/{1}…": "正在重试 {0}/{1}…",
-  "pi has not answered in {0}s — it may still be installing its packages. Retry, or watch the Pi Chat output.": "pi 在 {0} 秒内没有响应 —— 可能还在安装依赖包。可以点重试，或查看「Pi Chat」输出面板。",
+  "pi has not answered in {0}s — it may still be installing its packages. Wait a little longer, or retry.": "pi 在 {0} 秒内没有响应 —— 可能还在装依赖包。可以再等一会儿，或点重试。",
   "Failed to start the session.": "无法启动会话。",
   "Fork": "派生",
   "Revert all": "全部回退",
