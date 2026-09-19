@@ -36,7 +36,6 @@ function onKeyDown(event: KeyboardEvent): void {
     return;
   }
   composer.closePopups();
-  overlays.closeContextMenu();
 }
 
 onMounted(() => {

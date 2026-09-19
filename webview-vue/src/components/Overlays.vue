@@ -1,17 +1,15 @@
 <!--
   Transient overlays: toasts, the modal dialog pi asks for through
-  `extension_ui_request`, the info panel, and the message context menu.
+  `extension_ui_request`, and the info panel.
 -->
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
 import { post } from "@/lib/bridge.ts";
 import { renderMarkdown } from "@/lib/markdown.ts";
 import { t } from "@/lib/i18n.ts";
 import { useOverlaysStore } from "@/stores/overlays";
-import { useSessionStore } from "@/stores/session";
 
 const overlays = useOverlaysStore();
-const session = useSessionStore();
 
 // ------------------------------------------------------------------ dialog
 
@@ -75,38 +73,10 @@ function closeInfoPanel(): void {
 }
 
 // ----------------------------------------------------------- context menu
-
-function onDocumentMouseDown(): void {
-  overlays.closeContextMenu();
-}
-
-onMounted(() => document.addEventListener("mousedown", onDocumentMouseDown));
-onUnmounted(() => document.removeEventListener("mousedown", onDocumentMouseDown));
-
-function menuCopy(): void {
-  const menu = overlays.contextMenu;
-  if (menu) post({ type: "copy", text: menu.text });
-  overlays.closeContextMenu();
-}
-
-async function menuFork(): Promise<void> {
-  const menu = overlays.contextMenu;
-  overlays.closeContextMenu();
-  if (!menu || menu.ts == null || session.isStreaming) return;
-  const accepted = await overlays.askConfirmation(
-    t("Fork from this message?"),
-    t("Create a new branch from this message. Current file changes are kept."),
-    t("Fork"),
-  );
-  if (accepted) post({ type: "fork", ts: menu.ts });
-}
-
-function menuRevert(): void {
-  const menu = overlays.contextMenu;
-  overlays.closeContextMenu();
-  if (!menu || menu.ts == null || session.isStreaming) return;
-  post({ type: "revert", ts: menu.ts });
-}
+//
+// Deleted with its store state: nothing in the transcript ever called
+// `openContextMenu`, so the menu could not be opened, and it was the second
+// place offering revert/fork once those moved onto the turn's status line.
 </script>
 
 <template>
@@ -209,16 +179,5 @@ function menuRevert(): void {
         </template>
       </footer>
     </div>
-  </div>
-
-  <!-- message context menu -->
-  <div
-    v-if="overlays.contextMenu"
-    id="ctx-menu"
-    :style="{ left: `${overlays.contextMenu.x}px`, top: `${overlays.contextMenu.y}px` }"
-  >
-    <button class="ctx-item" type="button" @click="menuCopy">{{ t("Copy") }}</button>
-    <button class="ctx-item" type="button" @click="menuFork">{{ t("Fork from here") }}</button>
-    <button class="ctx-item" type="button" @click="menuRevert">{{ t("Revert here") }}</button>
   </div>
 </template>

@@ -110,7 +110,6 @@ export type WebviewToExt =
   | { type: "pickResource" }
   | { type: "searchFiles"; query: string }
   | { type: "fork"; ts: number }
-  | { type: "revert"; ts: number }
   | {
       type: "dialogResponse";
       id: string;

@@ -138,7 +138,7 @@ function copyUserText(): void {
   overlays.toast(t("Copied"), "success");
 }
 
-async function forkFromUser(): Promise<void> {
+async function forkTurn(): Promise<void> {
   const ts = props.turn.user?.timestamp;
   if (!canAct.value || ts == null) {
     if (ts == null) overlays.toast(t("Message not ready yet."), "info");
@@ -150,15 +150,6 @@ async function forkFromUser(): Promise<void> {
     t("Fork"),
   );
   if (accepted) post({ type: "fork", ts });
-}
-
-function revertToUser(): void {
-  const ts = props.turn.user?.timestamp;
-  if (!canAct.value || ts == null) {
-    if (ts == null) overlays.toast(t("Message not ready yet."), "info");
-    return;
-  }
-  post({ type: "revert", ts });
 }
 </script>
 
@@ -188,12 +179,6 @@ function revertToUser(): void {
       <div class="bubble-actions">
         <button class="icon-btn" type="button" :title="t('Copy')" @click="copyUserText">
           <span class="codicon codicon-copy"></span>
-        </button>
-        <button class="icon-btn" type="button" :title="t('Fork')" @click="forkFromUser">
-          <span class="codicon codicon-repo-forked"></span>
-        </button>
-        <button class="icon-btn" type="button" :title="t('Revert')" @click="revertToUser">
-          <span class="codicon codicon-discard"></span>
         </button>
       </div>
       <span v-if="turn.user.timestamp" class="msg-time">{{ formatTime(turn.user.timestamp) }}</span>
@@ -273,12 +258,23 @@ function revertToUser(): void {
 
   <!-- Every settled turn closes with its own status line: outcome, duration and
        the timestamp. While the turn runs the head already counts the seconds, so
-       the line stays out of the way until there is an outcome to report. -->
+       the line stays out of the way until there is an outcome to report.
+       Forking belongs here, not on the user bubble: a turn is only a branch
+       point once the answer has landed. -->
   <div v-if="turn.messageTime && !running" class="msg-meta msg-status-line">
     <span v-if="hasContent" class="msg-outcome" :class="outcomeClass">{{ outcome }}</span>
     <span v-if="hasContent && turnDuration" class="msg-duration">
       {{ t("Worked for {0}", turnDuration) }}
     </span>
     <span class="msg-time">{{ formatTime(turn.messageTime) }}</span>
+    <button
+      v-if="turn.user?.timestamp != null"
+      class="icon-btn status-action"
+      type="button"
+      :title="t('Fork')"
+      @click="forkTurn"
+    >
+      <span class="codicon codicon-repo-forked"></span>
+    </button>
   </div>
 </template>

@@ -82,23 +82,6 @@ const DIFF_PANEL_TITLE = "Pi Diff";
 
 const allSessions = new Set<ChatSession>();
 
-function messageText(content: unknown): string {
-  if (typeof content === "string") return content;
-  if (!Array.isArray(content)) return "";
-  let t = "";
-  for (const block of content) {
-    if (typeof block === "string") t += block;
-    else if (
-      block &&
-      typeof block === "object" &&
-      block.type === "text" &&
-      typeof block.text === "string"
-    )
-      t += (t ? "\n" : "") + block.text;
-  }
-  return t;
-}
-
 function buildActiveBranch(entries: RpcSessionEntry[], leafId: string | null): RpcSessionEntry[] {
   const byId = new Map<string, RpcSessionEntry>();
   for (const e of entries) byId.set(e.id, e);
@@ -928,41 +911,6 @@ export async function createChatSession(
           postMessages(rMsgs);
           void sendContextUsage();
           toast("Forked from selected message.", "success");
-        } catch (e) {
-          host.postMessage({
-            type: "error",
-            message: e instanceof Error ? e.message : String(e),
-          });
-        }
-        break;
-      case "revert":
-        try {
-          if (streaming) {
-            toast("Stop the agent before reverting.", "error");
-            break;
-          }
-          const revEntriesData = await rpc.getEntries();
-          const revEntry = revEntriesData.entries.find(
-            (e) =>
-              e.type === "message" && e.message?.role === "user" && e.message?.timestamp === msg.ts,
-          );
-          if (!revEntry) {
-            toast("Could not locate that message to revert to.", "error");
-            break;
-          }
-          const revText = messageText(revEntry.message?.content);
-          const beforeLeaf = revEntriesData.leafId;
-          await rpc.prompt(`/pi-vscode-tree ${revEntry.id}`);
-          const afterEntries = await rpc.getEntries();
-          if (afterEntries.leafId === beforeLeaf) break;
-          const revSt = await rpc.getState();
-          applySessionFile(revSt.sessionFile, revSt.sessionName);
-          host.postMessage({ type: "state", state: revSt });
-          const revMsgs = await rpc.getMessages();
-          postMessages(revMsgs);
-          if (revText) host.postMessage({ type: "prefillInput", text: revText });
-          void sendContextUsage();
-          toast("Reverted to selected message.", "success");
         } catch (e) {
           host.postMessage({
             type: "error",

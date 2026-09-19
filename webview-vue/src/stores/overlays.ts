@@ -32,15 +32,6 @@ export interface RewindConfirm {
   resolve: (accepted: boolean) => void;
 }
 
-export interface ContextMenuState {
-  x: number;
-  y: number;
-  /** Message text the actions apply to. */
-  text: string;
-  /** Message timestamp, used by fork/revert. */
-  ts: number | null;
-}
-
 export const useOverlaysStore = defineStore("overlays", () => {
   let toastSeq = 0;
   const toasts = ref<Toast[]>([]);
@@ -50,8 +41,6 @@ export const useOverlaysStore = defineStore("overlays", () => {
   const infoPanel = ref<{ title: string; markdown: string } | null>(null);
   const widget = ref<{ key: string; lines: string[] } | null>(null);
   const widgetOpen = ref(true);
-
-  const contextMenu = ref<ContextMenuState | null>(null);
 
   const rewindFiles = ref<RewindFile[]>([]);
   const rewindSessionId = ref("");
@@ -125,21 +114,12 @@ export const useOverlaysStore = defineStore("overlays", () => {
     widgetOpen.value = true;
   }
 
-  function openContextMenu(state: ContextMenuState): void {
-    contextMenu.value = state;
-  }
-
-  function closeContextMenu(): void {
-    contextMenu.value = null;
-  }
-
   return {
     toasts,
     dialog,
     infoPanel,
     widget,
     widgetOpen,
-    contextMenu,
     rewindFiles,
     rewindSessionId,
     rewindBaselineHash,
@@ -155,7 +135,5 @@ export const useOverlaysStore = defineStore("overlays", () => {
     askConfirmation,
     settleConfirmation,
     applyWidget,
-    openContextMenu,
-    closeContextMenu,
   };
 });
