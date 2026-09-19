@@ -2,7 +2,7 @@
 
 A VS Code extension that puts the [pi](https://github.com/badlogic/pi-mono) coding agent in your
 editor: a Vue 3 chat panel and sidebar backed by a `pi --mode rpc` subprocess, a live editor bridge
-the agent can call as tools, and a set of bundled pi extensions (todo, questionnaire, permission
+the agent can call as tools, and a set of bundled pi extensions (questionnaire, permission
 gate, file rewind) that work out of the box.
 
 ## Features
@@ -16,7 +16,6 @@ gate, file rewind) that work out of the box.
   | extension | what it adds |
   | --- | --- |
   | `pi-extensions/pi-vscode-bridge.js` | the `vscode_*` LLM tools + TUI status |
-  | `pi-extensions/todo.ts` | todo-list tool and the chat widget that renders it |
   | `pi-extensions/questionnaire.ts` | interactive multi-question forms |
   | `pi-extensions/permission-gate.ts` | approval gate for dangerous bash commands |
   | `pi-extensions/rewind-code.ts` | sha256 file snapshots + rewind/accept UI |
@@ -161,7 +160,7 @@ All settings live under `pi-agent-chat.*` — see the Settings panel
 | `pi-agent-chat.path`                | `""`             | absolute path to the `pi` binary; empty = auto-detect      |
 | `pi-agent-chat.language`            | `auto`           | `auto` / `en` / `zh-cn`                                    |
 | `pi-agent-chat.permission.mode`     | `AskForApproval` | gate bash commands matching `permission.dangerousPatterns` |
-| `pi-agent-chat.disabledTools`       | `["subagent"]`   | bundled LLM tools to keep unregistered                     |
+| `pi-agent-chat.disabledTools`       | `[]`             | bundled tools to keep unregistered (`vscode_get_diagnostics`, `questionnaire`) |
 | `pi-agent-chat.chatFontSize`        | `14`             | transcript font size in px                                 |
 | `pi-agent-chat.chatBackgroundImage` | `""`             | optional background image path                             |
 

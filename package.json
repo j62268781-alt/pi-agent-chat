@@ -2,7 +2,7 @@
   "name": "pi-agent-chat",
   "displayName": "Pi Agent Chat",
   "version": "1.0.0",
-  "description": "Pi coding agent for VS Code — a Vue 3 webview chat panel and sidebar, backed by a `pi --mode rpc` subprocess, with a live editor bridge and bundled pi extensions (todo, questionnaire, permission gate, rewind) out of the box.",
+  "description": "Pi coding agent for VS Code — a Vue 3 webview chat panel and sidebar, backed by a `pi --mode rpc` subprocess, with a live editor bridge and bundled pi extensions (questionnaire, permission gate, rewind) out of the box.",
   "categories": [
     "AI",
     "Chat"
