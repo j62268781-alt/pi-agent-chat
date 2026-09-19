@@ -1835,17 +1835,25 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   padding-top: 4px;
   border-top: 1px solid var(--pi-border);
 }
+/* 读取块：浅底卡片 + 弱化等宽正文（参考图：白底、灰字、行号很淡）。
+ * 只有「读到的这一段」（offset..offset+limit）会进来，行号从 offset 起。 */
 .code-block {
   margin: 0;
+  padding: 10px 12px;
+  max-height: 340px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  border-radius: var(--pi-r-lg);
+  background: var(--pi-bg-surface);
+  color: var(--pi-text-muted);
   font-family: var(--pi-mono);
   font-size: var(--chat-fs-12);
   line-height: 1.5;
-  color: var(--pi-text);
 }
 .code-line {
   white-space: pre-wrap;
   word-break: break-word;
-  padding: 0 6px;
+  padding: 0;
 }
 .code-gutter {
   display: inline-block;

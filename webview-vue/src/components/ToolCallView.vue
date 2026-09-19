@@ -162,7 +162,6 @@ const writeLines = computed(() => {
   while (lines.length > 0 && lines[lines.length - 1] === "") lines.pop();
   return lines;
 });
-const writeGutterWidth = computed(() => String(writeLines.value.length).length);
 const argsText = computed(() => clamp(props.block.argsText));
 const outputText = computed(() =>
   diffRows.value.length || writeLines.value.length ? "" : clamp(props.block.output),
@@ -292,21 +291,16 @@ function onHeadClick(event: MouseEvent): void {
       </div>
     </template>
 
-    <!-- 文件读取: 输入(JSON) + 响应(带行号代码) -->
+    <!-- 文件读取：只展示读到的那一段（行号从 offset 起，正好是 offset..offset+limit
+         这个窗口），放进代码框里。参数里的 Input 不再展示 —— 行上的 tag 已经说明
+         是哪个文件了（彬哥）。 -->
     <template v-else-if="isRead">
-      <div v-if="argsText" class="tool-io">
-        <div class="tool-io-label">{{ t("Input") }}</div>
-        <pre class="tool-args">{{ argsText }}</pre>
-      </div>
-      <div v-if="readLines.length" class="tool-io">
-        <div class="tool-io-label">{{ t("Response") }}</div>
-        <div class="code-block">
-          <div v-for="(line, index) in readLines" :key="index" class="code-line">
-            <span class="code-gutter">{{
-              String(readStart + index).padStart(readGutterWidth, " ")
-            }}</span>
-            <span class="code-content">{{ line }}</span>
-          </div>
+      <div v-if="readLines.length" class="code-block">
+        <div v-for="(line, index) in readLines" :key="index" class="code-line">
+          <span class="code-gutter">{{
+            String(readStart + index).padStart(readGutterWidth, " ")
+          }}</span>
+          <span class="code-content">{{ line }}</span>
         </div>
       </div>
       <pre v-else-if="block.status === 'running'" class="tool-result">…</pre>
@@ -328,10 +322,13 @@ function onHeadClick(event: MouseEvent): void {
         </div>
       </div>
 
-      <div v-else-if="writeLines.length" class="code-block">
-        <div v-for="(line, index) in writeLines" :key="index" class="code-line">
-          <span class="code-gutter">{{ String(index + 1).padStart(writeGutterWidth, " ") }}</span>
-          <span class="code-content">{{ line }}</span>
+      <div v-else-if="writeLines.length" class="diff-block">
+        <!-- 整份写入：没有 diff 可对，那就按「全是新增」上色 —— 用户要的是
+             「他改了什么」，而不是一段无色的文件内容（彬哥）。 -->
+        <div v-for="(line, index) in writeLines" :key="index" class="diff-line added">
+          <span class="diff-sign">+</span>
+          <span class="diff-gutter">{{ index + 1 }}</span>
+          <span class="diff-content">{{ line }}</span>
         </div>
       </div>
 
