@@ -1533,20 +1533,21 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   font-weight: 600;
   font-family: var(--pi-mono);
 }
-/* MCP 调用的来源服务器：标题保持人话（`Symbol search`），来源放进这个小 pill，
- * 悬停给完整的 `MCP · lens`。原先这条是画在 `.tool-name::before` 上的死代码 ——
- * 组件从来没给块加过 `is-mcp`。 */
-.tool-badge {
-  flex: none;
-  padding: 0 4px;
-  border-radius: 3px;
-  background: var(--pi-info-soft);
-  color: var(--pi-info);
+/* 工具 tag：与文件 tag 同一套 chip，但不点击 —— 标题已经统一成「工具调用」，
+ * 这个 tag 只说明是哪一个工具（MCP 显示 `server/tool`，一眼看出来源）。 */
+.tool-tag {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 1px 6px;
+  border: 1px solid var(--pi-border);
+  border-radius: var(--pi-r-sm);
+  background: var(--pi-bg-subtle);
+  color: var(--pi-text-secondary);
   font-family: var(--pi-mono);
-  font-size: var(--chat-fs-10);
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
+  font-size: var(--chat-fs-11);
 }
 
 /* 参数与 JSON 结果的卡片样式在文件末尾（那里才盖得住历史上那几条 .tool-args）。 */

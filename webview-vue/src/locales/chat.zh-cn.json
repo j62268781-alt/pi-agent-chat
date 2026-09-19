@@ -151,6 +151,7 @@
   "Response": "响应",
   "Running for {0}": "正在执行中 · {0}",
   "Terminal command": "终端命令",
+  "Tool call": "工具调用",
   "There are many agent harnesses": "世上有许多 agent 框架",
   "Thinking": "思考",
   "Thinking…": "思考中",

@@ -46,58 +46,14 @@ export function isMcpTool(name: string): boolean {
   return name.startsWith("mcp__") || name.startsWith("mcp_tool_");
 }
 
-/** `"mcp__server__tool"` -> `"Tool name"`; other names pass through. */
-export function toolDisplayName(name: string): string {
+/** The display handle of a tool: `server/tool` for MCP, the raw name otherwise. */
+export function toolHandle(name: string): string {
   if (name.startsWith("mcp__")) {
     const rest = name.slice(5);
     const idx = rest.indexOf("__");
-    if (idx > 0) return humanizeToolName(rest.slice(idx + 2));
+    if (idx > 0) return `${rest.slice(0, idx)}/${rest.slice(idx + 2)}`;
   }
   return name;
-}
-
-/** The server behind an MCP tool name, for the row's badge. */
-export function mcpServerOf(name: string): string {
-  if (!name.startsWith("mcp__")) return "";
-  const rest = name.slice(5);
-  const idx = rest.indexOf("__");
-  return idx > 0 ? rest.slice(0, idx) : "";
-}
-
-/** Initialisms that read wrong when title-cased ("Lsp diagnostics"). */
-const INITIALISMS = new Set([
-  "ai",
-  "api",
-  "ast",
-  "cli",
-  "css",
-  "ctx",
-  "db",
-  "fs",
-  "html",
-  "http",
-  "io",
-  "json",
-  "llm",
-  "lsp",
-  "mcp",
-  "sql",
-  "ui",
-  "uri",
-  "url",
-]);
-
-/** `symbol_search` -> `Symbol search`, `lsp_diagnostics` -> `LSP diagnostics`. */
-export function humanizeToolName(name: string): string {
-  const words = name.split(/[_\-\s]+/).filter(Boolean);
-  if (words.length === 0) return name;
-  return words
-    .map((word, index) => {
-      const lower = word.toLowerCase();
-      if (INITIALISMS.has(lower)) return lower.toUpperCase();
-      return index === 0 ? lower.charAt(0).toUpperCase() + lower.slice(1) : lower;
-    })
-    .join(" ");
 }
 
 /** Split a `server_tool` handle on its first underscore. */

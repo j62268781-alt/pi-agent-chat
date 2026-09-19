@@ -22,8 +22,7 @@ import { answerText } from "@/lib/questionnaire.ts";
 import {
   formatToolSummary,
   isMcpTool,
-  mcpServerOf,
-  toolDisplayName,
+  toolHandle,
   toolPathArg,
   toolStr,
 } from "@/lib/tool-format.ts";
@@ -61,26 +60,33 @@ const isEdit = computed(() => name.value === "write" || name.value === "edit");
 const isSubagent = computed(() => name.value === "subagent");
 
 /**
- * MCP tools are the ones whose name carries the `mcp__server__tool` structure —
- * that is the only thing that tells them apart from a built-in, so the row shows
- * the server as a badge and the title stays a human name.
+ * MCP tools are the ones whose name carries the `mcp__server__tool` structure.
+ * The row does not single them out visually — every step keeps the same shape —
+ * but their results are JSON, and JSON is worth pretty-printing.
  */
 const isMcp = computed(() => isMcpTool(props.block.name || ""));
 
-/** Server behind an MCP call: the row badges it, so the title can stay human. */
-const mcpServer = computed(() => mcpServerOf(props.block.name || ""));
-
 /**
  * Title of the row. One vocabulary for every step type, so a glance down the
- * fold reads as a list of steps: 已思考 / 终端命令 / 读取文件 / 编辑文件. The
- * kind of thing is the title; what it touched goes in the subtitle.
+ * fold reads as a list of steps: 已思考 / 终端命令 / 读取文件 / 编辑文件, and
+ * 工具调用 for anything else (an MCP call, a third-party tool). The kind of
+ * thing is the title; which one it was goes in the tag.
  */
 const displayName = computed(() => {
   if (isBash.value) return t("Terminal command");
   if (isRead.value) return t("Read file");
   if (isEdit.value) return t("Edit file");
   if (isSubagent.value) return "";
-  return toolDisplayName(props.block.name || "tool");
+  return t("Tool call");
+});
+
+/**
+ * The tool behind a generic step, as a tag: `server/tool` for MCP, the plain
+ * name otherwise. 工具调用 says what kind of step it was, this says which.
+ */
+const toolTag = computed(() => {
+  if (isBash.value || isRead.value || isEdit.value || isSubagent.value) return "";
+  return toolHandle(props.block.name || "");
 });
 
 /**
@@ -293,9 +299,6 @@ function onHeadClick(event: MouseEvent): void {
         }"
         aria-hidden="true"
       ></span>
-      <span v-if="isMcp && mcpServer" class="tool-badge" :title="'MCP · ' + mcpServer">
-        {{ mcpServer }}
-      </span>
       <span v-if="displayName" class="tool-name">{{ displayName }}</span>
       <!-- 文件类：一个小 tag（只有文件名 + 后缀），点击在编辑器里打开 —— 行里不
            放完整路径（彬哥）。`prevent` 免得点 tag 顺手把折叠翻开。 -->
@@ -308,7 +311,10 @@ function onHeadClick(event: MouseEvent): void {
       >
         {{ fileTag }}
       </button>
-      <span v-else-if="summary" class="tool-summary">{{ summary }}</span>
+      <!-- 其它工具：标题统一是「工具调用」，这个 tag 说明是哪一个（MCP 是
+           `server/tool`，一眼看出是外部的）。 -->
+      <span v-else-if="toolTag" class="tool-tag" :title="block.name">{{ toolTag }}</span>
+      <span v-if="summary" class="tool-summary">{{ summary }}</span>
       <span v-if="statusLabel" class="tool-status">{{ statusLabel }}</span>
     </summary>
 
