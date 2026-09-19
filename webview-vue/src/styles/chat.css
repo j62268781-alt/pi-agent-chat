@@ -4763,62 +4763,56 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   font-variant-numeric: tabular-nums;
 }
 
-/* ── 终端卡（bash）：一条命令就是一个终端窗口 ──────────────────────────────
- * 设计来自彬哥给的 SVG：深色卡（#1F2329，与 code/diff 卡同一套 token）、头部一个
- * 终端字形 + 名称 + 复制按钮、`$ 命令`、输出，末尾一行绿色（失败红色）结果。
- * 整张卡走 code 调色板，所以卡内的行文字要按深色底重涂一遍。 */
-.tool-block[data-tool="bash"] {
+/* ── 终端卡（bash）：展开才是一扇终端窗口 ──────────────────────────────────
+ * 设计来自彬哥给的 SVG：深色卡（#1F2329，与 code/diff 卡同一套 token）、标题栏
+ * 一个终端字形 + 名称 + 复制、`$ 命令`、输出，末尾一行绿色（失败红色）结果。
+ *
+ * 卡只属于「展开」：折叠行本身和别的步骤完全一样，只有状态图标 —— 标题从不套
+ * 卡样式（彬哥）。 */
+.term {
+  margin: 2px 0 8px;
   border-radius: var(--pi-r-lg);
   background: var(--pi-code-bg);
   color: var(--pi-code-fg);
+  font-family: var(--pi-mono);
+  font-size: var(--chat-fs-12);
+  overflow: hidden;
 }
 
-.tool-block[data-tool="bash"] > .tool-head {
-  padding: 4px 12px;
+.term-head {
+  display: flex;
+  align-items: center;
   gap: 8px;
-  min-height: 0;
+  padding: 4px 6px 4px 12px;
 }
 
-/* 复制按钮：卡头的高度由它决定，32px 的通用尺寸会把卡头顶到 44px（设计稿约
- * 30px），收到 24px 仍是个够用的点击目标。 */
-.tool-block[data-tool="bash"] .tool-copy {
-  flex: none;
-  width: 24px;
-  height: 24px;
-  padding: 0;
-}
-
-/* 卡头一个裸的终端字形，不是那个 16px 的浅底方块。 */
-.tool-block[data-tool="bash"] .tool-name:before {
-  content: "\ea85";
-  width: auto;
-  height: auto;
-  background: transparent;
-  border-radius: 0;
+.term-icon {
   color: var(--pi-code-muted);
   font-size: 15px;
 }
 
-.tool-block[data-tool="bash"] .tool-name {
+.term-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   color: var(--pi-code-fg);
 }
 
-.tool-block[data-tool="bash"] .tool-summary,
-.tool-block[data-tool="bash"] .tool-status,
-.tool-block[data-tool="bash"] .tool-copy {
+.term-copy {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  margin-left: auto;
   color: var(--pi-code-muted);
-}
-
-.term {
-  padding: 0 12px 10px;
-  font-family: var(--pi-mono);
-  font-size: var(--chat-fs-12);
 }
 
 .term-line {
   display: flex;
   align-items: flex-start;
   gap: 6px;
+  padding: 0 12px;
   line-height: 1.5;
   color: var(--pi-code-fg);
 }
@@ -4838,6 +4832,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 /* 输出限高：一条 `npm test` 能刷几百行，不该把会话流撑开。 */
 .term-output {
   margin: 6px 0 0;
+  padding: 0 12px;
   max-height: 260px;
   overflow: auto;
   overscroll-behavior: contain;
@@ -4850,12 +4845,175 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   display: flex;
   align-items: center;
   gap: 6px;
+  padding: 0 12px 10px;
   margin-top: 8px;
   color: var(--pi-code-added-gutter);
 }
 
 .term-result.is-error {
   color: var(--pi-code-removed-gutter);
+}
+
+/* ── 问卷：弹窗里可点、会话流里只读，共用同一套编号行 ──────────────────────
+ * 编号是必须的 —— 工具回报答案时就带序号（"user selected: 2. <label>"）。 */
+.qa {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.qa-question {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* 一页一问：页码 + 已答圆点 + 当前问题的短标签（彬哥：像翻页那样）。 */
+.qa-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--pi-text-muted);
+  font-size: var(--chat-fs-12);
+}
+
+.qa-step {
+  font-variant-numeric: tabular-nums;
+}
+
+.qa-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.qa-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--pi-border-input);
+}
+
+.qa-dot.is-answered {
+  background: var(--pi-text-brand);
+}
+
+.qa-dot.is-here {
+  box-shadow: 0 0 0 3px var(--pi-bg-selected);
+}
+
+.qa-label-head {
+  margin-left: auto;
+}
+
+.qa-prompt,
+.qa-card-prompt {
+  margin: 0;
+  color: var(--pi-text);
+  font-size: var(--chat-fs-13);
+}
+
+.qa-options,
+.qa-card-options {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.qa-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 5px 8px;
+  border: 1px solid transparent;
+  border-radius: var(--pi-r-sm);
+  background: transparent;
+  color: var(--pi-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.qa-option:hover {
+  background: var(--pi-bg-hover);
+}
+
+.qa-option.is-picked {
+  border-color: var(--pi-border-brand);
+  background: var(--pi-bg-selected);
+}
+
+.qa-num {
+  flex: none;
+  min-width: 16px;
+  color: var(--pi-text-muted);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.qa-label {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.qa-tick {
+  flex: none;
+  color: var(--pi-text-brand);
+}
+
+.qa-desc {
+  margin: 0 0 2px 32px;
+  color: var(--pi-text-muted);
+  font-size: var(--chat-fs-12);
+}
+
+.qa-input {
+  margin: 4px 0 2px 32px;
+  width: calc(100% - 32px);
+}
+
+.qa-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* 会话流里的问答卡：选项全列出来（"4 选 1" 才是可读的决策），选中的那行加重。 */
+.qa-card {
+  padding: 10px 12px;
+  border: 1px solid var(--pi-border);
+  border-radius: var(--pi-r-lg);
+  background: var(--pi-bg-subtle);
+}
+
+.qa-card-question + .qa-card-question {
+  margin-top: 10px;
+}
+
+.qa-card-options {
+  margin-top: 4px;
+}
+
+.qa-card-option {
+  display: flex;
+  gap: 8px;
+  color: var(--pi-text-muted);
+  font-size: var(--chat-fs-12);
+}
+
+.qa-card-option.is-picked {
+  color: var(--pi-text);
+  font-weight: 600;
+}
+
+.qa-card-cancelled {
+  margin: 0;
+  color: var(--pi-text-muted);
+  font-size: var(--chat-fs-12);
 }
 
 /* read：输入与响应各自带一个小标签，响应沿用 .code-block 的带行号排版。 */

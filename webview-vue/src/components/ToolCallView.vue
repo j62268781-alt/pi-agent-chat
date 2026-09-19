@@ -18,10 +18,12 @@ import { parseDiffRows } from "@/lib/diff.ts";
 import { formatDuration } from "@/lib/format.ts";
 import { t } from "@/lib/i18n.ts";
 import { basenameOf, shortenWorkspacePath } from "@/lib/paths.ts";
+import { answerText } from "@/lib/questionnaire.ts";
 import { formatToolSummary, toolDisplayName, toolPathArg, toolStr } from "@/lib/tool-format.ts";
 import { useDisplayStore } from "@/stores/display";
 import { useOverlaysStore } from "@/stores/overlays";
 import type { ToolBlock } from "@/stores/transcript";
+import QuestionnaireCard from "./QuestionnaireCard.vue";
 
 const props = defineProps<{ block: ToolBlock }>();
 
@@ -78,6 +80,15 @@ const subagentState = computed(() => {
 /** Folded-header summary — the tools the user watches most get their own wording. */
 const summary = computed(() => {
   const args = props.block.args;
+  // Once answered, the row says what came back — that is the part worth reading
+  // without expanding the card.
+  const result = props.block.questionnaire;
+  if (result) {
+    if (result.cancelled) return t("Cancelled");
+    const answers = result.answers.map((answer) => answerText(answer)).join(" \u00b7 ");
+    if (answers) return truncate(answers, COMMAND_PREVIEW_MAX);
+    return t("{0} questions", result.questions.length);
+  }
   if (!args) return props.block.argsText ? "…" : "";
   if (isBash.value) {
     const command = toolStr(args.command);
@@ -207,7 +218,6 @@ function onHeadClick(event: MouseEvent): void {
   <details
     class="tool-block"
     :open="open"
-    :data-tool="isBash ? 'bash' : undefined"
     :data-has-file="block.filePath ? '1' : undefined"
     :data-added="block.added || undefined"
     :data-removed="block.removed || undefined"
@@ -226,22 +236,24 @@ function onHeadClick(event: MouseEvent): void {
       <span v-if="displayName" class="tool-name">{{ displayName }}</span>
       <span class="tool-summary">{{ summary }}</span>
       <span v-if="statusLabel" class="tool-status">{{ statusLabel }}</span>
-      <!-- The console's own affordance: copying the command is what the card is
-           for. `prevent` keeps the click from folding the card open/shut. -->
-      <button
-        v-if="isBash && bashCommand"
-        class="icon-btn tool-copy"
-        type="button"
-        :title="t('Copy command')"
-        @click.stop.prevent="copyCommand"
-      >
-        <span class="codicon codicon-copy"></span>
-      </button>
     </summary>
 
-    <!-- 终端命令：`$` + 完整命令 + 输出 + 结果行，整张卡是深色的终端窗口。 -->
+    <!-- 终端命令：展开才是一扇终端窗口（标题栏 + `$ 命令` + 输出 + 结果行）。
+         行本身和别的步骤一样，只是一行带状态图标的文案。 -->
     <template v-if="isBash">
       <div class="term">
+        <div class="term-head">
+          <span class="codicon codicon-terminal term-icon" aria-hidden="true"></span>
+          <span class="term-name">{{ block.name || "bash" }}</span>
+          <button
+            class="icon-btn term-copy"
+            type="button"
+            :title="t('Copy command')"
+            @click="copyCommand"
+          >
+            <span class="codicon codicon-copy"></span>
+          </button>
+        </div>
         <div class="term-line">
           <span class="term-prompt">$</span>
           <span class="term-command">{{ bashCommand || "…" }}</span>
@@ -282,6 +294,9 @@ function onHeadClick(event: MouseEvent): void {
       </div>
       <pre v-else-if="block.status === 'running'" class="tool-result">…</pre>
     </template>
+
+    <!-- 问卷：把问过什么、选了哪一项摊开，而不是那块原始 JSON。 -->
+    <QuestionnaireCard v-else-if="block.questionnaire" :result="block.questionnaire" />
 
     <template v-else>
       <pre v-if="argsText" class="tool-args">{{ argsText }}</pre>

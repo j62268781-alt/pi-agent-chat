@@ -11,6 +11,7 @@ import { computed, ref, shallowRef } from "vue";
 import type { RpcEvent } from "@protocol/rpc";
 import { countDiffChanges } from "@/lib/diff";
 import { extractImages, extractText, isToolResultMessage } from "@/lib/message-parse";
+import { parseQuestionnaireResult, type QuestionnaireResult } from "@/lib/questionnaire";
 import { createCacheTracker, type CacheMiss } from "@/lib/usage";
 import { useSessionStore } from "./session";
 
@@ -63,6 +64,8 @@ export interface ToolBlock {
   filePath: string | null;
   fileLine: number | null;
   subagent: SubagentInfo | null;
+  /** Set for a `questionnaire` call: its questions and the answers given. */
+  questionnaire: QuestionnaireResult | null;
 }
 
 export type Block = TextBlock | ThinkingBlock | ToolBlock;
@@ -141,6 +144,7 @@ function createToolBlock(): ToolBlock {
     filePath: null,
     fileLine: null,
     subagent: null,
+    questionnaire: null,
   };
 }
 
@@ -631,6 +635,10 @@ export const useTranscriptStore = defineStore("transcript", () => {
     if (typeof details?.content === "string") block.writeContent = details.content;
     if (typeof details?.filePath === "string") block.filePath = details.filePath;
     if (typeof details?.line === "number") block.fileLine = details.line;
+    // The `questionnaire` tool reports every question and answer here; the card
+    // needs them to show what was asked, not just the tool's text summary.
+    const questionnaire = parseQuestionnaireResult(details);
+    if (questionnaire) block.questionnaire = questionnaire;
     const output = extractToolOutput(record);
     if (output) block.output = output;
   }

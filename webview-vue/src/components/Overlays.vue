@@ -4,9 +4,15 @@
 -->
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from "vue";
+import QuestionnaireDialog from "@/components/QuestionnaireDialog.vue";
 import { post } from "@/lib/bridge.ts";
 import { renderMarkdown } from "@/lib/markdown.ts";
 import { t } from "@/lib/i18n.ts";
+import {
+  parseQuestionnaireForm,
+  type QuestionnaireAnswer,
+  type QuestionnaireQuestion,
+} from "@/lib/questionnaire.ts";
 import { useOverlaysStore } from "@/stores/overlays";
 
 const overlays = useOverlaysStore();
@@ -17,8 +23,28 @@ const dialogValue = ref("");
 
 const dialogRequest = computed(() => overlays.dialog);
 
+/**
+ * pi's editor request carries its starting text as `prefill`; reading only
+ * `defaultValue` (pi's internal name for "what a cancel resolves to") left every
+ * editor dialog empty.
+ */
+function dialogPrefill(request: { [k: string]: unknown } | null): string {
+  return String(request?.prefill ?? request?.defaultValue ?? "");
+}
+
+/**
+ * The `questionnaire` extension asks through the same `editor` request, with the
+ * form definition as the prefill. Recognising it here is what turns pi's generic
+ * "edit this JSON" into a form — anything else still renders the plain field.
+ */
+const questionnaire = computed<QuestionnaireQuestion[] | null>(() => {
+  const request = overlays.dialog;
+  if (!request || request.method !== "editor") return null;
+  return parseQuestionnaireForm(dialogPrefill(request));
+});
+
 watch(dialogRequest, () => {
-  dialogValue.value = String((overlays.dialog?.defaultValue as string | undefined) ?? "");
+  dialogValue.value = dialogPrefill(overlays.dialog);
 });
 
 function respondDialog(payload: {
@@ -30,6 +56,11 @@ function respondDialog(payload: {
   if (!request) return;
   overlays.dialog = null;
   post({ type: "dialogResponse", id: request.id, ...payload });
+}
+
+/** The tool JSON.parses this string, so the shape has to stay `{answers}`. */
+function submitQuestionnaire(answers: QuestionnaireAnswer[]): void {
+  respondDialog({ value: JSON.stringify({ answers }), confirmed: true });
 }
 
 const dialogTitle = computed(() => String((overlays.dialog?.title as string | undefined) ?? ""));
@@ -54,7 +85,7 @@ const isDangerous = computed(() => /danger/i.test(dialogTitle.value));
 const actionsEl = ref<HTMLElement | null>(null);
 watch(dialogRequest, async () => {
   if (!overlays.dialog) return;
-  dialogValue.value = String((overlays.dialog?.defaultValue as string | undefined) ?? "");
+  dialogValue.value = dialogPrefill(overlays.dialog);
   await nextTick();
   actionsEl.value?.querySelector<HTMLElement>("button")?.focus();
 });
@@ -113,71 +144,84 @@ function closeInfoPanel(): void {
   <div v-if="overlays.dialog" class="overlay">
     <div
       class="dialog"
-      :class="{ 'dialog-danger': isDangerous }"
+      :class="{ 'dialog-danger': isDangerous, 'dialog-questionnaire': questionnaire }"
       role="dialog"
       aria-modal="true"
       :data-method="overlays.dialog.method"
       @keydown="onDialogKeydown"
     >
-      <h3 v-if="dialogTitle" class="dialog-title">
-        <span v-if="isDangerous" class="codicon codicon-warning dialog-warn-icon"></span>
-        <span class="dialog-title-text">{{ dialogTitle }}</span>
-      </h3>
-      <p v-if="dialogMessage" class="dialog-message">{{ dialogMessage }}</p>
-
-      <select
-        v-if="overlays.dialog.method === 'select' && !isChoiceDialog"
-        v-model="dialogValue"
-        class="dialog-select"
-      >
-        <option v-for="option in dialogOptions" :key="option" :value="option">{{ option }}</option>
-      </select>
-
-      <input
-        v-else-if="overlays.dialog.method === 'input' || overlays.dialog.method === 'editor'"
-        ref="actionsEl"
-        v-model="dialogValue"
-        class="dialog-input"
-        type="text"
-        @keydown.enter.prevent="respondDialog({ value: dialogValue, confirmed: true })"
+      <!-- The questionnaire brings its own heading and actions: its questions
+           are the content, and "Pi Questionnaire Form" says nothing to a user. -->
+      <QuestionnaireDialog
+        v-if="questionnaire"
+        :questions="questionnaire"
+        @submit="submitQuestionnaire"
+        @cancel="respondDialog({ cancelled: true })"
       />
 
-      <footer ref="actionsEl" class="dialog-actions" :class="{ 'choice-group': isChoiceDialog }">
-        <template v-if="isChoiceDialog">
-          <button
-            v-for="(option, index) in dialogOptions"
-            :key="option"
-            class="btn choice-btn"
-            :class="{
-              'choice-allow': /allow|yes|accept/i.test(option),
-              'choice-block':
-                /block|no|deny|cancel/i.test(option) || index === dialogOptions.length - 1,
-            }"
-            type="button"
-            @click="respondDialog({ value: option, confirmed: true })"
-          >
+      <template v-else>
+        <h3 v-if="dialogTitle" class="dialog-title">
+          <span v-if="isDangerous" class="codicon codicon-warning dialog-warn-icon"></span>
+          <span class="dialog-title-text">{{ dialogTitle }}</span>
+        </h3>
+        <p v-if="dialogMessage" class="dialog-message">{{ dialogMessage }}</p>
+
+        <select
+          v-if="overlays.dialog.method === 'select' && !isChoiceDialog"
+          v-model="dialogValue"
+          class="dialog-select"
+        >
+          <option v-for="option in dialogOptions" :key="option" :value="option">
             {{ option }}
-          </button>
-        </template>
-        <template v-else>
-          <button class="btn" type="button" @click="respondDialog({ cancelled: true })">
-            {{ t("Cancel") }}
-          </button>
-          <button
-            class="btn btn-primary"
-            type="button"
-            @click="
-              respondDialog(
-                overlays.dialog.method === 'confirm'
-                  ? { confirmed: true }
-                  : { value: dialogValue, confirmed: true },
-              )
-            "
-          >
-            {{ overlays.dialog.method === "confirm" ? t("Confirm") : t("OK") }}
-          </button>
-        </template>
-      </footer>
+          </option>
+        </select>
+
+        <input
+          v-else-if="overlays.dialog.method === 'input' || overlays.dialog.method === 'editor'"
+          ref="actionsEl"
+          v-model="dialogValue"
+          class="dialog-input"
+          type="text"
+          @keydown.enter.prevent="respondDialog({ value: dialogValue, confirmed: true })"
+        />
+
+        <footer ref="actionsEl" class="dialog-actions" :class="{ 'choice-group': isChoiceDialog }">
+          <template v-if="isChoiceDialog">
+            <button
+              v-for="(option, index) in dialogOptions"
+              :key="option"
+              class="btn choice-btn"
+              :class="{
+                'choice-allow': /allow|yes|accept/i.test(option),
+                'choice-block':
+                  /block|no|deny|cancel/i.test(option) || index === dialogOptions.length - 1,
+              }"
+              type="button"
+              @click="respondDialog({ value: option, confirmed: true })"
+            >
+              {{ option }}
+            </button>
+          </template>
+          <template v-else>
+            <button class="btn" type="button" @click="respondDialog({ cancelled: true })">
+              {{ t("Cancel") }}
+            </button>
+            <button
+              class="btn btn-primary"
+              type="button"
+              @click="
+                respondDialog(
+                  overlays.dialog.method === 'confirm'
+                    ? { confirmed: true }
+                    : { value: dialogValue, confirmed: true },
+                )
+              "
+            >
+              {{ overlays.dialog.method === "confirm" ? t("Confirm") : t("OK") }}
+            </button>
+          </template>
+        </footer>
+      </template>
     </div>
   </div>
 </template>
