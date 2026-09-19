@@ -682,6 +682,9 @@ const modelLabel = computed(() => {
     return model.provider
       ? `${model.name || model.id} · ${model.provider}`
       : model.name || model.id;
+  // A dead pi leaves `models` empty too; saying "no models configured" there
+  // points the user at the model settings when the process never came up.
+  if (session.piFailure) return t("Pi is not running");
   return session.models.length === 0 ? t("No models configured") : "";
 });
 

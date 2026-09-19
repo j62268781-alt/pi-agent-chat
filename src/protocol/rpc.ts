@@ -142,6 +142,12 @@ export interface RpcClient {
   switchSession(sessionPath: string): Promise<{ cancelled: boolean }>;
   getEntries(): Promise<RpcEntriesData>;
   fork(entryId: string): Promise<{ text: string; cancelled: boolean }>;
+  /**
+   * The tail of the subprocess's stderr. pi reports a broken extension there and
+   * then exits without answering a single command, so this is the only record of
+   * why a session never started.
+   */
+  lastStderr(): string;
   respondExtensionUi(
     id: string,
     payload: { value?: string; confirmed?: boolean; cancelled?: boolean },

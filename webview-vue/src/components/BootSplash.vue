@@ -14,7 +14,9 @@ import piLogoSvg from "../../../resources/icon.svg?raw";
 import { post } from "@/lib/bridge.ts";
 import { t } from "@/lib/i18n.ts";
 import { bootFailure, isBooting, startBootWatchdog } from "@/composables/useHostLink.ts";
+import { useSessionStore } from "@/stores/session.ts";
 
+const session = useSessionStore();
 const retrying = ref(false);
 
 /** Once the failure card is up it stays up until a retry succeeds. */
@@ -24,6 +26,7 @@ const visible = computed(() => failed.value || isBooting.value);
 function retry(): void {
   retrying.value = true;
   bootFailure.value = "";
+  session.piFailure = "";
   // Back to the splash first, then ask the host for a fresh session: the same
   // shape as a cold boot, so a second timeout is possible and visible.
   post({ type: "startSession" });

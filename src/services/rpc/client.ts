@@ -2,6 +2,7 @@ import { spawn, spawnSync, type ChildProcess } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { StringDecoder } from "node:string_decoder";
 import { normalizePiSpawnTarget } from "../pi/process.ts";
+import { createStderrTail } from "./stderr-tail.ts";
 import { rpcTrace, rpcTraceErr } from "../../providers/chat/rpc-trace.ts";
 import type {
   ExtensionUiRequest,
@@ -49,6 +50,7 @@ export async function createRpcClient(options: CreateRpcClientOptions): Promise<
   });
 
   const pending = new Map<string, Pending>();
+  const stderrTail = createStderrTail();
   let disposed = false;
 
   const failAll = (message: string) => {
@@ -112,6 +114,7 @@ export async function createRpcClient(options: CreateRpcClientOptions): Promise<
 
   attachJsonlReader(proc.stderr, (line) => {
     rpcTraceErr(traceTag, line);
+    stderrTail.push(line);
   });
 
   proc.on("error", (err) => {
@@ -247,6 +250,7 @@ export async function createRpcClient(options: CreateRpcClientOptions): Promise<
       request<{ cancelled: boolean }>({ type: "switch_session", sessionPath }),
     getEntries: () => request<RpcEntriesData>({ type: "get_entries" }),
     fork: (entryId) => request<{ text: string; cancelled: boolean }>({ type: "fork", entryId }),
+    lastStderr: () => stderrTail.text(),
     respondExtensionUi,
     dispose,
   } satisfies RpcClient;

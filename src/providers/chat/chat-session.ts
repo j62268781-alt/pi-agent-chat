@@ -203,11 +203,30 @@ function escapeGlob(s: string): string {
   return out;
 }
 
+/**
+ * pi reports a broken extension by writing to stderr and exiting 1 without ever
+ * answering a command, so the exit code on its own tells the user nothing — the
+ * stderr tail is the actual diagnosis.
+ */
+function describePiExit(code: number | null, stderr: string): string {
+  const head = t("Pi exited{0}", code === null ? "" : ` (code ${code})`);
+  if (!stderr) return head;
+  return `${head}\n${stderr.split("\n").slice(-12).join("\n")}`;
+}
+
 export async function createChatSession(
   opts: ChatSessionOptions,
 ): Promise<ChatSession | undefined> {
   const piPath = await ensurePiBinary();
-  if (!piPath) return undefined;
+  if (!piPath) {
+    // Returning undefined used to be silent: the sidebar bailed and the UI kept
+    // saying "No models configured" for a pi that was never even found.
+    opts.host.postMessage({
+      type: "sessionFailed",
+      message: t('Cannot find the pi executable. Set "pi-agent-chat.path" to its absolute path.'),
+    });
+    return undefined;
+  }
 
   let host = opts.host;
   let msgSub: vscode.Disposable | undefined;
@@ -1264,9 +1283,11 @@ export async function createChatSession(
           opts.onExit?.(code);
           sessionDisposed = true;
           allSessions.delete(session);
+          // `sessionFailed`, not `error`: a toast disappears while the reason is
+          // the whole point, and the failure card is the one surface with a retry.
           host.postMessage({
-            type: "error",
-            message: "Pi process exited" + (code != null ? ` (code ${code})` : ""),
+            type: "sessionFailed",
+            message: describePiExit(code, rpc.lastStderr()),
           });
         },
         onError: (err) => {

@@ -90,6 +90,13 @@ export const useSessionStore = defineStore("session", () => {
     return Math.min(100, Math.max(0, percent));
   });
 
+  /**
+   * Why the session is dead, `""` while it is alive. The model chip needs this:
+   * a pi that crashed leaves `models` empty, and "No models configured" sends the
+   * user looking at the wrong thing entirely.
+   */
+  const piFailure = ref("");
+
   const isFavorite = (candidate: RpcModel): boolean =>
     enabledModelKeys.value.includes(modelKey(candidate.provider, candidate.id));
 
@@ -137,6 +144,7 @@ export const useSessionStore = defineStore("session", () => {
     commands,
     enabledModelKeys,
     permissionMode,
+    piFailure,
     sessionList,
     pendingNew,
     beginSwitch,

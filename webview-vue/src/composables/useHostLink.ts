@@ -83,6 +83,12 @@ export function useHostLink() {
         break;
 
       case "sessionFailed":
+        // The session is dead rather than slow: drop the running affordances and
+        // undo an optimistic switch, then let the card carry the reason.
+        session.applyState({ isStreaming: false });
+        transcript.statusText = "";
+        session.rollbackSwitch(transcript);
+        session.piFailure = message.message;
         bootFailure.value = message.message;
         settleBoot();
         break;
@@ -120,6 +126,7 @@ export function useHostLink() {
         // has landed and the "new chat" guide is over.
         session.endSwitch();
         session.pendingNew = false;
+        session.piFailure = "";
         transcript.hydrate(message.messages);
         transcript.historyAvailable = message.historyAvailable === true;
         settleBoot();
