@@ -3445,9 +3445,11 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   font-size: var(--chat-fs-13);
 }
 
+/* 思考行与「已处理」「工具」行同一节奏：一行、约 25px 高。原先 12/9 的上下内边距
+ * 让这一行有 40px，比参考设计厚一倍，三个思考块连着出现时非常占地方。 */
 .thinking-block > summary {
-  padding: 12px 12px 9px 14px;
-  gap: 8px;
+  padding: 4px 0;
+  gap: 6px;
   font-weight: 400;
   opacity: 1;
   color: var(--pi-text-secondary);
@@ -4935,12 +4937,14 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 }
 
 /* 展开后的思考正文：限高 + 内部滚动（彬哥：过长的推理不该把整条会话流撑开），
- * 底色沿用弹窗正文的浅底 + 圆角。 */
+ * 底色沿用弹窗正文的浅底 + 圆角，并补一条描边让它读起来是个「框」（参考设计里
+ * 展开的推理是被框住的）。 */
 .thinking-body {
   max-height: 220px;
   overflow-y: auto;
   overscroll-behavior: contain;
   background: var(--pi-bg-subtle);
+  border: 1px solid var(--pi-border);
   border-radius: var(--pi-r-sm);
   padding: 8px 10px;
 }
@@ -4950,9 +4954,14 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   margin-left: 0;
 }
 
-/* 折叠内容只留一点缩进，不再画竖向导引线。 */
+/* 折叠内容左侧的竖向导引线：从头部箭头正下方垂到最后一行（彬哥：箭头那里要有线
+ * 到最后一个思考）。线画在 7px —— 头部箭头是 14px 的 codicon、从 0 起排，中线就在
+ * 这里（实测箭头盒 0..14、中线 7）；`border-left` 的高度到内容盒底为止，所以它落
+ * 在最后一行的下沿。 */
 .work-body {
-  margin-left: 6px;
+  margin-left: 7px;
+  padding-left: 12px;
+  border-left: 1px solid var(--pi-border);
 }
 
 /* 连续工具调用分段（「执行工具 N 次」），嵌套在「已处理」里的第二层折叠。 */
