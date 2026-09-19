@@ -137,11 +137,11 @@ export function argsPreview(args: unknown): string {
 
   for (const key of PREVIEW_KEYS) {
     const value = scalar(record[key]);
-    if (value) return truncate(value, 80);
+    if (value) return truncate(String(value), 80);
   }
   for (const key of keys) {
     const value = scalar(record[key]);
-    if (value) return truncate(value, 80);
+    if (value) return truncate(String(value), 80);
   }
   const first = record[keys[0] as string];
   if (Array.isArray(first)) return t("{0} items", first.length);
