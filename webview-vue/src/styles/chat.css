@@ -3464,6 +3464,8 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 
 .thinking-label {
   font-size: var(--chat-fs-13);
+  /* 与工具标题同权重：一行里标题总是最显眼的那一段（彬哥）。 */
+  font-weight: 500;
   /* A three-character label like 已思考 must not break across lines to make room
    * for the preview; the preview is the part that can give. */
   flex-shrink: 0;
@@ -3548,36 +3550,43 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   white-space: nowrap;
 }
 
-/* The board gives every tool row a rounded chip on #F2F3F5. The markup
- * has no icon element of its own, so the chip is drawn on the name. 16px keeps
- * the row on the 27px rhythm; the glyph scales with it. */
+/* 标题前不再画那个 16px 的图标方块（彬哥：每个标题前面多了一个像 menu 的字形）。
+ * 一行只有：状态图标 + 标题 + 副标题 —— 各类型完全一致。 */
 .tool-name {
   display: inline-flex;
   align-items: center;
-  font-weight: 400;
-}
-
-.tool-name:before {
-  content: "\eab3";
-  font-family: codicon;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  width: 16px;
-  height: 16px;
-  margin-right: 8px;
-  border-radius: var(--pi-r-sm);
-  background: var(--pi-bg-subtle);
-  color: var(--pi-icon);
-  font-size: 11px;
-  font-weight: 400;
+  flex: none;
+  font-weight: 500;
+  color: var(--pi-text);
 }
 
 .tool-summary {
   color: var(--pi-text-tool);
   opacity: 1;
   font-size: var(--chat-fs-12);
+}
+
+/* 文件 tag：只有文件名 + 后缀，点击在编辑器里打开（彬哥）。 */
+.file-tag {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 1px 6px;
+  border: 1px solid var(--pi-border);
+  border-radius: var(--pi-r-sm);
+  background: var(--pi-bg-subtle);
+  color: var(--pi-text-secondary);
+  font-family: var(--pi-mono);
+  font-size: var(--chat-fs-11);
+  cursor: pointer;
+}
+
+.file-tag:hover {
+  border-color: var(--pi-border-brand);
+  color: var(--pi-text-brand);
 }
 
 .tool-summary .tool-metrics,
@@ -4764,13 +4773,14 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 }
 
 /* ── 终端卡（bash）：展开才是一扇终端窗口 ──────────────────────────────────
- * 设计来自彬哥给的 SVG：深色卡（#1F2329，与 code/diff 卡同一套 token）、标题栏
- * 一个终端字形 + 名称 + 复制、`$ 命令`、输出，末尾一行绿色（失败红色）结果。
+ * 设计来自彬哥给的 SVG：深色卡（#1F2329，与 code/diff 卡同一套 token）、`$ 命令`、
+ * 输出，末尾一行绿色（失败红色）结果。卡里不再有标题栏与复制按钮（彬哥）。
  *
  * 卡只属于「展开」：折叠行本身和别的步骤完全一样，只有状态图标 —— 标题从不套
  * 卡样式（彬哥）。 */
 .term {
   margin: 2px 0 8px;
+  padding: 10px 12px;
   border-radius: var(--pi-r-lg);
   background: var(--pi-code-bg);
   color: var(--pi-code-fg);
@@ -4779,40 +4789,10 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   overflow: hidden;
 }
 
-.term-head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 4px 6px 4px 12px;
-}
-
-.term-icon {
-  color: var(--pi-code-muted);
-  font-size: 15px;
-}
-
-.term-name {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--pi-code-fg);
-}
-
-.term-copy {
-  flex: none;
-  width: 24px;
-  height: 24px;
-  padding: 0;
-  margin-left: auto;
-  color: var(--pi-code-muted);
-}
-
 .term-line {
   display: flex;
   align-items: flex-start;
   gap: 6px;
-  padding: 0 12px;
   line-height: 1.5;
   color: var(--pi-code-fg);
 }
@@ -4832,7 +4812,6 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 /* 输出限高：一条 `npm test` 能刷几百行，不该把会话流撑开。 */
 .term-output {
   margin: 6px 0 0;
-  padding: 0 12px;
   max-height: 260px;
   overflow: auto;
   overscroll-behavior: contain;
@@ -4845,7 +4824,6 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 0 12px 10px;
   margin-top: 8px;
   color: var(--pi-code-added-gutter);
 }
@@ -5152,13 +5130,15 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   font-size: 0;
 }
 
-/* 行内文案：标签正常色、预览弱化并单行截断（「已思考 · <首行>」）。 */
+/* 行内文案：标题正常色、预览弱化并单行截断（「已思考 · <首行>」）。
+ * 副标题比标题小一档（12px vs 13px），层级靠字号 + 弱化色拉开（彬哥）。 */
 .row-preview {
   flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-size: var(--chat-fs-12);
   font-weight: 400;
   color: var(--pi-text-muted);
 }

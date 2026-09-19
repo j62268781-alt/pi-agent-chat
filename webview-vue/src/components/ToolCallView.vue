@@ -21,7 +21,6 @@ import { basenameOf, shortenWorkspacePath } from "@/lib/paths.ts";
 import { answerText } from "@/lib/questionnaire.ts";
 import { formatToolSummary, toolDisplayName, toolPathArg, toolStr } from "@/lib/tool-format.ts";
 import { useDisplayStore } from "@/stores/display";
-import { useOverlaysStore } from "@/stores/overlays";
 import type { ToolBlock } from "@/stores/transcript";
 import QuestionnaireCard from "./QuestionnaireCard.vue";
 
@@ -33,7 +32,6 @@ const MAX_INLINE = 12000;
 const COMMAND_PREVIEW_MAX = 70;
 
 const display = useDisplayStore();
-const overlays = useOverlaysStore();
 
 const fold = useFoldState(display.expandToolCalls);
 const { open } = fold;
@@ -52,18 +50,38 @@ watch(
 const name = computed(() => (props.block.name || "").toLowerCase());
 const isBash = computed(() => name.value === "bash");
 const isRead = computed(() => name.value === "read");
+const isEdit = computed(() => name.value === "write" || name.value === "edit");
 const isSubagent = computed(() => name.value === "subagent");
 
 /**
- * Leading label of the row. bash reads as "终端命令" (the board's wording);
- * read and subagent carry a whole sentence in the summary, so they drop the
- * label rather than repeat their own name.
+ * Title of the row. One vocabulary for every step type, so a glance down the
+ * fold reads as a list of steps: 已思考 / 终端命令 / 读取文件 / 编辑文件. The
+ * kind of thing is the title; what it touched goes in the subtitle.
  */
 const displayName = computed(() => {
   if (isBash.value) return t("Terminal command");
-  if (isRead.value || isSubagent.value) return "";
+  if (isRead.value) return t("Read file");
+  if (isEdit.value) return t("Edit file");
+  if (isSubagent.value) return "";
   return toolDisplayName(props.block.name || "tool");
 });
+
+/**
+ * The file a read/edit touched, as a bare name: the row is ~300px wide and the
+ * full path is one click away (`openFile`), so the path itself is not shown.
+ */
+const fileTag = computed(() => {
+  if (!isRead.value && !isEdit.value) return "";
+  const args = props.block.args;
+  return args ? basenameOf(shortenWorkspacePath(toolPathArg(args))) : "";
+});
+
+function openFile(): void {
+  const args = props.block.args;
+  const filePath = props.block.filePath || (args ? toolPathArg(args) : "");
+  if (!filePath) return;
+  post({ type: "openFile", filePath, line: props.block.fileLine });
+}
 
 /**
  * Sub-agent state, folded into the header: "子 Agent 已完成 12s". The head is
@@ -75,6 +93,13 @@ const subagentState = computed(() => {
   if (props.block.status === "error")
     return duration ? t("Subagent failed {0}", duration) : t("Subagent failed");
   return duration ? t("Subagent finished {0}", duration) : t("Subagent finished");
+});
+
+/** How a command finished, in the same words for every command row. */
+const bashState = computed(() => {
+  if (props.block.status === "running") return t("Running");
+  if (props.block.status === "error") return t("Run failed");
+  return t("Ran successfully");
 });
 
 /** Folded-header summary — the tools the user watches most get their own wording. */
@@ -92,16 +117,14 @@ const summary = computed(() => {
   if (!args) return props.block.argsText ? "…" : "";
   if (isBash.value) {
     const command = toolStr(args.command);
-    if (command) return t("Ran") + " \u00b7 " + truncate(firstLine(command), COMMAND_PREVIEW_MAX);
-  } else if (isRead.value) {
-    const base = basenameOf(shortenWorkspacePath(toolPathArg(args)));
-    if (base) return t("Read {0}", base);
-  } else if (isSubagent.value) {
-    return subagentTitle(args);
-  } else if (name.value === "write" || name.value === "edit") {
-    const base = basenameOf(shortenWorkspacePath(toolPathArg(args)));
-    if (base) return t("Edited {0}", base);
+    if (command) {
+      return bashState.value + " \u00b7 " + truncate(firstLine(command), COMMAND_PREVIEW_MAX);
+    }
+    return bashState.value;
   }
+  // read/edit carry their file as a tag instead of a path in the text.
+  if (isRead.value || isEdit.value) return "";
+  if (isSubagent.value) return subagentTitle(args);
   return formatToolSummary(props.block.name, args);
 });
 
@@ -158,11 +181,6 @@ const bashResult = computed(() => {
   const outcome = props.block.status === "error" ? t("failed") : t("Processed");
   return statusLabel.value ? `${outcome} \u00b7 ${statusLabel.value}` : outcome;
 });
-
-function copyCommand(): void {
-  post({ type: "copy", text: bashCommand.value });
-  overlays.toast(t("Copied"), "success");
-}
 
 // ---- read: the call's input, then a numbered file body ----------------------
 //
@@ -234,26 +252,25 @@ function onHeadClick(event: MouseEvent): void {
         aria-hidden="true"
       ></span>
       <span v-if="displayName" class="tool-name">{{ displayName }}</span>
-      <span class="tool-summary">{{ summary }}</span>
+      <!-- 文件类：一个小 tag（只有文件名 + 后缀），点击在编辑器里打开 —— 行里不
+           放完整路径（彬哥）。`prevent` 免得点 tag 顺手把折叠翻开。 -->
+      <button
+        v-if="fileTag"
+        class="file-tag"
+        type="button"
+        :title="block.filePath ?? fileTag"
+        @click.stop.prevent="openFile"
+      >
+        {{ fileTag }}
+      </button>
+      <span v-else-if="summary" class="tool-summary">{{ summary }}</span>
       <span v-if="statusLabel" class="tool-status">{{ statusLabel }}</span>
     </summary>
 
-    <!-- 终端命令：展开才是一扇终端窗口（标题栏 + `$ 命令` + 输出 + 结果行）。
-         行本身和别的步骤一样，只是一行带状态图标的文案。 -->
+    <!-- 终端命令：展开才是一扇终端窗口（`$ 命令` + 输出 + 结果行）。行本身和别的
+         步骤一样，只是一行带状态图标的文案。 -->
     <template v-if="isBash">
       <div class="term">
-        <div class="term-head">
-          <span class="codicon codicon-terminal term-icon" aria-hidden="true"></span>
-          <span class="term-name">{{ block.name || "bash" }}</span>
-          <button
-            class="icon-btn term-copy"
-            type="button"
-            :title="t('Copy command')"
-            @click="copyCommand"
-          >
-            <span class="codicon codicon-copy"></span>
-          </button>
-        </div>
         <div class="term-line">
           <span class="term-prompt">$</span>
           <span class="term-command">{{ bashCommand || "…" }}</span>
