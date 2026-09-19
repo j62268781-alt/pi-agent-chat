@@ -48,7 +48,7 @@
     "fmt": "oxlint . --fix && oxfmt .",
     "lint": "oxlint . && oxfmt --check .",
     "typecheck": "tsgo --noEmit --skipLibCheck && tsgo --noEmit -p test/e2e/tsconfig.json && node scripts/typecheck-pi-extensions.mjs && pnpm --filter @pi-agent-chat/webview-vue typecheck",
-    "test:unit": "vitest run",
+    "test:unit": "vitest run && pnpm --filter @pi-agent-chat/webview-vue test",
     "test:e2e": "pnpm run build:e2e && node test/e2e/.build/runner.cjs",
     "test": "pnpm run lint && pnpm run typecheck && pnpm run test:unit"
   },
