@@ -3516,14 +3516,6 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   opacity: 1;
 }
 
-/* The original drew a second bar inside the opened body; the board's card
- * border already frames it. */
-.thinking-block[open] .thinking-body {
-  margin-left: 0;
-  padding-left: 14px;
-  border-left: none;
-}
-
 /* ── flow card (work-block) ──────────────────────────────────────────────── */
 
 /* Flat: the fold used to sit in a raised, bordered card with a vertical guide
@@ -5137,8 +5129,9 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   padding: 8px 10px;
 }
 
+/* The reasoning card hangs off the guide rail, so it drops the indent the
+ * summary carries — its own padding comes from the shared surface rule. */
 .thinking-block[open] .thinking-body {
-  padding-left: 10px;
   margin-left: 0;
 }
 
@@ -5249,4 +5242,29 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   line-height: 1.5;
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+/* ── 会话流只有一个「面」（必须放最后）────────────────────────────────────
+ * 之前每加一张卡就换一个底：气泡 #37373D、围栏代码 #2B2B2B、思考卡 #313131、
+ * 参数卡 #181818、终端卡 #2B2B2B，字色也有 #CCCCCC / #D0D0D0 / #9D9D9D 三种，
+ * 内距 8/12、8/10、10/12 三种 —— 彬哥：输入侧和展开的灰底不同步、间距没对齐、
+ * 该用圆角。现在一处定死：同底（`--pi-bg-card`，就是气泡的底）、同字色（正文）、
+ * 同内距（与气泡的 8px 12px）、同圆角（`--pi-r-lg`），描边全部去掉 —— 同色之后
+ * 框只是多出来的一条线。终端卡保留它的 `$`、等宽与绿/红结果行，思考卡与参数卡
+ * 保留各自的字号，那些是内容不是「面」。 */
+.user-bubble,
+.text-block blockquote,
+.text-block pre,
+.thinking-body,
+.tool-args,
+.tool-json,
+.code-block,
+.term,
+.qa-card,
+.compaction-summary-body {
+  padding: var(--pi-sp-3) var(--pi-sp-5);
+  border: none;
+  border-radius: var(--pi-r-lg);
+  background: var(--pi-bg-card);
+  color: var(--pi-text);
 }

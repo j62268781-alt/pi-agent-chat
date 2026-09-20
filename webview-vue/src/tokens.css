@@ -53,6 +53,11 @@
   --pi-bg-overlay: rgba(0, 0, 0, 0.45); /* no theme id exists for a modal scrim */
 
   --pi-bg-bubble: var(--vscode-list-inactiveSelectionBackground, var(--pi-bg-subtle, #313131));
+  /* The one surface of the transcript: the user's bubble and every expanded card
+   * (quote, fenced code, reasoning, tool args, terminal, Q&A) sit on this. It
+   * reads as "the same object on the same layer", so the bubble doubles as the
+   * reference — retint here, nowhere else. */
+  --pi-bg-card: var(--pi-bg-bubble);
   /* Control fills — the composer bar's `+`, the pickers and the resting send
    * button. No theme token is safe for these: `badge-background` is a
    * count/brand colour (2026-dark paints it #307E9F, hc_light #0F4A85), and

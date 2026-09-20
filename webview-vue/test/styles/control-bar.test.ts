@@ -76,6 +76,58 @@ describe("control-bar fill contract", () => {
   });
 });
 
+describe("transcript surface contract", () => {
+  /** Everything the transcript paints as a block. Each one used to pick its own
+   * grey, which is how five surfaces, three ink colours and three paddings
+   * ended up on one screen. */
+  const SURFACES = [
+    ".user-bubble",
+    ".text-block blockquote",
+    ".text-block pre",
+    ".thinking-body",
+    ".tool-args",
+    ".tool-json",
+    ".code-block",
+    ".term",
+    ".qa-card",
+  ];
+
+  it("gives every transcript surface the same fill, ink, padding and radius", () => {
+    for (const selector of SURFACES) {
+      const body = declarations(chat, selector);
+      expect(body, selector).toContain("background: var(--pi-bg-card)");
+      expect(body, selector).toContain("color: var(--pi-text)");
+      expect(body, selector).toContain("padding: var(--pi-sp-3) var(--pi-sp-5)");
+      expect(body, selector).toContain("border-radius: var(--pi-r-lg)");
+    }
+  });
+
+  it("keeps the shared surface last, so a later card cannot re-pick a grey", () => {
+    const all = rules(chat);
+    const convergence = all.find(
+      (rule) =>
+        rule.selectors.includes(".user-bubble") &&
+        rule.selectors.includes(".term") &&
+        rule.body.includes("--pi-bg-card"),
+    );
+    expect(convergence, "the convergence block was deleted").toBeDefined();
+    const index = all.indexOf(convergence as Rule);
+    for (const selector of SURFACES) {
+      const painted = all
+        .map((rule, position) => ({ rule, position }))
+        .filter(
+          (entry) => entry.position > index && entry.rule.selectors.includes(selector) && /background/.test(entry.rule.body),
+        );
+      expect(painted.map((entry) => entry.rule.selectors.join(",")), selector).toEqual([]);
+    }
+  });
+
+  it("aliases the card onto the bubble instead of picking a sixth grey", () => {
+    const value = /--pi-bg-card:\s*([^;]+);/.exec(tokens)?.[1] ?? "";
+    expect(value.trim()).toBe("var(--pi-bg-bubble)");
+  });
+});
+
 describe("meta-row contract", () => {
   it("keeps the status row and the bubble meta on one centre line", () => {
     expect(declarations(chat, ".msg-meta")).toContain("align-items: center");

@@ -58,6 +58,7 @@
 | `--pi-bg-hover`       | `list.hoverBackground`                               | 行悬停                |
 | `--pi-bg-selected`    | `list.activeSelectionBackground`                     | 选中行                |
 | `--pi-bg-bubble`      | `list.inactiveSelectionBackground`                   | 用户消息气泡          |
+| `--pi-bg-card`        | = `--pi-bg-bubble`                                   | 会话流唯一的「面」：气泡、引用、围栏代码、思考卡、参数卡、终端卡、问答卡 |
 | `--pi-bg-control`       | `foreground` 12% 混进 `sideBar.background`           | 控制条 chip（`+`、选择器、待命的发送钮） |
 | `--pi-bg-control-hover` | 同上取 20%                                     | 上述 chip 悬停                  |
 | `--pi-bg-think`       | `textBlockQuote.background`                          | 思考块底              |
@@ -206,7 +207,11 @@ Alt+Enter 始终强制入队。
 3. 图标 → 用 codicon，尺寸取 `--pi-icon-*`；需要新字形时在 `chat.css` /
    `settings.css` 的码点表里补一行。
 4. 主题相关行为（如随主题重绘）→ 读 `<body>` 的 `vscode-*` 类，不要自己判断明暗。
-5. 改完用 `webview-vue/preview/` 至少在 Dark Modern、Light Modern、Dark High
+5. 会话流的「面」只有一种 → 气泡与所有展开卡（引用、围栏代码、思考、参数、终端、
+   问答）共用 `--pi-bg-card` + 正文色 + `8px 12px` 内距 + `--pi-r-lg`，收敛规则写在
+   `chat.css` 末尾。**新加一张卡不要再自己挑底色**（历史上每张卡各取一种，攒出了
+   5 种灰、3 种字色、3 种内距）。
+6. 改完用 `webview-vue/preview/` 至少在 Dark Modern、Light Modern、Dark High
    Contrast 三套主题下看一眼。
 
 **验收不留截图**：`docs/design/preview/` 那批渲图已删除。仓库里没有生成它们的脚本，图就会随配色一改悄悄过期，比没有更误导 —— 需要看效果时直接跑预览：
