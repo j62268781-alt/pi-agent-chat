@@ -53,7 +53,15 @@
   --pi-bg-overlay: rgba(0, 0, 0, 0.45); /* no theme id exists for a modal scrim */
 
   --pi-bg-bubble: var(--vscode-list-inactiveSelectionBackground, var(--pi-bg-subtle, #313131));
-  --pi-bg-pill: var(--vscode-badge-background, var(--pi-bg-subtle));
+  /* Control fills — the composer bar's `+`, the pickers and the resting send
+   * button. No theme token is safe for these: `badge-background` is a
+   * count/brand colour (2026-dark paints it #307E9F, hc_light #0F4A85), and
+   * `button-secondaryBackground` is *fully transparent* in Dark Modern, so a
+   * control filled from either one either clashes or vanishes. Mixing the
+   * theme's own foreground into its sidebar surface keeps the shape readable in
+   * every theme and still follows it. */
+  --pi-bg-control: color-mix(in srgb, var(--pi-text) 12%, var(--pi-bg-surface));
+  --pi-bg-control-hover: color-mix(in srgb, var(--pi-text) 20%, var(--pi-bg-surface));
   --pi-bg-think: var(--vscode-textBlockQuote-background, var(--pi-bg-raised));
 
   /* Inline code, fenced code and preformatted text: VS Code's markdown
@@ -160,9 +168,7 @@
   --pi-send-bg: var(--vscode-button-background, #0078d4);
   --pi-send-bg-hover: var(--vscode-button-hoverBackground, var(--vscode-button-background));
   --pi-send-bg-active: var(--vscode-button-hoverBackground, var(--vscode-button-background));
-  --pi-send-bg-disabled: var(--vscode-button-secondaryBackground, var(--vscode-disabledForeground));
   --pi-send-fg: var(--vscode-button-foreground, #ffffff);
-  --pi-send-fg-disabled: var(--vscode-disabledForeground, var(--vscode-button-secondaryForeground));
 
   /* ── icons ─────────────────────────────────────────────────────────────── */
 

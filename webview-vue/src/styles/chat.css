@@ -2002,11 +2002,11 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
  * halo is gone with it — it was a hard-coded warm glow, which is exactly the
  * kind of colour that stops matching the moment the theme changes. */
 .send-btn.is-stop {
-  background: var(--pi-bg-subtle);
+  background: var(--pi-bg-control);
   color: var(--pi-danger);
 }
 .send-btn.is-stop:hover {
-  background: var(--pi-bg-hover);
+  background: var(--pi-bg-control-hover);
   color: var(--pi-danger);
 }
 
@@ -2928,8 +2928,8 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 #ctx-tooltip {
   padding: var(--pi-sp-2) var(--pi-sp-4);
   border-radius: var(--pi-r-sm);
-  background: var(--pi-text);
-  color: var(--pi-bg-page);
+  background: var(--pi-bg-raised);
+  color: var(--pi-text);
   font-size: var(--fs-11);
   box-shadow: var(--pi-shadow-menu);
 }
@@ -3422,13 +3422,9 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   max-width: 100%;
 }
 
-.msg.user .msg-time {
-  align-self: flex-end;
-}
-
 .msg-time {
-  font-size: var(--chat-fs-12);
-  color: var(--pi-text-muted);
+  font-size: var(--pi-fs-body);
+  color: var(--pi-text-secondary);
   opacity: 1;
 }
 
@@ -3441,7 +3437,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 .bubble {
   max-width: min(640px, 100%);
   padding: 11px 16px;
-  border-radius: 18px;
+  border-radius: var(--pi-r-lg);
 }
 
 /* The board gives the assistant turn a fixed 640px column — long-form output
@@ -3733,22 +3729,24 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   border-top: 1px solid var(--pi-border-divider);
 }
 
-/* Pills — board: r8, #F7F7F9 fill, #E5E7EB stroke, 13px #374151. */
+/* Pills — one fill and one hairline with the bar's icon chips: the pickers and
+ * the `+` are the same kind of thing, so they have to be the same colour. */
 .model-trigger,
 .thinking-trigger,
 .permission-trigger {
   padding: 6px 10px 6px 12px;
   border: 1px solid var(--pi-border);
   border-radius: var(--pi-r-md);
-  background: var(--pi-bg-pill);
+  background: var(--pi-bg-control);
   color: var(--pi-text-tool);
   font-size: var(--chat-fs-13);
 }
 
 .model-trigger:hover,
 .thinking-trigger:hover,
+.permission-trigger:hover,
 .thinking-wrap.is-open .thinking-trigger {
-  background: var(--pi-bg-hover);
+  background: var(--pi-bg-control-hover);
 }
 
 /* Full access gets the board's red pill. composer.ts only toggles
@@ -3759,9 +3757,11 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   color: var(--pi-text-danger);
 }
 
-/* Send button — the same 28x28 rounded square as the other control-bar icons
- * (`.icon-btn`), filled with the theme's button colour instead of staying
- * transparent. No size or radius of its own: it inherits both. */
+/* Send — the bar's 30x30 chip, filled with the theme's button colour. Resting
+ * (nothing typed) it has to read as a button just as loudly: `.icon-btn:disabled`
+ * fades the control to 40% opacity and Dark Modern defines
+ * `button-secondaryBackground` as *fully transparent*, so the two combined left
+ * an empty composer looking like an unpainted square. */
 .send-btn {
   background: var(--pi-send-bg);
   color: var(--pi-send-fg);
@@ -3772,17 +3772,17 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 }
 
 .send-btn:disabled {
-  background: var(--pi-send-bg-disabled);
-  color: var(--pi-send-fg-disabled);
+  background: var(--pi-bg-control);
+  color: var(--pi-text-disabled);
+  opacity: 1;
 }
 
-/* Same chip as the attach button — the bar's own 30x30 / 8px — with the theme's
- * button colour instead of the grey fill. Icon only in every state: how the
- * message will be delivered (插话 / 排队) lives in the tooltip, so the control bar
- * keeps one size and the row never shifts. */
+/* One hairline with the pills and the `+`, so the bar's controls read as the
+ * same kind of object in every state. */
 .composer-controls-bar > .send-btn {
   width: 30px;
   height: 30px;
+  border: 1px solid var(--pi-border);
   border-radius: var(--pi-r-md);
 }
 
@@ -3800,18 +3800,20 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 /* ── one icon size for everything in the bar ─────────────────────────────── */
 
 /* The board's Plus is a 30x30 chip. .icon-btn is 32px globally (set for the
- * toolbar), and .send-btn is its own 36px circle, so this is scoped to exclude
- * it — otherwise the send button would inherit the grey chip background. */
+ * toolbar), so this is scoped to the control bar — and it carries the pills'
+ * fill and hairline, which is what makes the `+` and the model picker look
+ * like the two halves of one row rather than two different widgets. */
 .composer-controls-bar > .icon-btn:not(.send-btn) {
   width: 30px;
   height: 30px;
+  border: 1px solid var(--pi-border);
   border-radius: var(--pi-r-md);
-  background: var(--pi-bg-subtle);
+  background: var(--pi-bg-control);
   color: var(--pi-icon);
 }
 
 .composer-controls-bar > .icon-btn:not(.send-btn):hover {
-  background: var(--pi-bg-hover);
+  background: var(--pi-bg-control-hover);
   color: var(--pi-text);
 }
 
@@ -3900,17 +3902,18 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
  * "...fla…". Collapsing at 720px threw away room the bar actually had; 560px
  * is where the labels genuinely stop fitting. */
 @media (max-width: 560px) {
-  /* Permission floors at the "+" button's size, so down here it wears the
-   * same chip look (borderless subtle fill, centred content). Its WIDTH is
-   * not set — it keeps flowing from flex with the label ellipsising, so
-   * nothing snaps at this breakpoint. The model picker is untouched: it
-   * keeps its pill and shows the current model name at every width. */
+  /* Permission floors at the "+" button's size, so down here it becomes a chip
+   * like the `+`: same fill, same hairline, content centred. Only the ink moves
+   * to the icon colour — the fill/border pair now comes from the shared control
+   * rules, so this block no longer restates them (it used to override them with
+   * a borderless `input.background`, which is why the pill looked unlike `+`).
+   * Its WIDTH is not set — it keeps flowing from flex with the label
+   * ellipsising, so nothing snaps at this breakpoint. The model picker is
+   * untouched: it keeps its pill and shows the current model name at every
+   * width. */
   .permission-trigger {
     justify-content: center;
     padding: 0 4px;
-    border: none;
-    border-radius: var(--pi-r-md);
-    background: var(--pi-bg-subtle);
     color: var(--pi-icon);
   }
 
@@ -3971,10 +3974,9 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   }
 
   .send-btn {
-    width: 32px;
-    height: 32px;
     /* The bar's own gap collapses to 1px down here, which would glue the send
-     * disc to the context ring; buy that pair a readable gutter back. */
+     * chip to the context ring; buy that pair a readable gutter back. No size
+     * here: `.composer-controls-bar > .send-btn` keeps it at the bar's 30px. */
     margin-left: 5px;
   }
 }
@@ -4725,16 +4727,26 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
  * read 的「输入 + 带行号响应」、队列卡片的类型标签。均复用既有 token 与
  * .tool-args / .code-block 的排版，不覆盖上面的既有声明。 */
 
-/* 回合状态行：与时间戳同一行，弱化到 10px mute，只有状态色带语义。 */
+/* 收尾状态行与用户气泡下的元信息行。`.msg-meta` 之前一条规则都没有，图标与时间戳
+ * 只能按行内基线排；`.msg.user .msg-time` 的 `align-self: flex-end` 又把时间推到
+ * 行底（实测中线差 3px），一并删掉。字号原先 outcome/duration 走 micro(10px)、
+ * time 走 meta(12px)，比正文小两档、看着像被压扁 —— 现在整行同一档，层级交给颜色。 */
+.msg-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pi-sp-2);
+  line-height: 1;
+}
+
 .msg-status-line {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--pi-sp-2);
   padding: 0 2px;
 }
 
 .msg-outcome {
-  font-size: var(--chat-fs-10);
+  font-size: var(--pi-fs-body);
   font-weight: 500;
 }
 
@@ -4755,9 +4767,17 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 }
 
 .msg-duration {
-  font-size: var(--chat-fs-10);
-  color: var(--pi-text-muted);
+  font-size: var(--pi-fs-body);
+  color: var(--pi-text-secondary);
   font-variant-numeric: tabular-nums;
+}
+
+/* The fork control sits in this row: a 20px box keeps the row as tall as its
+ * text, so the glyph stops floating above a 10px label. */
+.status-action {
+  width: 20px;
+  height: 20px;
+  color: var(--pi-icon-muted);
 }
 
 /* ── 终端卡（bash）：展开才是一扇终端窗口 ──────────────────────────────────
@@ -5113,7 +5133,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   overflow-y: auto;
   background: var(--pi-bg-subtle);
   border: 1px solid var(--pi-border);
-  border-radius: var(--pi-r-sm);
+  border-radius: var(--pi-r-lg);
   padding: 8px 10px;
 }
 

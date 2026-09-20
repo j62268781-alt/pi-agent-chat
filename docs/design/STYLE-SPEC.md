@@ -58,7 +58,8 @@
 | `--pi-bg-hover`       | `list.hoverBackground`                               | 行悬停                |
 | `--pi-bg-selected`    | `list.activeSelectionBackground`                     | 选中行                |
 | `--pi-bg-bubble`      | `list.inactiveSelectionBackground`                   | 用户消息气泡          |
-| `--pi-bg-pill`        | `badge.background`                                   | 小标签、chip          |
+| `--pi-bg-control`       | `foreground` 12% 混进 `sideBar.background`           | 控制条 chip（`+`、选择器、待命的发送钮） |
+| `--pi-bg-control-hover` | 同上取 20%                                     | 上述 chip 悬停                  |
 | `--pi-bg-think`       | `textBlockQuote.background`                          | 思考块底              |
 | `--pi-bg-code-inline` | `textPreformat.background`                           | 行内代码              |
 | `--pi-code-bg`        | `textCodeBlock.background`                           | 代码块 / mermaid 画布 |
@@ -90,11 +91,12 @@
 | ----------------------------- | --------------------------------------- |
 | `--pi-brand` / `--pi-send-bg` | `button.background`                     |
 | `--pi-brand-hover`            | `button.hoverBackground`                |
-| `--pi-send-bg-disabled`       | `button.secondaryBackground`            |
 | `--pi-border`                 | `panel.border`（HC 下 `widget.border`） |
 | `--pi-border-input`           | `input.border`                          |
 | `--pi-border-brand`           | `focusBorder`                           |
 | `--pi-danger-pill-border`     | `inputValidation.errorBorder`           |
+
+**控制条底色为什么是派生的，不是主题色号**：`badge.background` 在多数主题里是"计数徽标/品牌色"（2026-dark 是 `#307E9F`、hc_light 是 `#0F4A85`），拿它填 chip 会整条行变成蓝绿色块；`button.secondaryBackground` 在 Dark Modern 与 2026-dark 里被定义成**全透明 `#00000000`**，直接导致"输入框为空时发送按钮像没上颜色"。两个都不能用，所以 `--pi-bg-control` 从主题的 `foreground` × `sideBar.background` 派生——仍随主题，但任何主题下都有可见的中性底。
 
 ### Diff
 
@@ -168,7 +170,8 @@
 | 组件                     | 默认                                                                                      | 悬停                    | 选中 / 激活                                                | 禁用                                                   |
 | ------------------------ | ----------------------------------------------------------------------------------------- | ----------------------- | ---------------------------------------------------------- | ------------------------------------------------------ |
 | 图标按钮                 | `--pi-icon` + 透明底                                                                      | 底 `--pi-bg-hover`      | 字 `--pi-text-brand`                                       | `--pi-icon-disabled`                                   |
-| 发送按钮                 | 30×30、圆角 `--pi-r-md`（与上传按钮同规格），纯图标，底 `--pi-send-bg`、字 `--pi-send-fg` | 底 `--pi-send-bg-hover` | 同悬停                                                     | 底 `--pi-send-bg-disabled`、字 `--pi-send-fg-disabled` |
+| 发送按钮                 | 30×30、圆角 `--pi-r-md`、1px `--pi-border`（与上传按钮同规格），纯图标，底 `--pi-send-bg`、字 `--pi-send-fg` | 底 `--pi-send-bg-hover` | 停止态：底 `--pi-bg-control`、字 `--pi-danger`              | 底 `--pi-bg-control`、字 `--pi-text-disabled`，**不降透明度** |
+| 控制条 chip（`+` / 选择器） | 30×30（pill 同高）、圆角 `--pi-r-md`、1px `--pi-border`，底 `--pi-bg-control` | 底 `--pi-bg-control-hover` | 权限为 FullAccess 时整枚走危险软底 | 字 `--pi-text-disabled`，`opacity: .4` |
 | 行 / 列表项              | 透明                                                                                      | 底 `--pi-bg-hover`      | 底 `--pi-bg-selected`，字 `--pi-bg-selected-foreground`    | 字 `--pi-text-disabled`                                |
 | 输入框                   | 底 `--pi-bg-subtle`，描边 `--pi-border-input`                                             | —                       | **无焦点配色变化**：获得焦点时边框仍是 `--pi-border-input` | 字 `--pi-text-disabled`                                |
 | 危险操作                 | 字 / 描边 `--pi-danger`，软底 `--pi-danger-soft`                                          | 同左                    | 同左                                                       | `--pi-text-disabled`                                   |
