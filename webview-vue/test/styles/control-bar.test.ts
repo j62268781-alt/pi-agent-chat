@@ -128,6 +128,19 @@ describe("transcript surface contract", () => {
   });
 });
 
+describe("turn width contract", () => {
+  it("lets both sides of the conversation use the whole column", () => {
+    // The board's 640px reading column is gone by decision: width follows the
+    // copy now. `100%` keeps the guard the bare `640px` used to break — a flex
+    // item may not shrink below its min-content, so anything that cannot wrap
+    // would widen the transcript into horizontal scrolling.
+    expect(chat).not.toMatch(/max-width:\s*min\(640px/);
+    for (const selector of [".bubble", ".msg.assistant"]) {
+      expect(declarations(chat, selector), selector).toContain("max-width: 100%");
+    }
+  });
+});
+
 describe("meta-row contract", () => {
   it("keeps the status row and the bubble meta on one centre line", () => {
     expect(declarations(chat, ".msg-meta")).toContain("align-items: center");

@@ -3428,22 +3428,20 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   opacity: 1;
 }
 
-/* The board's fixed 640px cap assumes a wide editor panel. A bare `640px` also
- * applies in a ~300px sidebar, where it is WIDER than the column: a flex item
- * may not shrink below its min-content, so any bubble holding something that
- * cannot wrap (the sideways-scrolling image strip, a long `pre` line) grew to
- * 640 and dragged the whole transcript into horizontal overflow. `min()` keeps
- * the board's cap on a wide panel and the column width on a narrow one. */
+/* Both sides fill the column. The board's fixed 640px cap is gone: width
+ * follows the copy now — a short line stays short, a long one uses the whole
+ * panel (彬哥). `100%` rather than a bare length also keeps the original
+ * overflow guard: a flex item may not shrink below its min-content, so
+ * something that cannot wrap (the sideways image strip, a long `pre` line)
+ * would otherwise widen the transcript into horizontal scrolling. */
 .bubble {
-  max-width: min(640px, 100%);
+  max-width: 100%;
   padding: 11px 16px;
   border-radius: var(--pi-r-lg);
 }
 
-/* The board gives the assistant turn a fixed 640px column — long-form output
- * stays readable instead of stretching to the full panel width. */
 .msg.assistant {
-  max-width: min(640px, 100%);
+  max-width: 100%;
 }
 
 .user-bubble {
