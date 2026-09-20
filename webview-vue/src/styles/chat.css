@@ -1851,7 +1851,6 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   padding: 10px 12px;
   max-height: 340px;
   overflow: auto;
-  overscroll-behavior: contain;
   border-radius: var(--pi-r-lg);
   background: var(--pi-bg-surface);
   color: var(--pi-text-muted);
@@ -4537,7 +4536,11 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 
 /* ── 长滚动容器恢复细滚动条（全局 width:0 隐藏导致长内容无位置感知）────────
  * `.thinking-body` 是限高可滚的推理框：没有滚动条就只剩一小截可见内容、也没有
- * 位置感知（彬哥：右侧有一个小小的滚动条）。读取块 / 参数 / JSON 卡片同理。 */
+ * 位置感知（彬哥：右侧有一个小小的滚动条）。读取块 / 参数 / JSON 卡片同理。
+ *
+ * 这几个内层框都**不要**写 `overscroll-behavior: contain`：内层滚到边界时要把
+ * 滚轮交给外层 `#messages` 继续往下，contain 会在边界处把滚轮吃掉（彬哥：展开
+ * 的思考滚到底后，外层就再也滚不动了）。 */
 .messages,
 #sessions-list,
 .lightbox,
@@ -4799,7 +4802,6 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   margin: 6px 0 0;
   max-height: 260px;
   overflow: auto;
-  overscroll-behavior: contain;
   white-space: pre-wrap;
   word-break: break-word;
   color: var(--pi-code-fg);
@@ -5109,7 +5111,6 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 .thinking-body {
   max-height: 220px;
   overflow-y: auto;
-  overscroll-behavior: contain;
   background: var(--pi-bg-subtle);
   border: 1px solid var(--pi-border);
   border-radius: var(--pi-r-sm);
@@ -5219,7 +5220,6 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   padding: 10px 12px;
   max-height: 340px;
   overflow: auto;
-  overscroll-behavior: contain;
   border: none;
   border-radius: var(--pi-r-lg);
   background: var(--pi-bg-surface);
