@@ -142,6 +142,47 @@ describe("TurnBlock — is this turn still running?", () => {
   });
 });
 
+// The closing status line carries the turn's cache counters. A turn that uses
+// tools is *several* assistant messages, so the numbers have to be the turn's
+// sum — reading only the last message would under-report every tool-using turn.
+describe("TurnBlock — the turn's cache counters", () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+  });
+
+  const usageEntry = (id: string, usage: unknown): Turn["workBlocks"][number] => {
+    const block: Block = { ...TEXT, id };
+    return { message: { ...assistant(block), usage }, block };
+  };
+
+  it("sums the turn's messages, stays compact and keeps the full string on hover", () => {
+    const wrapper = mountTurn({
+      workBlocks: [
+        usageEntry("text-a", {
+          input: 1200,
+          output: 340,
+          cacheRead: 18600,
+          cacheWrite: 900,
+          cost: 0.0123,
+        }),
+      ],
+      finalBlocks: [usageEntry("text-b", { input: 300, output: 40, cacheRead: 5000 })],
+    });
+
+    const span = wrapper.get(".msg-status-line span[title]");
+    expect(span.text()).toBe("R24k W900");
+    expect(span.attributes("title")).toBe(`\u21911.5k \u2193380 R24k W900 $0.0123`);
+  });
+
+  it("stays out of the line when the provider reported no cache activity", () => {
+    const wrapper = mountTurn({
+      workBlocks: [usageEntry("text-a", { input: 5000, output: 100, cacheRead: 0, cacheWrite: 0 })],
+    });
+
+    expect(wrapper.find(".msg-status-line span[title]").exists()).toBe(false);
+  });
+});
+
 // Work rows are one flat list: 已思考, then each tool call, every one of them a direct
 // child of `.work-body`. A run of consecutive calls used to get its own counter row
 // ("执行工具 N 次") — first as a fold, then as a label — but with the calls laid out

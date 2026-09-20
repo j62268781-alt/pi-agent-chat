@@ -8,8 +8,9 @@
 <script setup lang="ts">
 import { computed, onUnmounted, ref, watch } from "vue";
 import { post } from "@/lib/bridge.ts";
-import { formatCounts, formatDuration, formatTime } from "@/lib/format.ts";
+import { formatCounts, formatDuration, formatTime, formatTokens } from "@/lib/format.ts";
 import { t } from "@/lib/i18n.ts";
+import { aggregateUsage, formatUsage } from "@/lib/usage.ts";
 import { useDisplayStore } from "@/stores/display";
 import { useOverlaysStore } from "@/stores/overlays";
 import { useSessionStore } from "@/stores/session";
@@ -82,6 +83,24 @@ const turnDuration = computed(() => {
   const start = props.turn.user?.timestamp ?? props.turn.workStartedAt;
   if (end == null || start == null || end < start) return "";
   return formatDuration(end - start);
+});
+
+/**
+ * Cache counters for the whole turn — every assistant message in it, not just
+ * the last one, because a turn that uses tools is several messages. Kept to the
+ * two cache buckets on the line itself: a sidebar row has no room for the full
+ * `↑12.3k ↓1.2k R8k W2k $0.0123`, which is what the span's hover title shows.
+ */
+const turnUsage = computed(() => {
+  const messages = [...props.turn.workBlocks, ...props.turn.finalBlocks].map(
+    (entry) => entry.message,
+  );
+  const totals = aggregateUsage(messages);
+  const parts: string[] = [];
+  if (totals.cacheRead) parts.push("R" + formatTokens(totals.cacheRead));
+  if (totals.cacheWrite) parts.push("W" + formatTokens(totals.cacheWrite));
+  if (parts.length === 0) return null;
+  return { short: parts.join(" "), full: formatUsage(totals) };
 });
 
 /** The closing status line is only meaningful once the turn has content. */
@@ -215,6 +234,7 @@ async function forkTurn(): Promise<void> {
     <span v-if="hasContent && turnDuration" class="msg-duration">
       {{ t("Worked for {0}", turnDuration) }}
     </span>
+    <span v-if="turnUsage" class="msg-time" :title="turnUsage.full">{{ turnUsage.short }}</span>
     <span class="msg-time">{{ formatTime(turn.messageTime) }}</span>
     <button
       v-if="turn.user?.timestamp != null"
