@@ -503,7 +503,7 @@ function onKeydown(ev: KeyboardEvent): void {
 
 /**
  * Running-send behavior, carried by the send button's tooltip: 排队 holds the
- * message here (deletable, steerable) and 插话 hands it to pi as a steering
+ * message here (deletable, steerable) and 引导 hands it to pi as a steering
  * prompt right away. The value lives in the global config, so the host's
  * `displaySettings` push is what moves the wording.
  */

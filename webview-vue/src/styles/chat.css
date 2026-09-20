@@ -68,7 +68,7 @@
 .codicon-chevron-right::before {
   content: "\eab6";
 }
-/* 待发送行上的两个字形：↳（indent，表示这条还排在队里）和「插话」的回车箭头
+/* 待发送行上的两个字形：↳（indent，表示这条还排在队里）和「引导」的回车箭头
  * （reply）。字形本身是 codicon 的，只是这份子集里还没有声明。 */
 .codicon-indent::before {
   content: "\ebf9";
@@ -1007,12 +1007,10 @@ body {
   min-height: 0;
   overflow-y: auto;
   overflow-anchor: none;
-  padding: 12px;
 }
 .messages-inner {
   display: flex;
   flex-direction: column;
-  gap: 14px;
 }
 .messages-inner:has(.empty) {
   height: 100%;
@@ -2436,7 +2434,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   margin-left: auto;
 }
 
-/* 参考图里三个动作同一种灰（#838280），插话是多一个字的文字按钮。 */
+/* 参考图里三个动作同一种灰（#838280），引导是多一个字的文字按钮。 */
 .queue-action {
   display: inline-flex;
   align-items: center;
@@ -3401,15 +3399,11 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
  * deliberately left alone — they carry the chat-background-image color-mix.
  * ------------------------------------------------------------------------ */
 
-/* ── turn rhythm and the user turn ───────────────────────────────────────── */
-
 .messages {
   padding: 16px 20px;
 }
 
-.messages-inner {
-  gap: 20px;
-}
+/* ── turn rhythm and the user turn ───────────────────────────────────────── */
 
 /* Both turns share one left-aligned frame, except the user's: the bubble, its
  * actions and its timestamp hug the right edge, and the bubble may grow to the

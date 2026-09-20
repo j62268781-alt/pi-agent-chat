@@ -5,15 +5,35 @@
 
 import { mount } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { t } from "@/lib/i18n.ts";
 import QueuePanel from "@/components/QueuePanel.vue";
 import { useComposerStore } from "@/stores/composer.ts";
 import { usePendingStore } from "@/stores/pending.ts";
+import { useSessionStore } from "@/stores/session.ts";
+import { useTranscriptStore } from "@/stores/transcript.ts";
+
+const { posted, persisted } = vi.hoisted(() => ({
+  posted: [] as Array<Record<string, unknown>>,
+  persisted: [] as unknown[],
+}));
+
+// `post` and `persisted` are thin wrappers over `acquireVsCodeApi()`, which is
+// a no-op outside the webview — without this seam the two actions that talk to
+// the host are unobservable.
+vi.mock("@/lib/bridge.ts", () => ({
+  post: (message: Record<string, unknown>) => {
+    posted.push(message);
+  },
+  persisted: { get: () => undefined, set: (state: unknown) => persisted.push(state) },
+  onHostMessage: () => () => {},
+}));
 
 describe("QueuePanel", () => {
   beforeEach(() => {
     setActivePinia(createPinia());
+    posted.length = 0;
+    persisted.length = 0;
   });
 
   it("renders a queued message as one row: the text, then 插话 / 编辑 / 删除", () => {
@@ -59,5 +79,58 @@ describe("QueuePanel", () => {
     await wrapper.findAll("button")[1]!.trigger("click");
 
     expect(useComposerStore().draft).toBe("前半句 后半句");
+  });
+
+  it("deletes only the row it was clicked on, and writes the shorter list back", async () => {
+    const pending = usePendingStore();
+    pending.enqueue("第一条", []);
+    const doomed = pending.enqueue("第二条", []);
+    pending.enqueue("第三条", []);
+    const wrapper = mount(QueuePanel);
+
+    // Row 2's third button.
+    await wrapper.findAll(".queue-item")[1]!.findAll("button")[2]!.trigger("click");
+
+    expect(pending.items.map((item) => item.text)).toEqual(["第一条", "第三条"]);
+    expect(pending.items.some((item) => item.id === doomed)).toBe(false);
+    expect(posted).toEqual([]);
+    // The strip survives a webview reload, so a delete that is not persisted
+    // would come back as if it had never happened.
+    expect(persisted.length).toBeGreaterThan(0);
+  });
+
+  it("steers a queued message straight to pi, and drops it from the strip", async () => {
+    const pending = usePendingStore();
+    pending.enqueue("现在就插这句", []);
+    useSessionStore().isStreaming = true;
+    const wrapper = mount(QueuePanel);
+
+    await wrapper.get(".queue-item").findAll("button")[0]!.trigger("click");
+
+    expect(pending.items).toEqual([]);
+    expect(posted).toEqual([
+      { type: "prompt", message: "现在就插这句", streamingBehavior: "steer" },
+    ]);
+  });
+
+  it("sends a plain prompt when the agent went idle in the meantime", async () => {
+    const pending = usePendingStore();
+    pending.enqueue("空闲了就正常发", []);
+    const wrapper = mount(QueuePanel);
+
+    await wrapper.get(".queue-item").findAll("button")[0]!.trigger("click");
+
+    // pi only accepts `streamingBehavior` mid-stream; sending it idle is an error.
+    expect(posted).toEqual([{ type: "prompt", message: "空闲了就正常发" }]);
+  });
+
+  it("leaves pi's own queue rows read-only, because they carry no id to act on", () => {
+    const transcript = useTranscriptStore();
+    transcript.queue.steering = ["扩展自己入队的一条"];
+    const wrapper = mount(QueuePanel);
+
+    const hostRow = wrapper.get(".queue-item.is-host");
+    expect(hostRow.text()).toContain("扩展自己入队的一条");
+    expect(hostRow.findAll("button")).toHaveLength(0);
   });
 });
