@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { StringDecoder } from "node:string_decoder";
 import { normalizePiSpawnTarget } from "../pi/process.ts";
 import { createStderrTail } from "./stderr-tail.ts";
+import { toExtensionUiResponse } from "./extension-ui-response.ts";
 import { rpcTrace, rpcTraceErr } from "../../providers/chat/rpc-trace.ts";
 import type {
   ExtensionUiRequest,
@@ -155,18 +156,8 @@ export async function createRpcClient(options: CreateRpcClientOptions): Promise<
     id: string,
     payload: { value?: string; confirmed?: boolean; cancelled?: boolean },
   ): void => {
-    const resp: Record<string, unknown> = { type: "extension_ui_response", id };
-    if (payload.cancelled) {
-      resp.cancelled = true;
-    } else if (payload.confirmed !== undefined) {
-      resp.confirmed = !!payload.confirmed;
-    } else if (payload.value !== undefined) {
-      resp.value = payload.value;
-    } else {
-      resp.cancelled = true;
-    }
     try {
-      send(resp);
+      send(toExtensionUiResponse(id, payload));
     } catch {
       // process gone; nothing to do
     }

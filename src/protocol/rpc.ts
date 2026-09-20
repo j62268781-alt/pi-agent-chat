@@ -172,3 +172,14 @@ export interface ExtensionUiRequest {
     | "set_editor_text";
   [k: string]: unknown;
 }
+
+/**
+ * Answer to one {@link ExtensionUiRequest} — pi's union, so exactly one of the
+ * three shapes. Which field pi reads depends on the request method: `value` for
+ * `select` / `input` / `editor`, `confirmed` for `confirm`, `cancelled` for a
+ * dismissal.
+ */
+export type ExtensionUiResponse =
+  | { type: "extension_ui_response"; id: string; value: string }
+  | { type: "extension_ui_response"; id: string; confirmed: boolean }
+  | { type: "extension_ui_response"; id: string; cancelled: true };
