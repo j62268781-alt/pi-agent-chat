@@ -11,6 +11,7 @@ import * as vscode from "vscode";
 import { SessionManager } from "@earendil-works/pi-coding-agent";
 import type { SessionInfo } from "@earendil-works/pi-coding-agent";
 import type { BridgeConfig } from "../../services/bridge/types.ts";
+import { resolveChatCwd } from "../../utils/chat-cwd.ts";
 import { t } from "../../utils/i18n.ts";
 import {
   affectsBakedHtml,
@@ -107,7 +108,7 @@ function makeHost(webviewView: vscode.WebviewView): ChatHost {
 async function resolveInitialSessionFile(opts: SidebarChatOptions): Promise<string | undefined> {
   if (opts.sessionFile) return opts.sessionFile;
   if (opts.newSession) return undefined;
-  const cwd = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+  const cwd = resolveChatCwd(vscode.workspace.workspaceFolders?.[0]?.uri.fsPath);
   if (!cwd) return undefined;
   try {
     const sessions = await SessionManager.list(cwd);
@@ -133,7 +134,7 @@ function ensureSidebarSession(opts: SidebarChatOptions): Promise<ChatSession | u
         extensionUri: opts.extensionUri,
         bridgeConfig: opts.bridgeConfig,
         sessionFile: opts.sessionFile,
-        cwd: vscode.workspace.workspaceFolders?.[0]?.uri.fsPath,
+        cwd: resolveChatCwd(vscode.workspace.workspaceFolders?.[0]?.uri.fsPath),
         traceTag: "sidebar",
         host,
       });

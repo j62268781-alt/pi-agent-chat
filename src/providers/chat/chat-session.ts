@@ -8,6 +8,7 @@ import { homedir } from "node:os";
 import { isAbsolute, relative, resolve, sep } from "node:path";
 import * as vscode from "vscode";
 import { SessionManager } from "@earendil-works/pi-coding-agent";
+import { resolveChatCwd } from "../../utils/chat-cwd.ts";
 import { t } from "../../utils/i18n.ts";
 import type { BridgeConfig } from "../../services/bridge/types.ts";
 import {
@@ -228,7 +229,7 @@ export async function createChatSession(
   let historyLoading: Promise<void> | null = null;
   let rpc: RpcClient;
 
-  const cwd = opts.cwd ?? vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+  const cwd = resolveChatCwd(opts.cwd ?? vscode.workspace.workspaceFolders?.[0]?.uri.fsPath);
 
   function updateStreamingState(running: boolean): void {
     streaming = running;

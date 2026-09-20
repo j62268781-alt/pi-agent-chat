@@ -20,6 +20,7 @@ import {
   stopBridge,
 } from "./services/bridge/runtime.ts";
 import { invalidatePiBinaryCache } from "./services/pi/process.ts";
+import { configureDevHostRoot } from "./utils/chat-cwd.ts";
 import { TERMINAL_TITLE } from "./utils/constants.ts";
 import { t } from "./utils/i18n.ts";
 import { resolveUiMode } from "./utils/ui-mode.ts";
@@ -31,6 +32,10 @@ const PI_BINARY_SETTING = "pi-agent-chat.path";
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   const extensionUri = context.extensionUri;
   const chatTracker = createChatTracker(context);
+  configureDevHostRoot(
+    extensionUri.fsPath,
+    context.extensionMode === vscode.ExtensionMode.Production,
+  );
 
   await bindBridge(context);
   context.subscriptions.push(

@@ -9,6 +9,7 @@ import {
   readChatDisplaySettings,
 } from "./display-settings.ts";
 import { getChatWebviewHtml } from "./webview-html.ts";
+import { resolveChatCwd } from "../../utils/chat-cwd.ts";
 import { t } from "../../utils/i18n.ts";
 import type { ChatTracker } from "./chat-tracker.ts";
 import type { RpcClient } from "../../protocol/rpc.ts";
@@ -80,7 +81,7 @@ export async function openChatPanel(
     light: vscode.Uri.joinPath(opts.extensionUri, "resources", "logo-light.svg"),
     dark: vscode.Uri.joinPath(opts.extensionUri, "resources", "logo.svg"),
   };
-  const workspace = opts.cwd ?? vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+  const workspace = resolveChatCwd(opts.cwd ?? vscode.workspace.workspaceFolders?.[0]?.uri.fsPath);
   panel.webview.html = getChatWebviewHtml(buildChatWebviewOptions(workspace));
 
   let disposed = false;
@@ -117,7 +118,7 @@ export async function openChatPanel(
     extensionUri: opts.extensionUri,
     bridgeConfig: opts.bridgeConfig,
     sessionFile: opts.sessionFile,
-    cwd: opts.cwd ?? vscode.workspace.workspaceFolders?.[0]?.uri.fsPath,
+    cwd: resolveChatCwd(opts.cwd ?? vscode.workspace.workspaceFolders?.[0]?.uri.fsPath),
     traceTag: panelId.slice(0, 8),
     host,
     onSessionFile: (sessionFile, _name, previous) => {

@@ -1,13 +1,20 @@
 {
   // Open this file instead of the folder, for the sake of `Run Extension`.
   //
-  // VS Code refuses to open one folder in two windows: it just focuses the window
-  // that already holds it. So while the window you press F5 in has the repo open as
-  // a *folder*, the Extension Development Host can never take that same folder, and
-  // it comes up on the welcome page with no workspace — which means no `cwd`, which
-  // means pi has no per-project sessions and the Pi panel renders empty.
+  // F5 hands the Extension Development Host a window with the repo in it, but VS
+  // Code refuses to put a folder in that window while any other window holds the
+  // same folder — and only a *plain folder* window counts: the launch drops the
+  // folder and opens with `forceEmpty`
+  // (`WindowsMainService.openExtensionDevelopmentHostWindow`). The host then
+  // comes up on the welcome page with no `cwd`, so pi has no per-project sessions
+  // and the Pi panel renders empty. This is not a platform difference: it
+  // depends only on which windows are already open.
   //
-  // A workspace window does not hold its folders, so the F5 host can open the repo
-  // normally, and `.vscode/launch.json` passes ${workspaceFolder} to it.
+  // A workspace window is not one of those folder-holders, so opening the repo
+  // through *this* file keeps the folder free. Keep the repo out of every folder
+  // window, press F5 from the window that has this file open, and the host opens
+  // on the repo. `src/utils/chat-cwd.ts` is the safety net for when it does not:
+  // a dev host with no folder chats in the extension's own folder instead of
+  // nowhere.
   "folders": [{ "path": "." }],
 }
