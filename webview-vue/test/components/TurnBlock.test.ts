@@ -14,7 +14,7 @@ import { t } from "@/lib/i18n.ts";
 import { useDisplayStore } from "@/stores/display.ts";
 import { useSessionStore } from "@/stores/session.ts";
 import type { AssistantMessage, Block, Turn } from "@/stores/transcript.ts";
-import TurnBlock from "./TurnBlock.vue";
+import TurnBlock from "@/components/TurnBlock.vue";
 
 const T0 = 1_700_000_000_000;
 

@@ -6,7 +6,7 @@
 
 import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it } from "vitest";
-import { useTranscriptStore } from "./transcript.ts";
+import { useTranscriptStore } from "@/stores/transcript.ts";
 
 const T0 = 1_700_000_000_000;
 

@@ -8,8 +8,8 @@
 import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { RpcEvent } from "@protocol/rpc";
-import { useSessionStore } from "./session.ts";
-import { useTranscriptStore, type Turn } from "./transcript.ts";
+import { useSessionStore } from "@/stores/session.ts";
+import { useTranscriptStore, type Turn } from "@/stores/transcript.ts";
 
 const T0 = 1_700_000_000_000;
 const USAGE = { input: 120, output: 24 };

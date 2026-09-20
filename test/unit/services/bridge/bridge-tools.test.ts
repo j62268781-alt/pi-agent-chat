@@ -9,7 +9,7 @@
 
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { BRIDGE_BOOTSTRAP_PROMPT } from "../../utils/constants.ts";
+import { BRIDGE_BOOTSTRAP_PROMPT } from "../../../../src/utils/constants.ts";
 
 const EXTENSION = "pi-extensions/pi-vscode-bridge.js";
 const HANDLERS = "src/services/bridge/handlers.ts";

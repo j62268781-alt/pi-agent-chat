@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createStderrTail } from "./stderr-tail.ts";
+import { createStderrTail } from "../../../../src/services/rpc/stderr-tail.ts";
 
 describe("createStderrTail", () => {
   it("starts empty", () => {

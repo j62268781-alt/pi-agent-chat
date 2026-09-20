@@ -5,7 +5,8 @@ dist
 *.vsix
 package-lock.json
 .DS_Store
-test/
+# the retired e2e harness's leftover build output (`test/unit` is tracked)
+/test/e2e/.build/
 
 # webview-vue build output
 webview-vue/dist

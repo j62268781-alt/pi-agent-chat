@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resolveEndpoint } from "./endpoint.ts";
+import { resolveEndpoint } from "../../../../src/services/bridge/endpoint.ts";
 
 describe("resolveEndpoint", () => {
   it("defaults to a random TCP port for empty or missing values", () => {

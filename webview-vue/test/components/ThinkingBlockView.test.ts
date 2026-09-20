@@ -13,7 +13,7 @@ import { reactive } from "vue";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { ThinkingBlock } from "@/stores/transcript.ts";
 import { useDisplayStore } from "@/stores/display.ts";
-import ThinkingBlockView from "./ThinkingBlockView.vue";
+import ThinkingBlockView from "@/components/ThinkingBlockView.vue";
 
 /** Reactive like the store's blocks: the view watches `block.running` in place. */
 const thinkingBlock = (over: Partial<ThinkingBlock> = {}): ThinkingBlock =>

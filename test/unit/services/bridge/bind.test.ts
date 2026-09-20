@@ -4,7 +4,7 @@ import { createServer, type Server } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { bindServer, unlinkStaleSocket } from "./bind.ts";
+import { bindServer, unlinkStaleSocket } from "../../../../src/services/bridge/bind.ts";
 
 // Sandboxed CI (nono) may deny TCP listen entirely, even on loopback. Probe
 // once and skip the TCP suite in that case — the socket suite still runs.

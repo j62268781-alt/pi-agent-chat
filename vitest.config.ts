@@ -1,15 +1,11 @@
-import { configDefaults, defineConfig } from "vitest/config";
+import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
-    exclude: [
-      // configDefaults.exclude 在 vitest 4 里只有 node_modules 与 .git，
-      // 必须 spread 保留再追加，否则会把默认排除项覆盖掉。
-      ...configDefaults.exclude,
-      // webview-vue 是 workspace 里的独立包，测试由它自己的
-      // `webview-vue/vitest.config.ts` 跑（要 vue 插件与它的别名表）。在这里
-      // 排除，否则同一份用例会以「宿主侧 node 环境」被再跑一遍。
-      "webview-vue/**",
-    ],
+    // Unit tests live in `test/unit/`, mirroring `src/`. `test/e2e/` is the
+    // end-to-end harness with its own runner, so it is never collected here,
+    // and the webview package keeps its own tests (jsdom + the vue plugin) —
+    // which is why an explicit include is better than the bare default glob.
+    include: ["test/unit/**/*.test.ts"],
   },
 });

@@ -8,7 +8,7 @@
 import { mount } from "@vue/test-utils";
 import { describe, expect, it } from "vitest";
 import type { QuestionnaireQuestion } from "@/lib/questionnaire.ts";
-import QuestionnaireDialog from "./QuestionnaireDialog.vue";
+import QuestionnaireDialog from "@/components/QuestionnaireDialog.vue";
 
 const QUESTIONS: QuestionnaireQuestion[] = [
   {

@@ -112,6 +112,11 @@ pnpm run test           # lint + typecheck + unit tests
 pnpm run package        # produce a .vsix
 ```
 
+Tests live under `test/`, mirroring what they cover: `test/unit/services/bridge/bind.test.ts` covers
+`src/services/bridge/bind.ts`. `test/e2e/` is reserved for the end-to-end harness, which brings its own
+runner and is never collected by `pnpm run test:unit`. The webview package keeps its tests in
+`webview-vue/test/`, beside the jsdom + vue-plugin config they need.
+
 To debug, run the **Run Extension** launch configuration and press <kbd>F5</kbd>; the Extension
 Development Host opens with this extension loaded. For the webview side, run
 `Developer: Open Webview Developer Tools` from the command palette in the development host.

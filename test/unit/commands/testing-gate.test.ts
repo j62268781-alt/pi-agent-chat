@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { EXTENSION_MODE_PRODUCTION, shouldRegisterTestingCommands } from "./testing-gate.ts";
+import {
+  EXTENSION_MODE_PRODUCTION,
+  shouldRegisterTestingCommands,
+} from "../../../src/commands/testing-gate.ts";
 
 describe("shouldRegisterTestingCommands", () => {
   it("is false in Production so the shipped vsix has no stimulus surface", () => {
