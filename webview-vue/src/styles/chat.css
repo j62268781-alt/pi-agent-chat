@@ -3399,11 +3399,11 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
  * deliberately left alone — they carry the chat-background-image color-mix.
  * ------------------------------------------------------------------------ */
 
+/* ── turn rhythm and the user turn ───────────────────────────────────────── */
+
 .messages {
   padding: 16px 20px;
 }
-
-/* ── turn rhythm and the user turn ───────────────────────────────────────── */
 
 /* Both turns share one left-aligned frame, except the user's: the bubble, its
  * actions and its timestamp hug the right edge, and the bubble may grow to the
@@ -3453,10 +3453,6 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 @media (min-width: 720px) {
   .messages {
     padding: 28px 32px;
-  }
-
-  .messages-inner {
-    gap: 28px;
   }
 }
 
@@ -4406,11 +4402,12 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
    Compact pass — transcript rhythm and session list (彬哥: 会话列表和气泡的间距
    都太松了).
 
-   Appended overrides, not rewrites: the board rhythm (20px, 28px on a wide
-   panel) sits between EVERY `.msg`, and every turn block IS a `.msg` sibling,
-   so the parent gap is what actually paces the conversation. 6px keeps the
-   blocks distinct without turning each one into its own paragraph; the closing
-   timestamp is still what separates two turns.
+   6px is the single declaration for that rhythm: every turn block is a `.msg`
+   sibling of `.messages-inner`, so this parent gap — not the blocks' own
+   margins — is what actually paces the conversation. It keeps the blocks
+   distinct without turning each one into its own paragraph, and the closing
+   timestamp is still what separates two turns. (The 14px, 20px and wide-panel
+   28px variants that used to fight over it are gone.)
 --------------------------------------------------------------------------- */
 
 .messages-inner {
