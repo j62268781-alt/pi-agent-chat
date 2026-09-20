@@ -499,26 +499,20 @@ function onKeydown(ev: KeyboardEvent): void {
 // ------------------------------------------------------------------ intake
 
 /**
- * Running-send behavior, in the composer rather than only in the settings panel:
- * 排队 holds the message here (deletable, steerable) and 插话 hands it to pi as
- * a steering prompt right away. The value lives in the global config, so the
- * host's `displaySettings` push is what moves this button.
+ * Running-send behavior, carried by the send button's tooltip: 排队 holds the
+ * message here (deletable, steerable) and 插话 hands it to pi as a steering
+ * prompt right away. The value lives in the global config, so the host's
+ * `displaySettings` push is what moves the wording.
  */
-const runningSendLabel = computed(() =>
-  display.runningSendBehavior === "steer" ? t("Steer") : t("Queue"),
-);
 const runningSendHint = computed(() =>
   display.runningSendBehavior === "steer"
     ? t("Sent as a steer before the next model call")
     : t("Queued until the agent stops"),
 );
 
-function toggleRunningSendBehavior(): void {
-  post({
-    type: "setRunningSendBehavior",
-    value: display.runningSendBehavior === "steer" ? "queue" : "steer",
-  });
-}
+/** Mid-turn with something typed: the button sends (queue or steer) instead of
+ *  stopping. Stopping is the empty-composer action — see `stopMode`. */
+const sendWhileRunning = computed(() => session.isStreaming && composer.hasContent);
 
 // ------------------------------------------------------------------ attachments
 
@@ -652,20 +646,25 @@ function sendPrompt(explicitQueue?: boolean): void {
   post({ type: "prompt", message: messageWithTagLine, ...(images.length > 0 ? { images } : {}) });
 }
 
-const stopMode = computed(() => session.isStreaming);
+// Stopping is the *empty* composer action while the agent works; with something
+// typed the same button sends, and `chatRunningSendBehavior` decides whether that
+// means queueing it here or steering pi immediately.
+const stopMode = computed(() => session.isStreaming && !composer.hasContent);
 const sendDisabled = computed(
   () => session.isCompacting || (!stopMode.value && !composer.hasContent),
 );
 const sendTitle = computed(() =>
   session.isCompacting
     ? t("Context is being compacted")
-    : session.isStreaming
+    : stopMode.value
       ? t("Stop generation")
-      : t("Send message"),
+      : sendWhileRunning.value
+        ? `${t("Send message")} — ${runningSendHint.value}`
+        : t("Send message"),
 );
 
 function onSendClick(): void {
-  if (session.isStreaming) {
+  if (stopMode.value) {
     post({ type: "abort" });
     return;
   }
@@ -925,16 +924,6 @@ onUnmounted(() => {
         >
           <span class="codicon codicon-add"></span>
         </button>
-        <button
-          id="running-send-btn"
-          class="run-send-toggle"
-          :class="{ 'is-steer': display.runningSendBehavior === 'steer' }"
-          type="button"
-          :title="t('Running message delivery') + ' — ' + runningSendHint"
-          @click="toggleRunningSendBehavior"
-        >
-          {{ runningSendLabel }}
-        </button>
         <div
           id="model-wrap"
           ref="modelWrapEl"
@@ -1020,7 +1009,10 @@ onUnmounted(() => {
           :title="sendTitle"
           @click="onSendClick"
         >
-          <span class="codicon" :class="stopMode ? 'codicon-debug-stop' : 'codicon-send'"></span>
+          <span
+            class="codicon"
+            :class="stopMode ? 'codicon-debug-stop' : 'codicon-arrow-up'"
+          ></span>
         </button>
       </div>
     </div>

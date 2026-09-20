@@ -1,104 +1,250 @@
 /* pi-ui · design tokens
  *
- * Single source of truth for colour: Ardot file 726160554760857, board
- * "Style Spec" (node 2:541), cross-checked against boards A (2:726),
- * D (2:730), F (2:732), G (2:733).
+ * Single source of truth for colour, type and geometry in both webviews.
  *
- * Light is the default. Dark engages when VS Code puts `.vscode-dark` on
- * <body>; `vscode-high-contrast` is folded into dark, while
- * `vscode-high-contrast-light` deliberately stays light. For local `vite dev`
- * you can force a theme with <html data-pi-theme="dark">.
+ * COLOUR COMES FROM THE THEME. Every value below is a `--vscode-*` custom
+ * property that the host injects into the webview, so the chat follows whatever
+ * theme the user runs — including high contrast, and including themes that do
+ * not exist yet. Nothing here is a colour of our own, and no rule outside this
+ * file may hard-code one.
  *
- * Fonts: the design board specifies "Sarasa Gothic SC", but that is the design
- * tool's stand-in. Here UI text follows the VS Code font setting and code text
- * follows the editor font setting, so the webview keeps obeying the user.
+ * Two consequences worth knowing before editing:
  *
- * Font SIZES are intentionally absent — they stay owned by `--fs` (pi-settings)
- * and `--chat-fs` (pi-chat), both driven by the pi-agent-chat.chatFontSize
- * setting. Do not add a second size scale here.
+ *   - The fallback chains are load-bearing, not defensive. VS Code does not
+ *     define every colour id in every theme: `widget.border` resolves to null in
+ *     Dark Modern and Light Modern and exists only in high contrast, and
+ *     `charts.red` / `charts.yellow` are computed from palette constants rather
+ *     than declared. Each chain ends on an id that every theme does define.
+ *   - There is no light/dark block and no `.vscode-dark` selector any more. The
+ *     theme switches the values itself; a second hand-written palette is exactly
+ *     the drift this file used to have.
+ *
+ * Shipped without a host (plain `vite dev`, no `--vscode-*` in scope) the
+ * fallbacks resolve to a Dark Modern-ish surface. The preview harness in
+ * `webview-vue/preview/` is the supported way to look at a specific theme.
+ *
+ * TYPE is five semantic steps driven by the user's `pi-agent-chat.chatFontSize`
+ * (`--chat-fs`), plus code text that follows the editor. The older numeric names
+ * (`--chat-fs-12`, `--fs-11`, …) survive as aliases onto the semantic steps so
+ * existing rules keep working; retire them by renaming their call sites.
+ *
+ * GEOMETRY (radii, spacing, control heights, shadows) is unchanged by the theme
+ * migration that introduced this file.
  */
 
 :root {
-  /* surfaces */
-  --pi-bg-page: #ffffff;
-  --pi-bg-raised: #ffffff;
-  --pi-bg-surface: #f7f8fa;
-  --pi-bg-subtle: #f2f3f5;
-  --pi-bg-hover: #f2f3f5;
-  --pi-bg-selected: #eaf2ff;
-  --pi-bg-overlay: rgba(0, 0, 0, 0.45);
+  /* ── surfaces ──────────────────────────────────────────────────────────── */
 
-  /* borders */
-  --pi-border: #e5e7eb;
-  --pi-border-input: #d0d5dd;
-  --pi-border-divider: #edf0f2;
-  --pi-border-brand: #aac7ff;
+  /* `--pi-bg-page` follows the editor surface. A side bar is painted a shade
+   * apart; the host knows where the webview is docked and sets the property
+   * inline when it is a side bar. */
+  --pi-bg-page: var(--vscode-editor-background, #1f1f1f);
+  --pi-bg-raised: var(--vscode-editorWidget-background, var(--pi-bg-page, #202020));
+  --pi-bg-surface: var(--vscode-sideBar-background, var(--pi-bg-raised, #181818));
+  --pi-bg-subtle: var(--vscode-input-background, var(--pi-bg-raised, #313131));
+  --pi-bg-hover: var(
+    --vscode-list-hoverBackground,
+    color-mix(in srgb, var(--pi-text) 8%, transparent)
+  );
+  --pi-bg-selected: var(
+    --vscode-list-activeSelectionBackground,
+    var(--vscode-list-inactiveSelectionBackground, #37373d)
+  );
+  --pi-bg-overlay: rgba(0, 0, 0, 0.45); /* no theme id exists for a modal scrim */
 
-  /* text */
-  --pi-text: #1f2329;
-  --pi-text-secondary: #6b7280;
-  --pi-text-muted: #9aa0a6;
-  --pi-text-disabled: #b0b5bd;
-  --pi-text-brand: #0052d9;
-  --pi-text-on-solid: #ffffff;
-  --pi-text-success: #2ba471;
-  --pi-text-warning: #e37318;
-  --pi-text-danger: #d14343;
+  --pi-bg-bubble: var(--vscode-list-inactiveSelectionBackground, var(--pi-bg-subtle, #313131));
+  --pi-bg-pill: var(--vscode-badge-background, var(--pi-bg-subtle));
+  --pi-bg-think: var(--vscode-textBlockQuote-background, var(--pi-bg-raised));
 
-  /* icons */
-  --pi-icon: #4e5969;
-  --pi-icon-muted: #8a9099;
-  --pi-icon-brand: #0052d9;
-  --pi-icon-disabled: #b0b5bd;
+  /* Inline code, fenced code and preformatted text: VS Code's markdown
+   * vocabulary, so the chat reads like its preview pane. */
+  --pi-bg-code-inline: var(--vscode-textPreformat-background, var(--pi-bg-subtle));
+  --pi-code-bg: var(--vscode-textCodeBlock-background, var(--pi-bg-subtle));
+  --pi-code-fg: var(--vscode-textPreformat-foreground, var(--vscode-editor-foreground, #d0d0d0));
+  --pi-code-gutter: var(--vscode-editorLineNumber-foreground, var(--pi-text-muted));
+  --pi-code-muted: var(--vscode-descriptionForeground, var(--pi-code-fg));
+  --pi-code-border: var(--vscode-editorGroup-border, var(--vscode-panel-border));
+  --pi-code-line: color-mix(in srgb, var(--pi-code-fg) 8%, transparent);
 
-  /* brand */
-  --pi-brand: #0052d9;
-  --pi-brand-hover: #0046b8;
-  --pi-brand-active: #003d9e;
-  --pi-brand-soft: #eaf2ff;
+  /* Diffs: the editor's own diff colours. */
+  --pi-code-added-bg: var(
+    --vscode-diffEditor-insertedTextBackground,
+    color-mix(in srgb, var(--pi-success) 18%, transparent)
+  );
+  --pi-code-added-fg: var(--pi-text, inherit);
+  --pi-code-added-gutter: var(--vscode-editorGutter-addedBackground, var(--pi-success));
+  --pi-code-removed-bg: var(
+    --vscode-diffEditor-removedTextBackground,
+    color-mix(in srgb, var(--pi-danger) 18%, transparent)
+  );
+  --pi-code-removed-fg: var(--pi-text, inherit);
+  --pi-code-removed-gutter: var(--vscode-editorGutter-deletedBackground, var(--pi-danger));
 
-  /* semantic */
-  --pi-success: #2ba471;
-  --pi-success-soft: #eaf7f1;
-  --pi-warning: #e37318;
-  --pi-warning-soft: #fef3e6;
-  --pi-danger: #d14343;
-  --pi-danger-soft: #fef2f2;
-  --pi-info: #0052d9;
-  --pi-info-soft: #eaf2ff;
-  --pi-info-soft-border: #d6e8ff;
+  --pi-toast-bg: var(--vscode-notifications-background, var(--vscode-editorWidget-background));
+  --pi-toast-fg: var(--vscode-notifications-foreground, var(--vscode-foreground, #cccccc));
+  --pi-toast-info: var(--vscode-editorInfo-foreground, var(--pi-info));
+  --pi-toast-success: var(--pi-success);
+  --pi-toast-error: var(--vscode-errorForeground, var(--pi-danger));
+  --pi-toast-close: var(--vscode-descriptionForeground, var(--pi-text-muted));
 
-  /* conversation — board "对话界面" (nodes 2:1 light / 2:108 dark), the only
-   * board that draws the message stream and the composer. */
-  --pi-bg-bubble: #f2f2f5;
-  --pi-bg-pill: #f7f7f9;
-  --pi-bg-think: #f7f7fa;
-  --pi-text-think: #7a828c;
-  --pi-text-flow: #4b5563;
-  --pi-text-tool: #374151;
-  --pi-text-faint: #b0b6bd;
-  --pi-icon-think: #a6aebb;
-  --pi-info-box-bg: #f0f7ff;
-  --pi-info-box-fg: #3b5b86;
-  --pi-danger-pill-border: #f2b8b5;
+  /* ── borders ───────────────────────────────────────────────────────────── */
 
-  /* send button — inverted on purpose, see Style Spec 04/05 */
-  --pi-send-bg: #111418;
-  --pi-send-bg-hover: #2c2f35;
-  --pi-send-bg-active: #0b0d10;
-  --pi-send-bg-disabled: #e5e7eb;
-  --pi-send-fg: #ffffff;
-  --pi-send-fg-disabled: #b0b5bd;
+  /* `panel.border` resolves to #808080 at 35% in both Dark Modern and Light
+   * Modern — the neutral hairline this design wants. It is absent in high
+   * contrast, where `widget.border` is the defined one. */
+  --pi-border: var(
+    --vscode-panel-border,
+    var(--vscode-widget-border, var(--vscode-editorGroup-border, #2b2b2b))
+  );
+  --pi-border-input: var(--vscode-input-border, var(--vscode-panel-border));
+  --pi-border-divider: var(--vscode-editorGroup-border, var(--vscode-panel-border));
+  --pi-border-brand: var(--vscode-focusBorder, var(--vscode-button-background));
+  --pi-danger-pill-border: var(--vscode-inputValidation-errorBorder, var(--pi-danger));
 
-  /* radii */
+  /* ── text ──────────────────────────────────────────────────────────────── */
+
+  --pi-text: var(--vscode-foreground, #cccccc);
+  /* VS Code derives this as foreground at 70%; when a theme computes it away,
+   * do the same thing rather than fall back to full-strength text. */
+  --pi-text-secondary: var(
+    --vscode-descriptionForeground,
+    color-mix(in srgb, var(--pi-text) 70%, transparent)
+  );
+  --pi-text-muted: var(
+    --vscode-descriptionForeground,
+    color-mix(in srgb, var(--pi-text) 70%, transparent)
+  );
+  --pi-text-faint: color-mix(in srgb, var(--pi-text) 55%, transparent);
+  --pi-text-disabled: var(
+    --vscode-disabledForeground,
+    color-mix(in srgb, var(--pi-text) 50%, transparent)
+  );
+  --pi-text-brand: var(--vscode-textLink-foreground, var(--vscode-button-background, #4daafc));
+  --pi-text-on-solid: var(--vscode-button-foreground, #ffffff);
+
+  --pi-text-think: var(--vscode-descriptionForeground, var(--pi-text-secondary));
+  --pi-text-flow: var(--vscode-foreground, #cccccc);
+  --pi-text-tool: var(--vscode-foreground, #cccccc);
+
+  /* ── status ────────────────────────────────────────────────────────────── */
+
+  /* The ids VS Code uses for these three states in its own problems view and
+   * markdown preview. `charts.red` / `charts.yellow` are not declared by every
+   * theme, so each chain ends on the error / warning foreground. */
+  --pi-success: var(--vscode-charts-green, var(--vscode-errorForeground));
+  --pi-warning: var(--vscode-editorWarning-foreground, var(--vscode-charts-yellow, #bf8803));
+  --pi-danger: var(--vscode-errorForeground, var(--vscode-charts-red, #f85149));
+  --pi-info: var(--vscode-editorInfo-foreground, var(--vscode-textLink-foreground));
+  --pi-text-success: var(--pi-success);
+  --pi-text-warning: var(--pi-warning);
+  --pi-text-danger: var(--pi-danger);
+
+  /* Soft tints derive from the semantic colour, so they follow the theme
+   * instead of being a second palette to maintain by hand. */
+  --pi-success-soft: color-mix(in srgb, var(--pi-success) 14%, transparent);
+  --pi-warning-soft: color-mix(in srgb, var(--pi-warning) 14%, transparent);
+  --pi-danger-soft: color-mix(in srgb, var(--pi-danger) 14%, transparent);
+  --pi-info-soft: color-mix(in srgb, var(--pi-info) 14%, transparent);
+  --pi-info-soft-border: color-mix(in srgb, var(--pi-info) 40%, transparent);
+
+  /* Validation boxes have first-class theme ids — use them. */
+  --pi-info-box-bg: var(--vscode-inputValidation-infoBackground, var(--pi-info-soft));
+  --pi-info-box-fg: var(--vscode-foreground, #cccccc);
+
+  /* ── interactive ───────────────────────────────────────────────────────── */
+
+  --pi-brand: var(--vscode-button-background, #0078d4);
+  --pi-brand-hover: var(--vscode-button-hoverBackground, var(--vscode-button-background));
+  --pi-brand-active: var(--vscode-button-hoverBackground, var(--vscode-button-background));
+  --pi-brand-soft: color-mix(in srgb, var(--vscode-button-background) 18%, transparent);
+  --pi-send-bg: var(--vscode-button-background, #0078d4);
+  --pi-send-bg-hover: var(--vscode-button-hoverBackground, var(--vscode-button-background));
+  --pi-send-bg-active: var(--vscode-button-hoverBackground, var(--vscode-button-background));
+  --pi-send-bg-disabled: var(--vscode-button-secondaryBackground, var(--vscode-disabledForeground));
+  --pi-send-fg: var(--vscode-button-foreground, #ffffff);
+  --pi-send-fg-disabled: var(--vscode-disabledForeground, var(--vscode-button-secondaryForeground));
+
+  /* ── icons ─────────────────────────────────────────────────────────────── */
+
+  --pi-icon: var(--vscode-icon-foreground, var(--vscode-foreground, #cccccc));
+  --pi-icon-muted: var(
+    --vscode-descriptionForeground,
+    color-mix(in srgb, var(--pi-text) 70%, transparent)
+  );
+  --pi-icon-brand: var(--vscode-textLink-foreground, var(--vscode-button-background, #4daafc));
+  --pi-icon-think: var(--vscode-descriptionForeground, var(--pi-icon-muted));
+  --pi-icon-disabled: var(
+    --vscode-disabledForeground,
+    color-mix(in srgb, var(--pi-text) 50%, transparent)
+  );
+
+  /* Fixed, like VS Code's own chrome: the chat font size setting is about
+   * reading prose, not about how big a gear glyph is. */
+  --pi-icon-lg: 16px;
+  /* VS Code computes its slider colour from a palette constant, so it may not
+   * arrive as a variable; the previous hard-coded grey stays as the fallback. */
+  --pi-scrollbar: var(--vscode-scrollbarSlider-background, rgba(127, 127, 127, 0.4));
+
+  /* ── type ──────────────────────────────────────────────────────────────── */
+
+  /* Five steps, all driven by the chat font size setting: 10/12/14/16/18 at the
+   * default 14, and proportional when the user changes it. */
+  --pi-fs-micro: calc(var(--chat-fs) * 10 / 14);
+  --pi-fs-meta: calc(var(--chat-fs) * 12 / 14);
+  --pi-fs-body: var(--chat-fs);
+  --pi-fs-title: calc(var(--chat-fs) * 16 / 14);
+  --pi-fs-display: calc(var(--chat-fs) * 18 / 14);
+
+  /* Code reads at the editor's size and family, so a snippet in the chat and
+   * the same snippet in the editor agree. */
+  --pi-fs-code: var(--vscode-editor-font-size, var(--pi-fs-meta));
+  --pi-font: var(--vscode-font-family, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
+  --pi-mono: var(--vscode-editor-font-family, ui-monospace, "SF Mono", Menlo, monospace);
+}
+
+/* A side bar is painted a shade apart from an editor tab. The host reports
+ * which one the chat is docked in (`display.surface`), and the store puts this
+ * class on <body>; nothing here has to guess. */
+body.pi-surface-sidebar {
+  --pi-bg-page: var(--vscode-sideBar-background, #181818);
+}
+
+/* Numeric aliases. Nine steps onto five, both panels — `-11` and `-12` were
+ * doing the same job, and so were `-15` and `-16`. Every rule that still says
+ * `var(--chat-fs-12)` gets the meta step. Rename call sites to retire this. */
+:root {
+  --chat-fs-8: var(--pi-fs-micro);
+  --chat-fs-9: var(--pi-fs-micro);
+  --chat-fs-10: var(--pi-fs-micro);
+  --chat-fs-11: var(--pi-fs-meta);
+  --chat-fs-12: var(--pi-fs-meta);
+  --chat-fs-13: var(--pi-fs-body);
+  --chat-fs-14: var(--pi-fs-body);
+  --chat-fs-15: var(--pi-fs-title);
+  --chat-fs-16: var(--pi-fs-title);
+
+  --fs-10: var(--pi-fs-micro);
+  --fs-11: var(--pi-fs-micro);
+  --fs-12: var(--pi-fs-meta);
+  --fs-13: var(--pi-fs-body);
+  --fs-14: var(--pi-fs-body);
+  --fs-16: var(--pi-fs-title);
+}
+
+/* ── radii ───────────────────────────────────────────────────────────────── */
+
+:root {
   --pi-r-xs: 4px;
   --pi-r-sm: 6px;
   --pi-r-md: 8px;
   --pi-r-lg: 12px;
   --pi-r-xl: 16px;
   --pi-r-full: 999px;
+}
 
-  /* spacing */
+/* ── spacing ─────────────────────────────────────────────────────────────── */
+
+:root {
   --pi-sp-1: 4px;
   --pi-sp-2: 6px;
   --pi-sp-3: 8px;
@@ -109,109 +255,22 @@
   --pi-sp-8: 20px;
   --pi-sp-9: 24px;
   --pi-sp-10: 32px;
+}
 
-  /* control heights */
+/* ── control heights ─────────────────────────────────────────────────────── */
+
+:root {
   --pi-h-toolbar: 48px;
   --pi-h-control: 32px;
   --pi-h-control-lg: 36px;
   --pi-h-control-sm: 28px;
   --pi-h-row: 40px;
+}
 
-  /* type families (sizes deliberately excluded, see header) */
-  --pi-font: var(--vscode-font-family, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
-  --pi-mono: var(--vscode-editor-font-family, ui-monospace, "SF Mono", Menlo, monospace);
+/* ── elevation ───────────────────────────────────────────────────────────── */
 
-  /* elevation */
+:root {
   --pi-shadow-popup: 0 14px 40px -10px rgba(15, 23, 33, 0.1);
   --pi-shadow-menu: 0 4px 16px rgba(0, 0, 0, 0.12);
   --pi-shadow-modal: 0 24px 48px rgba(15, 23, 33, 0.18);
-
-  /* code, diff and toast surfaces stay dark in BOTH themes — the boards draw
-   * them on #1F2329 unconditionally, so these are theme-independent. */
-  --pi-code-bg: #1f2329;
-  --pi-code-fg: #c9d1d9;
-  --pi-code-gutter: #6e7681;
-  --pi-code-muted: #9ea9b3;
-  --pi-code-border: #2c2c38;
-  --pi-code-line: #22262d;
-  --pi-code-added-bg: #0a2e17;
-  --pi-code-added-fg: #c8e6c9;
-  --pi-code-added-gutter: #7ee787;
-  --pi-code-removed-bg: #38141a;
-  --pi-code-removed-fg: #ffb4b0;
-  --pi-code-removed-gutter: #ff9492;
-  --pi-toast-bg: #1f2329;
-  --pi-toast-fg: #ffffff;
-  --pi-toast-info: #5b8ff9;
-  --pi-toast-success: #3fb950;
-  --pi-toast-error: #f0796f;
-  --pi-toast-close: #9aa0a6;
-}
-
-body.vscode-dark,
-body.vscode-high-contrast,
-html[data-pi-theme="dark"] {
-  --pi-bg-page: #1e1e24;
-  --pi-bg-raised: #26262e;
-  --pi-bg-surface: #26262e;
-  --pi-bg-subtle: #2a2a31;
-  --pi-bg-hover: #2a2a31;
-  --pi-bg-selected: #16243a;
-  --pi-bg-overlay: rgba(0, 0, 0, 0.6);
-
-  --pi-border: #2c2c34;
-  --pi-border-input: #2c2c34;
-  --pi-border-divider: #2c2c34;
-  --pi-border-brand: #2d4a7a;
-
-  --pi-text: #e7eaf0;
-  --pi-text-secondary: #9aa0a6;
-  --pi-text-muted: #9aa0a6;
-  --pi-text-disabled: #5a5a63;
-  --pi-text-brand: #5b8ff9;
-  --pi-text-success: #5dcaa5;
-  --pi-text-warning: #ef9f27;
-  --pi-text-danger: #f09595;
-
-  --pi-icon: #8a9099;
-  --pi-icon-brand: #5b8ff9;
-  --pi-icon-disabled: #5a5a63;
-
-  --pi-brand: #5b8ff9;
-  --pi-brand-hover: #7aa5fb;
-  --pi-brand-active: #94b7fc;
-  --pi-brand-soft: #16243a;
-
-  --pi-success: #3fb950;
-  --pi-success-soft: #14291f;
-  --pi-warning: #ef9f27;
-  --pi-warning-soft: #33231a;
-  --pi-danger: #f0796f;
-  --pi-danger-soft: #2e1a1a;
-  --pi-info: #5b8ff9;
-  --pi-info-soft: #16243a;
-  --pi-info-soft-border: #2d4a7a;
-
-  --pi-bg-bubble: #2a2a31;
-  --pi-bg-pill: #2a2a31;
-  --pi-bg-think: #26262e;
-  --pi-text-think: #9aa0a6;
-  --pi-text-flow: #c8ccd4;
-  --pi-text-tool: #c8ccd4;
-  --pi-text-faint: #6b7078;
-  --pi-icon-think: #6b7078;
-  --pi-info-box-bg: #16243a;
-  --pi-info-box-fg: #9db8dc;
-  --pi-danger-pill-border: #5a2a2a;
-
-  --pi-send-bg: #e6e7ea;
-  --pi-send-bg-hover: #ffffff;
-  --pi-send-bg-active: #c8cbd1;
-  --pi-send-bg-disabled: #3a3a42;
-  --pi-send-fg: #1e1e24;
-  --pi-send-fg-disabled: #5a5a63;
-
-  --pi-shadow-popup: 0 14px 40px -10px rgba(0, 0, 0, 0.5);
-  --pi-shadow-menu: 0 4px 16px rgba(0, 0, 0, 0.45);
-  --pi-shadow-modal: 0 24px 48px rgba(0, 0, 0, 0.55);
 }

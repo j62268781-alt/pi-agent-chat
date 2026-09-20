@@ -21,17 +21,84 @@ const MERMAID_THEMES = ["default", "dark", "forest", "neutral", "base"] as const
 
 type MermaidTheme = (typeof MERMAID_THEMES)[number];
 
-function resolveTheme(configured: string): MermaidTheme {
-  const v = (configured || "default").toLowerCase();
-  if ((MERMAID_THEMES as readonly string[]).indexOf(v) >= 0) return v as MermaidTheme;
-  return "default";
+/**
+ * The mermaid theme to draw with.
+ *
+ * An explicit `chatMermaidTheme` wins. Left on `default`, follow the VS Code
+ * theme instead: mermaid's `default` theme inks dark on a transparent canvas,
+ * which is unreadable on a dark surface — that is why the diagram container used
+ * to be pinned white. With `dark` for dark themes the container can be a token.
+ */
+export function resolveMermaidTheme(): MermaidTheme {
+  const configured = (configuredMermaidTheme() || "default").toLowerCase();
+  if (configured !== "default" && (MERMAID_THEMES as readonly string[]).indexOf(configured) >= 0) {
+    return configured as MermaidTheme;
+  }
+  return document.body.classList.contains("vscode-light") ? "default" : "dark";
 }
 
 let resolvedMermaidTheme: MermaidTheme | null = null;
 
 function currentMermaidTheme(): MermaidTheme {
-  resolvedMermaidTheme ??= resolveTheme(configuredMermaidTheme());
+  resolvedMermaidTheme ??= resolveMermaidTheme();
   return resolvedMermaidTheme;
+}
+
+/** Set once the body-class observer is in place; the webview outlives renders. */
+let themeWatcherInstalled = false;
+
+/**
+ * VS Code repaints a webview into a new theme without reloading it, so nothing
+ * would re-run `mermaid.initialize`: a diagram would keep the ink of the theme
+ * it was drawn under, on a container that has just changed colour. The body
+ * class is the only signal the webview gets, so watch it.
+ */
+function installThemeWatcher(): void {
+  if (themeWatcherInstalled) return;
+  themeWatcherInstalled = true;
+  new MutationObserver(() => {
+    const next = resolveMermaidTheme();
+    if (next === resolvedMermaidTheme) return;
+    resolvedMermaidTheme = next;
+    // Re-initialise on the next draw, then redraw what is already on screen.
+    mermaidInitialized = false;
+    void redrawMermaid();
+  }).observe(document.body, { attributes: true, attributeFilter: ["class"] });
+}
+
+/** Draw (or redraw) mermaid nodes, keeping each diagram's source on the node. */
+async function renderMermaid(nodes: HTMLElement[]): Promise<void> {
+  if (nodes.length === 0) return;
+  try {
+    const mermaid = (await loadMermaid()).default;
+    if (!mermaidInitialized) {
+      mermaid.initialize({
+        startOnLoad: false,
+        securityLevel: "strict",
+        theme: currentMermaidTheme(),
+      });
+      mermaidInitialized = true;
+    }
+    for (const node of nodes) {
+      const source = node.dataset.src ?? node.querySelector("code")?.textContent ?? "";
+      node.dataset.src = source;
+      node.setAttribute("data-r", "1");
+      try {
+        const { svg } = await mermaid.render(`pi-mermaid-${seq++}`, source);
+        node.innerHTML = svg;
+      } catch {
+        node.classList.add("pi-mermaid-error");
+      }
+    }
+  } catch {
+    for (const node of nodes) node.classList.add("pi-mermaid-error");
+  }
+}
+
+async function redrawMermaid(): Promise<void> {
+  const nodes = Array.from(document.querySelectorAll<HTMLElement>(".pi-mermaid[data-r]"));
+  for (const node of nodes) node.classList.remove("pi-mermaid-error");
+  await renderMermaid(nodes);
 }
 
 function escapeCode(s: string): string {
@@ -62,37 +129,13 @@ async function ensureKatexCss(): Promise<void> {
 }
 
 export async function enhance(target: HTMLElement): Promise<void> {
+  installThemeWatcher();
   const mermaidNodes = Array.from(
     target.querySelectorAll<HTMLElement>(".pi-mermaid:not([data-r])"),
   );
   const mathNodes = Array.from(target.querySelectorAll<HTMLElement>(".pi-math:not([data-r])"));
 
-  if (mermaidNodes.length) {
-    try {
-      const mermaid = (await loadMermaid()).default;
-      if (!mermaidInitialized) {
-        mermaid.initialize({
-          startOnLoad: false,
-          securityLevel: "strict",
-          theme: currentMermaidTheme(),
-        });
-        mermaidInitialized = true;
-      }
-      for (const node of mermaidNodes) {
-        node.setAttribute("data-r", "1");
-        const codeEl = node.querySelector("code");
-        const src = codeEl ? (codeEl.textContent ?? "") : "";
-        try {
-          const { svg } = await mermaid.render(`pi-mermaid-${seq++}`, src);
-          node.innerHTML = svg;
-        } catch {
-          node.classList.add("pi-mermaid-error");
-        }
-      }
-    } catch {
-      for (const node of mermaidNodes) node.classList.add("pi-mermaid-error");
-    }
-  }
+  await renderMermaid(mermaidNodes);
 
   if (mathNodes.length) {
     try {

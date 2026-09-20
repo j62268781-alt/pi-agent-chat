@@ -25,5 +25,5 @@
       "@page": ["./src/pages/ChatPage.vue"]
     }
   },
-  "include": ["src", "test", "vite.config.ts", "vitest.config.ts", "../src/protocol"]
+  "include": ["src", "test", "preview", "vite.config.ts", "vitest.config.ts", "../src/protocol"]
 }

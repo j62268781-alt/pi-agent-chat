@@ -1,0 +1,33 @@
+/* Preview-harness styles. Loaded after the app's own stylesheets on purpose:
+ * `chat.css` is injected by the bundler at runtime, so anything written in
+ * `preview.html`'s <head> loses to it. Order here, not `!important`.
+ *
+ * Why any of this exists: the app is a fixed-viewport panel — the transcript
+ * scrolls, the composer is pinned, and the document itself never scrolls. That
+ * is right inside VS Code, where the webview is an iframe the editor sizes. It
+ * is wrong in a browser tab, where the chrome (a phone's URL bar and bottom
+ * toolbar, an embedded preview pane) can overlay part of the viewport: the
+ * composer ends up underneath it with no way to reach it.
+ */
+
+/* `100%` resolves against the layout viewport — the area *including* whatever
+ * the browser chrome covers. `dvh` follows the visible area, so the composer
+ * stays on screen when the URL bar is showing. The `100%` line stays as the
+ * fallback for engines without dynamic viewport units. */
+html,
+body {
+  height: 100%;
+  height: 100dvh;
+}
+
+/* If the viewport is somehow shorter than the app needs (a very small window,
+ * a zoomed-in phone), let the document scroll rather than clipping the bottom
+ * out of reach. With a correctly sized viewport this never scrolls. */
+html,
+body {
+  overflow: auto;
+}
+
+#app {
+  min-height: 100%;
+}

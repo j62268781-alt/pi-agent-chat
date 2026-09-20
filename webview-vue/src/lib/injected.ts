@@ -45,6 +45,9 @@ export const mermaidTheme = (): string => raw("mermaidTheme") || "default";
 export function displaySettings(): ChatDisplaySettings {
   const defaults: ChatDisplaySettings = {
     fontSize: 13,
+    // The extension's default home is the side bar, and a missing field should
+    // not silently repaint the page as an editor tab.
+    surface: "sidebar",
     backgroundImage: "",
     backgroundOpacity: 1,
     sendShortcut: "enter",

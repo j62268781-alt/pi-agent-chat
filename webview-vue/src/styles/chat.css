@@ -1,9 +1,13 @@
 .codicon {
-  font: normal normal normal 16px/1 codicon;
+  /* Same rule as the settings panel: one glyph size, fixed like VS Code's own
+   * chrome, and it does not follow the chat font size. */
+  font: normal normal normal var(--pi-icon-lg) / 1 codicon;
   display: inline-block;
   text-decoration: none;
   text-rendering: auto;
   text-align: center;
+  vertical-align: middle;
+  flex: none;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   user-select: none;
@@ -25,8 +29,8 @@
 .codicon-add::before {
   content: "\ea60";
 }
-.codicon-send::before {
-  content: "\ec0f";
+.codicon-arrow-up::before {
+  content: "\eaa1";
 }
 .codicon-debug-stop::before {
   content: "\ead7";
@@ -106,14 +110,9 @@
   content: "\eb3b";
 }
 :root {
+  /* Fallback for a host that never pushes display settings; `tokens.css` derives
+   * the whole five-step scale from this. */
   --chat-fs: 14px;
-  --chat-fs-8: calc(var(--chat-fs) * 8 / 13);
-  --chat-fs-9: calc(var(--chat-fs) * 9 / 13);
-  --chat-fs-10: calc(var(--chat-fs) * 10 / 13);
-  --chat-fs-11: calc(var(--chat-fs) * 11 / 13);
-  --chat-fs-12: calc(var(--chat-fs) * 12 / 13);
-  --chat-fs-14: calc(var(--chat-fs) * 14 / 13);
-  --chat-fs-15: calc(var(--chat-fs) * 15 / 13);
 }
 * {
   box-sizing: border-box;
@@ -196,10 +195,6 @@ body {
   );
   display: flex;
   flex-direction: column;
-  transition: border-color 0.12s;
-}
-.composer-box:focus-within {
-  border-color: var(--pi-brand);
 }
 .attach-preview {
   display: flex;
@@ -540,7 +535,7 @@ body {
   display: inline-flex;
   align-items: center;
   flex-shrink: 0;
-  font-size: 15px;
+  font-size: var(--pi-fs-title);
   margin-top: 1px;
   color: var(--pi-text);
 }
@@ -568,7 +563,7 @@ body {
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
-  font-size: 16px;
+  font-size: var(--pi-fs-title);
   color: var(--pi-brand);
   visibility: hidden;
   margin-top: 1px;
@@ -664,7 +659,7 @@ body {
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
-  font-size: 16px;
+  font-size: var(--pi-fs-title);
   color: var(--pi-brand);
 }
 .sessions-empty {
@@ -763,7 +758,7 @@ body {
   display: inline-flex;
   align-items: center;
   flex-shrink: 0;
-  font-size: 13px;
+  font-size: var(--pi-fs-body);
 }
 .model-item-label {
   flex: 1 1 auto;
@@ -785,7 +780,7 @@ body {
   color: var(--pi-text-secondary);
   cursor: pointer;
   border-radius: 4px;
-  font-size: 13px;
+  font-size: var(--pi-fs-body);
   line-height: 1;
 }
 .model-star:hover {
@@ -840,7 +835,7 @@ body {
   padding-left: 4px;
 }
 .permission-icon {
-  font-size: 12px;
+  font-size: var(--pi-fs-meta);
   line-height: 1;
   margin-left: 8px;
   pointer-events: none;
@@ -870,7 +865,7 @@ body {
   display: block;
 }
 .icon-btn .codicon {
-  font-size: 16px;
+  font-size: var(--pi-fs-title);
   line-height: 1;
 }
 .icon-btn:hover:not(:disabled) {
@@ -913,7 +908,7 @@ body {
   display: block;
 }
 .toolbar .icon-btn .codicon {
-  font-size: 13px;
+  font-size: var(--pi-fs-body);
   line-height: 1;
 }
 .toolbar .icon-btn:hover:not(:disabled) {
@@ -1004,7 +999,7 @@ body {
   display: block;
 }
 .scroll-bottom-btn .codicon {
-  font-size: 14px;
+  font-size: var(--pi-fs-body);
   line-height: 1;
 }
 .messages {
@@ -1143,24 +1138,24 @@ body {
   margin: 0 0 8px;
 }
 .text-block h1 {
-  font-size: 1.4em;
+  font-size: var(--pi-fs-display);
   margin: 14px 0 8px;
   font-weight: 600;
 }
 .text-block h2 {
-  font-size: 1.25em;
+  font-size: var(--pi-fs-title);
   margin: 12px 0 6px;
   font-weight: 600;
 }
 .text-block h3 {
-  font-size: 1.1em;
+  font-size: var(--pi-fs-body);
   margin: 10px 0 6px;
   font-weight: 600;
 }
 .text-block h4,
 .text-block h5,
 .text-block h6 {
-  font-size: 1em;
+  font-size: var(--pi-fs-body);
   margin: 8px 0 4px;
   font-weight: 600;
 }
@@ -1183,8 +1178,8 @@ body {
 }
 .text-block code {
   font-family: var(--pi-mono);
-  font-size: 0.92em;
-  background: var(--pi-bg-subtle);
+  font-size: var(--pi-fs-code);
+  background: var(--pi-bg-code-inline);
   padding: 1px 4px;
   border-radius: 3px;
 }
@@ -1206,10 +1201,10 @@ body {
   margin: 0 0 8px;
   border-radius: 4px;
   overflow-x: auto;
-  /* Deliberately not a token: the mermaid theme is a separate pi setting and
-   * defaults to "default", which draws dark ink on a transparent canvas. A
-   * themed background would make every diagram unreadable in dark mode. */
-  background: #ffffff;
+  /* A token now: mermaid draws with its `dark` theme on a dark VS Code theme
+   * (see `resolveMermaidTheme`), so the canvas no longer has to be pinned white
+   * to keep dark ink readable. Diagrams redraw when the theme changes. */
+  background: var(--pi-code-bg);
   padding: 8px 10px;
 }
 .text-block .pi-mermaid svg {
@@ -2003,38 +1998,17 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   background: var(--pi-brand);
   color: var(--pi-text-on-solid);
 }
-.send-btn {
-  background: var(--pi-brand);
-  color: var(--pi-text-on-solid);
-  border-radius: 50%;
-  margin-left: 6px;
-}
-.send-btn:hover:not(:disabled):not(.is-stop) {
-  background: var(--pi-brand-hover);
-}
+/* Stop is the empty-composer action mid-turn: a neutral surface with the
+ * theme's danger ink, rather than a filled warning colour. The old breathing
+ * halo is gone with it — it was a hard-coded warm glow, which is exactly the
+ * kind of colour that stops matching the moment the theme changes. */
 .send-btn.is-stop {
   background: var(--pi-bg-subtle);
-  color: var(--pi-text);
-  animation: stop-breath 2.2s ease-in-out infinite;
-}
-@keyframes stop-breath {
-  0%,
-  100% {
-    box-shadow: 0 0 0 0 rgba(244, 135, 113, 0);
-    filter: brightness(1);
-  }
-  50% {
-    box-shadow:
-      0 0 0 4px rgba(244, 135, 113, 0.3),
-      0 0 10px 2px rgba(244, 135, 113, 0.35);
-    filter: brightness(1.06);
-  }
+  color: var(--pi-danger);
 }
 .send-btn.is-stop:hover {
-  animation: none;
-  background: var(--pi-danger);
-  color: var(--pi-bg-page);
-  filter: brightness(1.12);
+  background: var(--pi-bg-hover);
+  color: var(--pi-danger);
 }
 
 .overlay {
@@ -2435,7 +2409,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 /* ↳ 字形（codicon 里叫 indent）：这条消息还排在队伍里，没有发出去。 */
 .queue-lead {
   flex-shrink: 0;
-  font-size: 14px;
+  font-size: var(--pi-fs-body);
   color: var(--pi-text-muted);
 }
 
@@ -2479,7 +2453,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 }
 
 .queue-action .codicon {
-  font-size: 14px;
+  font-size: var(--pi-fs-body);
 }
 
 /* Rows pi queued itself: no handle, so no actions — just a type chip. */
@@ -2527,7 +2501,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   display: block;
 }
 .rewind-chevron .codicon {
-  font-size: 12px;
+  font-size: var(--pi-fs-meta);
   line-height: 1;
 }
 .rewind-widget.is-collapsed .rewind-chevron {
@@ -2574,7 +2548,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   display: block;
 }
 .rewind-btn .codicon {
-  font-size: 11px;
+  font-size: var(--pi-fs-meta);
   line-height: 1;
 }
 .rewind-btn:hover {
@@ -2698,7 +2672,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 }
 .mcp-drawer-title {
   font-weight: 600;
-  font-size: 13px;
+  font-size: var(--pi-fs-body);
 }
 .mcp-drawer-body {
   overflow-y: auto;
@@ -2709,7 +2683,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   text-align: center;
   color: var(--pi-text-secondary);
   opacity: 0.8;
-  font-size: 12px;
+  font-size: var(--pi-fs-meta);
 }
 .mcp-row {
   display: flex;
@@ -2735,7 +2709,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   min-width: 0;
 }
 .mcp-name {
-  font-size: 13px;
+  font-size: var(--pi-fs-body);
   font-weight: 500;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2743,7 +2717,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 }
 .mcp-tag {
   flex-shrink: 0;
-  font-size: 10px;
+  font-size: var(--pi-fs-micro);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.3px;
@@ -2759,22 +2733,22 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 }
 .mcp-state {
   flex-shrink: 0;
-  font-size: 10px;
+  font-size: var(--pi-fs-micro);
   text-transform: uppercase;
   letter-spacing: 0.3px;
   opacity: 0.7;
 }
 .mcp-state-connected {
-  color: #3fb950;
+  color: var(--pi-success);
   opacity: 1;
 }
 .mcp-state-connecting {
-  color: #1f6feb;
+  color: var(--pi-info);
   opacity: 1;
 }
 .mcp-state-error,
 .mcp-state-stopped {
-  color: #f85149;
+  color: var(--pi-danger);
   opacity: 1;
 }
 .mcp-state-disabled {
@@ -2782,12 +2756,12 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   opacity: 0.9;
 }
 .mcp-meta {
-  font-size: 11px;
+  font-size: var(--pi-fs-meta);
   color: var(--pi-text-secondary);
   opacity: 0.75;
 }
 .mcp-err {
-  font-size: 11px;
+  font-size: var(--pi-fs-meta);
   color: var(--pi-danger);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2800,16 +2774,16 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   flex-shrink: 0;
 }
 .mcp-dot-ok {
-  background: #3fb950;
+  background: var(--pi-success);
 }
 .mcp-dot-busy {
-  background: #1f6feb;
+  background: var(--pi-info);
 }
 .mcp-dot-off {
   background: var(--pi-text-secondary);
 }
 .mcp-dot-err {
-  background: #f85149;
+  background: var(--pi-danger);
 }
 .mcp-icon-btn {
   display: inline-flex;
@@ -2894,13 +2868,13 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 .icon-btn .codicon,
 .toolbar .icon-btn svg,
 .toolbar .icon-btn .codicon {
-  /* 18px (彬哥: +2px). The var here MUST be from the --chat-fs-* scale — an
-   * earlier pass wrote var(--fs-16), which only exists in pi-settings, so the
-   * glyph silently fell back to the inherited 13px inside a 16px box and read
-   * small and off-centre. */
-  font-size: 18px;
-  width: 18px;
-  height: 18px;
+  /* VS Code's own toolbar glyph size. This used to be 18px: an earlier pass
+   * pointed the size at a var that only existed in the settings panel, so the
+   * glyph fell back to the inherited 13px inside a 16px box and read small and
+   * off-centre. With the size pinned and the glyph centred, 16px is right. */
+  font-size: var(--pi-icon-lg);
+  width: var(--pi-icon-lg);
+  height: var(--pi-icon-lg);
 }
 
 .icon-btn:hover:not(:disabled),
@@ -3519,7 +3493,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 }
 
 .thinking-block > summary:before {
-  font-size: 15px;
+  font-size: var(--pi-fs-title);
   margin-right: 0;
   color: var(--pi-icon-think);
 }
@@ -3577,7 +3551,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 .work-head:before {
   content: "\eab6";
   font-family: codicon;
-  font-size: 14px;
+  font-size: var(--pi-fs-body);
   opacity: 1;
   color: var(--pi-icon-muted);
 }
@@ -3786,17 +3760,12 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   color: var(--pi-text-danger);
 }
 
-/* Send button — board 04/05: a 36x36 circle on #111418. */
+/* Send button — the same 28x28 rounded square as the other control-bar icons
+ * (`.icon-btn`), filled with the theme's button colour instead of staying
+ * transparent. No size or radius of its own: it inherits both. */
 .send-btn {
-  width: 36px;
-  height: 36px;
-  border-radius: var(--pi-r-full);
   background: var(--pi-send-bg);
   color: var(--pi-send-fg);
-  /* The legacy 6px made room in a bar whose `gap` was 2px; the design pass
-   * raised the gap to 8px, so keeping both double-counted it and left 14px
-   * between the context ring and send. The gap alone is the board's spacing. */
-  margin-left: 0;
 }
 
 .send-btn:hover:not(:disabled):not(.is-stop) {
@@ -3806,6 +3775,16 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 .send-btn:disabled {
   background: var(--pi-send-bg-disabled);
   color: var(--pi-send-fg-disabled);
+}
+
+/* Same chip as the attach button — the bar's own 30x30 / 8px — with the theme's
+ * button colour instead of the grey fill. Icon only in every state: how the
+ * message will be delivered (插话 / 排队) lives in the tooltip, so the control bar
+ * keeps one size and the row never shifts. */
+.composer-controls-bar > .send-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--pi-r-md);
 }
 
 /* ── composer polish ──────────────────────────────────────────────────────
@@ -3848,12 +3827,12 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 
 .permission-icon {
   margin-left: 0;
-  font-size: 16px;
+  font-size: var(--pi-fs-title);
   flex-shrink: 0;
 }
 
 .thinking-icon {
-  font-size: 16px;
+  font-size: var(--pi-fs-title);
   line-height: 1;
   flex-shrink: 0;
 }
@@ -3893,7 +3872,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 
 .model-item-icon,
 .permission-item-icon {
-  font-size: 16px;
+  font-size: var(--pi-fs-title);
 }
 
 /* ── context ring ────────────────────────────────────────────────────────── */
@@ -4075,7 +4054,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 
 .thinking-row-gear {
   flex: 0 0 auto;
-  font-size: 14px;
+  font-size: var(--pi-fs-body);
   color: var(--pi-icon-muted);
   transition: color 0.12s;
 }
@@ -4086,7 +4065,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 
 .model-popup .thinking-icon {
   flex: 0 0 auto;
-  font-size: 16px;
+  font-size: var(--pi-fs-title);
   color: var(--pi-icon);
 }
 
@@ -4370,7 +4349,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 }
 
 .lightbox-close .codicon {
-  font-size: 14px;
+  font-size: var(--pi-fs-body);
 }
 
 /* The transcript is a windowed render: paging in older turns prepends DOM at
@@ -4423,7 +4402,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 }
 
 .lightbox-zoom .codicon {
-  font-size: 14px;
+  font-size: var(--pi-fs-body);
 }
 
 .lightbox-zoom-value {
@@ -4523,7 +4502,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 }
 
 .lightbox-nav .codicon {
-  font-size: 14px;
+  font-size: var(--pi-fs-body);
 }
 
 .lightbox-prev {
@@ -4638,7 +4617,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 }
 
 .context-chip .codicon-file-text {
-  font-size: 12px;
+  font-size: var(--pi-fs-meta);
   color: var(--pi-brand);
 }
 
@@ -4669,14 +4648,14 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 }
 
 .context-chip-x .codicon {
-  font-size: 11px;
+  font-size: var(--pi-fs-meta);
 }
 
 /* ── 权限/选择 dialog（pi 的 ui.select 决策）─────────────────────────────────
  * 安全决策用按钮组而非原生 select：Allow 弱化、Block 红色强调——"允许"永远
  * 不该是误触的默认项。danger 场景标题带警示图标与警示色。 */
 .dialog-danger {
-  border-color: color-mix(in srgb, var(--pi-danger, #d14343) 45%, var(--pi-border));
+  border-color: color-mix(in srgb, var(--pi-danger) 45%, var(--pi-border));
 }
 
 .dialog-title {
@@ -4688,7 +4667,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 .dialog-warn-icon {
   flex-shrink: 0;
   font-size: var(--chat-fs-16);
-  color: var(--pi-danger, #d14343);
+  color: var(--pi-danger);
   margin-top: 1px;
 }
 
@@ -4709,21 +4688,21 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 }
 
 .choice-btn.choice-allow {
-  border: 1px solid color-mix(in srgb, var(--pi-success, #2ba471) 55%, var(--pi-border));
-  color: var(--pi-success, #2ba471);
+  border: 1px solid color-mix(in srgb, var(--pi-success) 55%, var(--pi-border));
+  color: var(--pi-success);
 }
 
 .choice-btn.choice-allow:hover {
-  background: color-mix(in srgb, var(--pi-success, #2ba471) 14%, transparent);
+  background: color-mix(in srgb, var(--pi-success) 14%, transparent);
 }
 
 .choice-btn.choice-block {
-  border: 1px solid color-mix(in srgb, var(--pi-danger, #d14343) 55%, var(--pi-border));
-  color: var(--pi-danger, #d14343);
+  border: 1px solid color-mix(in srgb, var(--pi-danger) 55%, var(--pi-border));
+  color: var(--pi-danger);
 }
 
 .choice-btn.choice-block:hover {
-  background: color-mix(in srgb, var(--pi-danger, #d14343) 14%, transparent);
+  background: color-mix(in srgb, var(--pi-danger) 14%, transparent);
 }
 
 /* 权限弹窗的命令正文：等宽 + 代码块底色（宿主把多行 title 拆出的 message） */
@@ -4765,7 +4744,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 }
 
 .msg-outcome.is-warn {
-  color: var(--pi-warning, #c99a2e);
+  color: var(--pi-warning);
 }
 
 .msg-outcome.is-error {
@@ -5026,29 +5005,6 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 /* ── 运行中发送方式切换 ──────────────────────────────────────────────────────
  * 空状态不再逐条教键盘；/ 与 @ 靠输入触发（弹窗可搜索），输入器里只留这一个
  * 「排队 / 插话」实体控件，引导文案因此缩到一行。 */
-.run-send-toggle {
-  display: inline-flex;
-  align-items: center;
-  height: 22px;
-  padding: 0 7px;
-  border: 1px solid var(--pi-border);
-  border-radius: var(--pi-r-full, 999px);
-  background: transparent;
-  color: var(--pi-text-secondary);
-  font-size: var(--chat-fs-10);
-  cursor: pointer;
-}
-
-.run-send-toggle:hover {
-  background: var(--pi-bg-hover);
-  color: var(--pi-text);
-}
-
-.run-send-toggle.is-steer {
-  border-color: var(--pi-info);
-  color: var(--pi-info);
-}
-
 /* 空状态：一行引导 + 三个必要的键位提示。 */
 .empty-guide {
   margin-top: 4px;

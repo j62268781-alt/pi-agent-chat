@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>pi-agent-chat · design preview</title>
+    <!--
+      Stands in for the extension host: `window.__PI__` is injected before the
+      module loads, exactly the way the host substitutes it into the built HTML.
+      Query parameters override it so a screenshot run can drive the matrix
+      without clicking:
+
+        ?theme=dark_modern   one of preview/themes.generated.ts
+        ?surface=editor|sidebar
+        ?streaming=0         idle agent, so the send button is the plain one
+        ?lang=zh-cn|en
+        ?bare=1              hide the control bar
+    -->
+    <script>
+      const params = new URLSearchParams(location.search);
+      const num = (key, fallback) => {
+        const value = Number(params.get(key));
+        return Number.isFinite(value) && value > 0 ? value : fallback;
+      };
+      window.__PI__ = {
+        home: "/Users/joeson",
+        sep: "/",
+        workspace: "/Users/joeson/Documents/pi-agent-chat",
+        lang: params.get("lang") || "zh-cn",
+        mermaidTheme: "default",
+        display: JSON.stringify({
+          fontSize: num("fs", 14),
+          backgroundImage: "",
+          backgroundOpacity: 1,
+          sendShortcut: "enter",
+          runningSendBehavior: "queue",
+          collapseWork: false,
+          expandToolCalls: true,
+          expandThinking: true,
+          keepReadingAnchor: false,
+        }),
+      };
+    </script>
+    <style>
+      /* The preview harness itself, kept out of the way of the design. Pinned to
+       * the top: an embedded preview pane or a phone's browser chrome covers the
+       * bottom of the viewport, and the controls have to stay reachable. */
+      #preview-bar {
+        position: fixed;
+        right: 8px;
+        top: 8px;
+        z-index: 9999;
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        padding: 6px 8px;
+        border-radius: 6px;
+        font:
+          11px/1.4 ui-monospace,
+          Menlo,
+          monospace;
+        background: rgba(20, 20, 22, 0.88);
+        color: #e6e6e6;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+      }
+      #preview-bar[hidden] {
+        display: none;
+      }
+      #preview-bar select,
+      #preview-bar button {
+        font: inherit;
+        color: inherit;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        border-radius: 4px;
+        padding: 2px 6px;
+      }
+      #preview-bar-label {
+        opacity: 0.7;
+        margin-right: 2px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+
+    <div id="preview-bar" hidden>
+      <span id="preview-bar-label">preview</span>
+      <select id="preview-theme"></select>
+      <button id="preview-surface" type="button"></button>
+      <button id="preview-fs" type="button"></button>
+    </div>
+
+    <script type="module" src="./preview/main.ts"></script>
+  </body>
+</html>

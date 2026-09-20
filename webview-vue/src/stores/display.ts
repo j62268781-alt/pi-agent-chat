@@ -33,6 +33,10 @@ export const useDisplayStore = defineStore("display", () => {
     style.setProperty("--chat-fs", size);
     style.setProperty("--fs", size);
 
+    // A side bar is painted a shade apart from an editor tab; the host knows
+    // which one this webview is, and `tokens.css` reads the class.
+    document.body.classList.toggle("pi-surface-sidebar", settings.value.surface === "sidebar");
+
     const background = settings.value.backgroundImage;
     if (background) {
       style.setProperty("--pi-bg-image", `url("${background.replace(/"/g, '\\"')}")`);

@@ -57,6 +57,11 @@ export interface PickedResource {
 export interface ChatDisplaySettings {
   /** Transcript font size in px (`chatFontSize`). */
   fontSize: number;
+  /**
+   * Where the chat is docked (`pi-agent-chat.ui`). A side bar and an editor tab
+   * are painted a shade apart, so the webview cannot assume either one.
+   */
+  surface: "sidebar" | "editor";
   /** Resolved background image as a data URL, or `""` (`chatBackgroundImage`). */
   backgroundImage: string;
   /** Background image opacity, 0..1 (`chatBackgroundOpacity`). */

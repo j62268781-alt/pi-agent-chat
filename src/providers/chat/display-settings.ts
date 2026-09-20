@@ -10,6 +10,7 @@ import { extname, isAbsolute, sep } from "node:path";
 import * as vscode from "vscode";
 import type { ChatDisplaySettings } from "../../protocol/messages.ts";
 import { getLocale } from "../../utils/i18n.ts";
+import { resolveUiMode } from "../../utils/ui-mode.ts";
 import type { ChatWebviewOptions } from "./webview-html.ts";
 
 const BG_MIME: Record<string, string> = {
@@ -52,6 +53,7 @@ export function readChatDisplaySettings(): ChatDisplaySettings {
   const config = vscode.workspace.getConfiguration("pi-agent-chat");
   return {
     fontSize: config.get<number>("chatFontSize") ?? 14,
+    surface: resolveUiMode() === "sidebar" ? "sidebar" : "editor",
     backgroundImage: resolveChatBackground(config.get<string>("chatBackgroundImage")),
     backgroundOpacity: config.get<number>("chatBackgroundOpacity") ?? 1,
     sendShortcut: config.get<string>("chatSendShortcut") === "ctrlEnter" ? "ctrlEnter" : "enter",

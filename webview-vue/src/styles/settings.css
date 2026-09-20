@@ -1,9 +1,13 @@
 .codicon {
-  font: normal normal normal var(--fs-16)/1 codicon;
+  /* Same rule as the chat panel: one glyph size, fixed like VS Code's own
+   * chrome, and it does not follow the font size setting. */
+  font: normal normal normal var(--pi-icon-lg) / 1 codicon;
   display: inline-block;
   text-decoration: none;
   text-rendering: auto;
   text-align: center;
+  vertical-align: middle;
+  flex: none;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   user-select: none;
@@ -163,15 +167,10 @@
 }
 
 :root {
+  /* Base falls back to VS Code's own UI font size; the host overrides `--fs`
+   * from `pi-agent-chat.chatFontSize`. The five-step scale lives in
+   * `tokens.css`, shared with the chat panel. */
   --fs: var(--vscode-font-size, 13px);
-  --fs-10: calc(var(--fs) * 10 / 13);
-  --fs-11: calc(var(--fs) * 11 / 13);
-  --fs-12: calc(var(--fs) * 12 / 13);
-  --fs-13: var(--fs);
-  --fs-14: calc(var(--fs) * 14 / 13);
-  --fs-15: calc(var(--fs) * 15 / 13);
-  --fs-16: calc(var(--fs) * 16 / 13);
-  --fs-32: calc(var(--fs) * 32 / 13);
 }
 
 * {
@@ -249,7 +248,7 @@ body {
 }
 
 .nav-icon-btn .codicon {
-  font-size: var(--fs-16);
+  font-size: var(--pi-icon-lg);
   line-height: 1;
 }
 
@@ -325,7 +324,7 @@ body {
 }
 
 .nav-tab .codicon {
-  font-size: var(--fs-16);
+  font-size: var(--pi-icon-lg);
   line-height: 1;
   flex-shrink: 0;
   color: var(--pi-icon);
@@ -471,7 +470,7 @@ body {
 .btn-primary .codicon,
 .btn-secondary .codicon,
 .btn-sm .codicon {
-  font-size: var(--fs-16);
+  font-size: var(--pi-icon-lg);
   line-height: 1;
   flex-shrink: 0;
 }
@@ -570,7 +569,7 @@ body {
 }
 
 .btn-icon .codicon {
-  font-size: var(--fs-16);
+  font-size: var(--pi-icon-lg);
   line-height: 1;
 }
 
@@ -592,7 +591,7 @@ body {
 
 .page-title {
   margin: 0 0 var(--pi-sp-5);
-  font-size: var(--fs-16);
+  font-size: var(--pi-fs-title);
   font-weight: 500;
   color: var(--pi-text);
 }
@@ -627,7 +626,7 @@ body {
  * matching B1. */
 .content > .tab-section:first-child > .section-header:first-child > h3,
 .content > .tab-section:first-child > h3 {
-  font-size: var(--fs-16);
+  font-size: var(--pi-fs-title);
 }
 
 /* ── list rows (providers, agents, servers, …) ───────────────────────────── */
@@ -1276,7 +1275,7 @@ body {
 .confirm-icon {
   flex-shrink: 0;
   color: var(--pi-danger);
-  font-size: var(--fs-16);
+  font-size: var(--pi-icon-lg);
   line-height: 1;
 }
 
@@ -1297,16 +1296,16 @@ body {
   margin-bottom: var(--pi-sp-5);
   padding: 8px 10px;
   border-radius: 6px;
-  background: color-mix(in srgb, var(--pi-success, #2ba471) 14%, transparent);
-  border: 1px solid color-mix(in srgb, var(--pi-success, #2ba471) 40%, transparent);
-  color: color-mix(in srgb, var(--pi-success, #2ba471) 78%, var(--pi-text) 22%);
+  background: color-mix(in srgb, var(--pi-success) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--pi-success) 40%, transparent);
+  color: color-mix(in srgb, var(--pi-success) 78%, var(--pi-text) 22%);
   font-size: var(--chat-fs-12);
 }
 
 .eco-package.missing {
-  background: color-mix(in srgb, #d97706 14%, transparent);
-  border-color: color-mix(in srgb, #d97706 45%, transparent);
-  color: color-mix(in srgb, #d97706 72%, var(--pi-text) 28%);
+  background: color-mix(in srgb, var(--pi-warning) 14%, transparent);
+  border-color: color-mix(in srgb, var(--pi-warning) 45%, transparent);
+  color: color-mix(in srgb, var(--pi-warning) 72%, var(--pi-text) 28%);
 }
 
 .eco-dot {

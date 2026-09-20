@@ -1,358 +1,211 @@
-# pi-agent-studio 样式规格说明（UI Style Spec）
+# pi-agent-chat 样式规格说明（UI Style Spec）
 
-> 适用范围：VS Code 扩展内 Webview 运行的 Agent 对话程序。
-> 目标：与 WorkBuddy 对话交互风格保持一致，统一 Light / Dark 双主题。
+> 适用范围：VS Code 扩展内 Webview 运行的聊天面板与设置面板。
+> 目标：**与用户当前使用的 VS Code 主题融为一体**。
+>
+> 上一版以「与 WorkBuddy 对话交互风格保持一致」为目标，列了整套自维护的
+> Light / Dark 色值表（`--bg-page` / `--text-primary` / `--surface-hover` …）。
+> 那套变量从未进入代码，而硬编码的调色板让面板在任何非默认主题下都格格不入。
+> 现方案改为：**颜色全部来自 VS Code 主题**，本文件因此只规定"用哪个主题色"，
+> 不再规定"是什么颜色"——色值随主题变，写死即错。
 
 ---
 
 ## 一、设计原则
 
-1. **统一风格**：所有界面共用同一套设计 Token（颜色、字体、圆角、间距），不随页面各写一套样式。
-2. **双主题共用 Token**：Light 与 Dark 仅切换同一组变量的取值，页面结构、组件层级、状态逻辑完全不变。
-3. **规范先行**：先定义 Token，再画页面；任何新组件必须先落在已有 Token 上，禁止在组件内硬编码颜色/字号。
+1. **颜色只有一个来源：VS Code 主题。** `tokens.css` 里每个 `--pi-*` 都映射到
+   `--vscode-*`，宿主会把当前主题的全部色值注入 webview。任何组件、样式表都
+   不得出现硬编码色值。
+2. **回退链是设计的一部分。** VS Code 并非在每套主题里都定义每个色号：
+   `widget.border` 在 Dark Modern / Light Modern 下是 null，只在对比度主题里
+   存在；`charts.red` / `charts.yellow` 由调色板常量算出、可能缺席。所以每个
+   `--pi-*` 都要以"链尾一定存在"的色号收尾，而不是随便写个 hex。
+3. **字号五档语义化。** 由 `pi-agent-chat.chatFontSize` 单一基准按比例派生，
+   不再有九个数字档位和散落的硬编码 px。
+4. **图标跟随 VS Code 规格且不缩放。** codicon 16 / 14 / 12 固定；字号设置
+   管的是阅读，不是齿轮图标多大。
+5. **双主题 = 主题自己切。** 不再有 `[data-theme="dark"]` 与手写 Dark 变量块，
+   也不再有 `body.vscode-dark` 覆盖。高对比度因此免费获得。
+6. **布局与几何不随本次迁移改变。** 圆角、间距、控件高度、阴影保持原值。
 
 ---
 
-## 二、如何使用（主题切换）
+## 二、主题如何生效
 
-在 `:root` 定义 Light 变量，用 `[data-theme="dark"]` 覆盖 Dark 变量。切换主题时**只给根元素加 `data-theme` 属性**，无需改任何组件代码：
-
-```css
-:root {
-  --bg-page: #ffffff;
-  /* ...其余 Light 变量见下文 */
-}
-
-[data-theme="dark"] {
-  --bg-page: #1e1e24;
-  /* ...其余 Dark 变量见下文 */
-}
-```
-
-```js
-// 切换主题示例
-document.documentElement.setAttribute("data-theme", isDark ? "dark" : "light");
-```
+| 机制             | 说明                                                                                                                                                                                           |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 色值注入         | VS Code 把当前主题的色值作为 `--vscode-<color-id>`（`.` 换成 `-`）注入 webview，无需任何代码                                                                                                   |
+| 明暗判定         | VS Code 在 `<body>` 上加 `vscode-light` / `vscode-dark` / `vscode-high-contrast` / `vscode-high-contrast-light`。mermaid 主题选择读这个类                                                      |
+| 停靠位置         | 宿主通过 `display.surface`（`sidebar` \| `editor`）告知面板停在哪；store 据此切 `body.pi-surface-sidebar`，`tokens.css` 据此把 `--pi-bg-page` 指到 `sideBar.background` 或 `editor.background` |
+| 字体             | `--vscode-font-family` / `--vscode-font-size`（界面）、`--vscode-editor-font-family` / `--vscode-editor-font-size`（代码）由宿主注入                                                           |
+| 运行中换主题     | webview 不重载。mermaid 图监听 body class 变化后重绘；其余样式靠 CSS 变量自动生效                                                                                                              |
+| 无宿主的本地开发 | `webview-vue/preview/`（`pnpm --filter @pi-agent-chat/webview-vue dev` 后访问 `/preview.html`），可选 8 套内置主题与真实字号                                                                   |
 
 ---
 
-## 三、颜色 Token（CSS 变量块）
+## 三、颜色 Token（`webview-vue/src/tokens.css`）
 
-### Light — `:root`
+左列是本项目变量，右列是它取的 VS Code 色号（`var()` 链，只列首要项）。
 
-```css
-:root {
-  /* 底色 / 表面 */
-  --bg-page: #ffffff;
-  --surface: #ffffff;
-  --surface-hover: #f2f3f5;
-  --surface-elevated: #f7f7f9;
+### 表面
 
-  /* 描边 */
-  --border: #e5e7eb;
-  --border-strong: #d0d3d9;
+| 变量                  | 主题色号                                             | 用途                  |
+| --------------------- | ---------------------------------------------------- | --------------------- |
+| `--pi-bg-page`        | `editor.background`（侧栏态走 `sideBar.background`） | 页面底                |
+| `--pi-bg-raised`      | `editorWidget.background`                            | 悬浮卡片、弹层        |
+| `--pi-bg-surface`     | `sideBar.background`                                 | 次级面                |
+| `--pi-bg-subtle`      | `input.background`                                   | 输入框、内嵌面        |
+| `--pi-bg-hover`       | `list.hoverBackground`                               | 行悬停                |
+| `--pi-bg-selected`    | `list.activeSelectionBackground`                     | 选中行                |
+| `--pi-bg-bubble`      | `list.inactiveSelectionBackground`                   | 用户消息气泡          |
+| `--pi-bg-pill`        | `badge.background`                                   | 小标签、chip          |
+| `--pi-bg-think`       | `textBlockQuote.background`                          | 思考块底              |
+| `--pi-bg-code-inline` | `textPreformat.background`                           | 行内代码              |
+| `--pi-code-bg`        | `textCodeBlock.background`                           | 代码块 / mermaid 画布 |
+| `--pi-bg-overlay`     | 无对应色号，固定 `rgba(0,0,0,.45)`                   | 模态遮罩（主题无关）  |
 
-  /* 文字 */
-  --text-primary: #1f2329;
-  --text-secondary: #6b7280;
-  --text-meta: #9aa0a6;
-  --text-disabled: rgba(31, 35, 41, 0.25);
+### 文字与图标
 
-  /* 品牌 / 选中 */
-  --brand: #0052d9;
-  --selected-bg: #eaf2ff;
+| 变量                                      | 主题色号                                                | 用途           |
+| ----------------------------------------- | ------------------------------------------------------- | -------------- |
+| `--pi-text`                               | `foreground`                                            | 正文           |
+| `--pi-text-secondary` / `--pi-text-muted` | `descriptionForeground`（缺席时取 `foreground` 的 70%） | 次要、元信息   |
+| `--pi-text-faint`                         | `foreground` 的 55%                                     | 最弱信息       |
+| `--pi-text-disabled`                      | `disabledForeground`                                    | 禁用           |
+| `--pi-text-brand`                         | `textLink.foreground`                                   | 链接、可点文字 |
+| `--pi-icon`                               | `icon.foreground`                                       | 图标默认色     |
 
-  /* 警示 / 通过 */
-  --danger: #d14343;
-  --danger-bg: #fef2f2;
+### 状态（四态齐全，软底由主色派生）
 
-  /* 图标（双主题相同） */
-  --icon-secondary: #8a9099;
+| 语义 | 主色                       | 软底                               |
+| ---- | -------------------------- | ---------------------------------- |
+| 成功 | `charts.green`             | `color-mix(主色 14%, transparent)` |
+| 警告 | `editorWarning.foreground` | 同上                               |
+| 危险 | `errorForeground`          | 同上                               |
+| 信息 | `editorInfo.foreground`    | 同上                               |
 
-  /* 发送按钮专用 */
-  --send-bg: #111418;
-  --send-icon: #ffffff;
-  --send-bg-hover: #2b2f36;
-  --send-bg-disabled: #f2f3f5;
-  --send-icon-disabled: #c9cdd4;
+### 交互与边框
 
-  /* Plus 按钮专用 */
-  --plus-bg: #f2f3f5;
-  --plus-bg-hover: #e5e7eb;
+| 变量                          | 主题色号                                |
+| ----------------------------- | --------------------------------------- |
+| `--pi-brand` / `--pi-send-bg` | `button.background`                     |
+| `--pi-brand-hover`            | `button.hoverBackground`                |
+| `--pi-send-bg-disabled`       | `button.secondaryBackground`            |
+| `--pi-border`                 | `panel.border`（HC 下 `widget.border`） |
+| `--pi-border-input`           | `input.border`                          |
+| `--pi-border-brand`           | `focusBorder`                           |
+| `--pi-danger-pill-border`     | `inputValidation.errorBorder`           |
 
-  /* Approve 胶囊专用 */
-  --approve-border: #f2b8b5;
+### Diff
 
-  /* 条目悬停专用 */
-  --item-hover: #f5f6f7;
-}
-```
-
-### Dark — `[data-theme="dark"]`
-
-```css
-[data-theme="dark"] {
-  /* 底色 / 表面 */
-  --bg-page: #1e1e24;
-  --surface: #26262e;
-  --surface-hover: #2a2a31;
-  --surface-elevated: #26262e;
-
-  /* 描边 */
-  --border: #2c2c34;
-  --border-strong: #34343c;
-
-  /* 文字 */
-  --text-primary: #e7eaf0;
-  --text-secondary: #9aa0a6;
-  --text-meta: #6b727f;
-  --text-disabled: rgba(231, 234, 240, 0.25);
-
-  /* 品牌 / 选中 */
-  --brand: #5b8ff9;
-  --selected-bg: #16243a;
-
-  /* 警示 / 通过 */
-  --danger: #f0796f;
-  --danger-bg: #3a1e1e;
-
-  /* 图标（双主题相同） */
-  --icon-secondary: #8a9099;
-
-  /* 发送按钮专用 */
-  --send-bg: #e6e7ea;
-  --send-icon: #1e1e24;
-  --send-bg-hover: #ffffff;
-  --send-bg-disabled: #2a2a31;
-  --send-icon-disabled: #6b7280;
-
-  /* Plus 按钮专用 */
-  --plus-bg: #2a2a31;
-  --plus-bg-hover: #34343c;
-
-  /* Approve 胶囊专用 */
-  --approve-border: #6b2e2e;
-
-  /* 条目悬停专用 */
-  --item-hover: #26262e;
-}
-```
+| 变量                                                  | 主题色号                                                      |
+| ----------------------------------------------------- | ------------------------------------------------------------- |
+| `--pi-code-added-bg` / `--pi-code-removed-bg`         | `diffEditor.insertedTextBackground` / `removedTextBackground` |
+| `--pi-code-added-gutter` / `--pi-code-removed-gutter` | `editorGutter.addedBackground` / `deletedBackground`          |
 
 ---
 
-## 四、字体 Token
+## 四、字体与字号
 
 ```css
-:root {
-  --font-ui: "Sarasa Gothic SC", system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, monospace;
-
-  /* 字号 */
-  --text-xs: 12px;
-  --text-sm: 13px;
-  --text-md: 14px;
-  --text-lg: 18px;
-
-  /* 字重 */
-  --weight-regular: 400;
-  --weight-medium: 500;
-  --weight-semibold: 600;
-
-  /* 行高 */
-  --line-height-title: 1.4;
-  --line-height-body: 1.5;
-  --line-height-input: 24px;
-}
+/* tokens.css —— 全部由 --chat-fs 按比例派生 */
+--pi-fs-micro: calc(var(--chat-fs) * 10 / 14); /* 10px @ 14 */
+--pi-fs-meta: calc(var(--chat-fs) * 12 / 14); /* 12px @ 14 */
+--pi-fs-body: var(--chat-fs); /* 14px @ 14 */
+--pi-fs-title: calc(var(--chat-fs) * 16 / 14); /* 16px @ 14 */
+--pi-fs-display: calc(var(--chat-fs) * 18 / 14); /* 18px @ 14 */
+--pi-fs-code: var(--vscode-editor-font-size, var(--pi-fs-meta));
 ```
 
-| 变量                  | 取值                                      | 用途                      |
-| --------------------- | ----------------------------------------- | ------------------------- |
-| `--font-ui`           | "Sarasa Gothic SC", system-ui, sans-serif | 界面主字体                |
-| `--font-mono`         | "JetBrains Mono", ui-monospace, monospace | 代码 / 等宽文本           |
-| `--text-xs`           | 12px                                      | 副行、分组标签、来源 chip |
-| `--text-sm`           | 13px                                      | 较小正文                  |
-| `--text-md`           | 14px                                      | 默认正文、标题            |
-| `--text-lg`           | 18px                                      | 大标题                    |
-| `--weight-regular`    | 400                                       | Regular                   |
-| `--weight-medium`     | 500                                       | Medium                    |
-| `--weight-semibold`   | 600                                       | SemiBold                  |
-| `--line-height-title` | 1.4                                       | 标题行高                  |
-| `--line-height-body`  | 1.5                                       | 正文行高                  |
-| `--line-height-input` | 24px                                      | 输入框行高                |
+| 档位      | 默认       | 用在哪                               |
+| --------- | ---------- | ------------------------------------ |
+| `micro`   | 10px       | 徽标、计数、gutter 元信息            |
+| `meta`    | 12px       | 工具行、时间戳、次要说明             |
+| `body`    | 14px       | 正文、按钮、输入                     |
+| `title`   | 16px       | 轮次头、对话框标题、工具栏标题       |
+| `display` | 18px       | 空态标题、markdown h1                |
+| `code`    | 编辑器字号 | 代码块与行内代码（字族取编辑器字族） |
+
+规则：
+
+1. **新代码只准用语义档。** 不许写 `font-size: 13px` / `0.92em` 之类的字面值。
+   检查手段：`node webview-vue/preview/derive-style-layer.mjs` 扫一遍，应报 0 处。
+2. **数字别名是过渡物**：`--chat-fs-8…16`、`--fs-10…16` 仍然存在并吸附到五个
+   语义档，供尚未改名的老规则使用。改到哪算哪，别新增。
+3. 界面字族取 `--vscode-font-family`，代码字族取 `--vscode-editor-font-family`——
+   用户在 VS Code 里改字体，面板跟着变。
+4. 行高按用途分开：正文 1.5，元信息 1.4，标题 1.3。
 
 ---
 
-## 五、圆角 Token
+## 五、图标
 
-```css
-:root {
-  --radius-sm: 6px; /* 图标按钮 */
-  --radius-md: 8px; /* 胶囊 / 输入 / 色卡 */
-  --radius-lg: 12px; /* 浮层 / 卡片 */
-  --radius-xl: 16px; /* 输入区 / 外框 */
-  --radius-round: 18px; /* 发送按钮圆形（或 50%） */
-}
-```
-
-| 变量             | 取值        | 用途               |
-| ---------------- | ----------- | ------------------ |
-| `--radius-sm`    | 6px         | 图标按钮           |
-| `--radius-md`    | 8px         | 胶囊 / 输入 / 色卡 |
-| `--radius-lg`    | 12px        | 浮层 / 卡片        |
-| `--radius-xl`    | 16px        | 输入区 / 外框      |
-| `--radius-round` | 18px 或 50% | 发送按钮圆形       |
+| 项   | 规格                                                                                         |
+| ---- | -------------------------------------------------------------------------------------------- |
+| 字体 | `@vscode/codicons`（subset，`main.ts` 注册 `@font-face`）                                    |
+| 尺寸 | `--pi-icon-lg: 16px`、`--pi-icon-md: 14px`、`--pi-icon-sm: 12px`，**固定**，不随字号设置缩放 |
+| 基线 | `.codicon` 统一 `line-height: 1`、`vertical-align: middle`、`flex: none`                     |
+| 颜色 | `--pi-icon` / `--pi-icon-muted` / `--pi-icon-brand` / `--pi-icon-disabled`                   |
+| 例外 | 品牌图形与上下文占用环是 SVG 图形，不是图标，不参与替换                                      |
 
 ---
 
-## 六、间距 Token（以 4 为基线）
+## 六、圆角 / 间距 / 控件高度 / 阴影
 
-```css
-:root {
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-6: 24px;
-  --space-8: 32px;
-}
-```
+沿用原设计，未改动（`tokens.css`）：
 
-| 变量        | 取值 | 用途          |
-| ----------- | ---- | ------------- |
-| `--space-1` | 4px  | 最小间距      |
-| `--space-2` | 8px  | 组内小间距    |
-| `--space-3` | 12px | 中等间距      |
-| `--space-4` | 16px | 常规间距      |
-| `--space-6` | 24px | 大间距 / 段落 |
-| `--space-8` | 32px | 外边距 / 区块 |
+- 圆角：`--pi-r-xs 4` / `sm 6` / `md 8` / `lg 12` / `xl 16` / `full 999`
+- 间距（4 基线）：4 / 6 / 8 / 10 / 12 / 14 / 16 / 20 / 24 / 32
+- 控件高度：工具栏 48、控件 32 / 36 / 28、行 40
+- 阴影：`--pi-shadow-popup` / `-menu` / `-modal`
 
 ---
 
-## 七、组件状态表
+## 七、组件状态：用 token 组合，不列色值
 
-> 列含义：状态 | 背景 | 描边 | 文字 | 图标
-> 「—」表示不适用；颜色取值按前面 Token 映射（Light / Dark 以 `/` 分隔）。
+色值随主题变，因此状态表只规定 token 组合。下表是唯一契约。
 
-### 1) 顶部面板 Top Bar
+| 组件                     | 默认                                                                                      | 悬停                    | 选中 / 激活                                                | 禁用                                                   |
+| ------------------------ | ----------------------------------------------------------------------------------------- | ----------------------- | ---------------------------------------------------------- | ------------------------------------------------------ |
+| 图标按钮                 | `--pi-icon` + 透明底                                                                      | 底 `--pi-bg-hover`      | 字 `--pi-text-brand`                                       | `--pi-icon-disabled`                                   |
+| 发送按钮                 | 30×30、圆角 `--pi-r-md`（与上传按钮同规格），纯图标，底 `--pi-send-bg`、字 `--pi-send-fg` | 底 `--pi-send-bg-hover` | 同悬停                                                     | 底 `--pi-send-bg-disabled`、字 `--pi-send-fg-disabled` |
+| 行 / 列表项              | 透明                                                                                      | 底 `--pi-bg-hover`      | 底 `--pi-bg-selected`，字 `--pi-bg-selected-foreground`    | 字 `--pi-text-disabled`                                |
+| 输入框                   | 底 `--pi-bg-subtle`，描边 `--pi-border-input`                                             | —                       | **无焦点配色变化**：获得焦点时边框仍是 `--pi-border-input` | 字 `--pi-text-disabled`                                |
+| 危险操作                 | 字 / 描边 `--pi-danger`，软底 `--pi-danger-soft`                                          | 同左                    | 同左                                                       | `--pi-text-disabled`                                   |
+| 状态点（成功/进行/失败） | `--pi-success` / `--pi-info` / `--pi-danger`                                              | —                       | —                                                          | `--pi-text-muted`                                      |
 
-布局：高 52px，左右 padding 24 / 16，标题左、操作右，`SPACE_BETWEEN` 两端对齐。
-会话标题：14px SemiBold，色 `--text-primary`，左对齐。
+硬性规则：**饱和实心底上的前景一律用 `--pi-text-on-solid`**（即 `button.foreground`），
+不许叠加半透明主文字色。
 
-**图标按钮（History / More）** — hit 28×28，图标 20px，圆角 `--radius-sm`
+### 发送按钮的三个面
 
-| 状态 | 背景                                 | 描边 | 文字 | 图标                                |
-| ---- | ------------------------------------ | ---- | ---- | ----------------------------------- |
-| 默认 | 透明                                 | 无   | —    | #8A9099（--icon-secondary）         |
-| 悬停 | #F2F3F5 / #2A2A31（--surface-hover） | 无   | —    | #1F2329 / #E7EAF0（--text-primary） |
-| 选中 | #EAF2FF / #16243A（--selected-bg）   | 无   | —    | #0052D9 / #5B8FF9（--brand）        |
-| 禁用 | 透明                                 | 无   | —    | rgba(text,0.25)（--text-disabled）  |
+同一个按钮承担「发送 / 停止 / 带文案的发送」，切换条件是**输入框是否为空**，而不是会话是否在跑：
 
-### 2) 输入区 Composer
+| 条件                 | 外观                                                                                        | 点击                                                                               |
+| -------------------- | ------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| 空闲（没有会话在跑） | 图标 `codicon-arrow-up`；无内容时禁用                                                       | 发送                                                                               |
+| 会话中 · 输入为空    | 图标 `codicon-debug-stop`，底 `--pi-bg-subtle`、字 `--pi-danger`，**不做动效**              | 停止当前轮次                                                                       |
+| 会话中 · 有输入      | 图标 `codicon-arrow-up`，底 `--pi-send-bg`；投递方式写在悬停提示里（`插话：…` / `排队：…`） | 发送：插话=立即作为引导发出；排队=进入输入框上方的本地队列（可删除 / 编辑 / 引导） |
 
-容器：bg `--surface`，border `--border`，radius `--radius-xl` 16，padding 14 / 16，轻微投影。
-输入框占位：15px，行高 `--line-height-input` 24，色 `--text-meta`。
-分割线：1px `--border`，宽 fill。
-控制条：横向 `SPACE_BETWEEN`，左组 = Plus + Model/Think/Approve 胶囊，右组 = 发送按钮，gap `--space-2` 8。
-
-**Plus 按钮（30×30，圆角 --radius-md）**
-
-| 状态 | 背景                                 | 描边 | 文字 | 图标                                |
-| ---- | ------------------------------------ | ---- | ---- | ----------------------------------- |
-| 默认 | #F2F3F5 / #2A2A31（--plus-bg）       | 无   | —    | #1F2329 / #E7EAF0（--text-primary） |
-| 悬停 | #E5E7EB / #34343C（--plus-bg-hover） | 无   | —    | #1F2329 / #E7EAF0（--text-primary） |
-| 禁用 | 透明                                 | 无   | —    | rgba(text,0.25)（--text-disabled）  |
-
-**胶囊 Pill（Model / Think，radius 8，padding 6 / 10 / 12）**
-
-| 状态 | 背景                                    | 描边                                 | 文字                                | 图标                                  |
-| ---- | --------------------------------------- | ------------------------------------ | ----------------------------------- | ------------------------------------- |
-| 默认 | #F7F7F9 / #26262E（--surface-elevated） | #E5E7EB / #34343C（--border）        | #1F2329 / #E7EAF0（--text-primary） | #6B7280 / #9AA0A6（--text-secondary） |
-| 悬停 | #F7F7F9 / #26262E（--surface-elevated） | #D0D3D9 / #34343C（--border-strong） | #1F2329 / #E7EAF0（--text-primary） | #6B7280 / #9AA0A6（--text-secondary） |
-| 选中 | #EAF2FF / #16243A（--selected-bg）      | #0052D9 / #5B8FF9（--brand）         | #1F2329 / #E7EAF0（--text-primary） | #6B7280 / #9AA0A6（--text-secondary） |
-| 禁用 | #F7F7F9 / #26262E（--surface-elevated） | #E5E7EB / #34343C（--border）        | rgba(text,0.25)（--text-disabled）  | rgba(text,0.25)（--text-disabled）    |
-
-**Approve 胶囊**
-
-| 状态 | 背景                               | 描边                                  | 文字                               | 图标                               |
-| ---- | ---------------------------------- | ------------------------------------- | ---------------------------------- | ---------------------------------- |
-| 默认 | #FEF2F2 / #3A1E1E（--danger-bg）   | #F2B8B5 / #6B2E2E（--approve-border） | #D14343 / #F0796F（--danger）      | #D14343 / #F0796F（--danger）      |
-| 悬停 | #FEF2F2 / #3A1E1E（--danger-bg）   | #D0D3D9 / #34343C（--border-strong）  | #D14343 / #F0796F（--danger）      | #D14343 / #F0796F（--danger）      |
-| 选中 | #EAF2FF / #16243A（--selected-bg） | #0052D9 / #5B8FF9（--brand）          | #D14343 / #F0796F（--danger）      | #D14343 / #F0796F（--danger）      |
-| 禁用 | #FEF2F2 / #3A1E1E（--danger-bg）   | #F2B8B5 / #6B2E2E（--approve-border） | rgba(text,0.25)（--text-disabled） | rgba(text,0.25)（--text-disabled） |
-
-**发送按钮（36×36 圆形，radius 18）**
-
-| 状态 | 背景                                    | 描边                         | 文字 | 图标                                      |
-| ---- | --------------------------------------- | ---------------------------- | ---- | ----------------------------------------- |
-| 默认 | #111418 / #E6E7EA（--send-bg）          | 无                           | —    | #FFFFFF / #1E1E24（--send-icon）          |
-| 悬停 | #2B2F36 / #FFFFFF（--send-bg-hover）    | 无                           | —    | #FFFFFF / #1E1E24（--send-icon）          |
-| 按下 | #2B2F36 / #FFFFFF（--send-bg-hover）    | 无（transform: scale(0.96)） | —    | #FFFFFF / #1E1E24（--send-icon）          |
-| 禁用 | #F2F3F5 / #2A2A31（--send-bg-disabled） | 无                           | —    | #C9CDD4 / #6B7280（--send-icon-disabled） |
-
-### 3) 设置侧边栏（主从布局，左侧列表 360）
-
-分组标签：12px SemiBold，色 `--text-meta`，字距 0.5，左 padding 12，上 24 / 下 8，例 "AGENTS"。
-条目：行高 44，radius 8，gap 12，左 padding 12。
-
-- 图标：32×32 圆角 8 实底色头像，或 18 图标。
-- 名称：14px Medium，--text-primary。
-- 副行：12px，--text-meta，内容 "source · model"。
-- 来源 chip：小胶囊，11px，"User"/"Project"，bg `--surface-hover`，色 `--text-secondary`，radius 6，padding 2 / 8。
-- 分组层级：Group（标签）→ Item（图标+名称+副行）→ 可选 Sub-item（缩进 12、16 图标）；组间 1px `--border` 分割线。
-
-**条目 Item**
-
-| 状态 | 背景                                                        | 描边 | 文字                                                                            | 图标                                  |
-| ---- | ----------------------------------------------------------- | ---- | ------------------------------------------------------------------------------- | ------------------------------------- |
-| 默认 | 透明                                                        | 无   | 名称 #1F2329 / #E7EAF0（--text-primary）；副行 #9AA0A6 / #6B727F（--text-meta） | 头像实底色 / 18 图标 --text-secondary |
-| 悬停 | #F5F6F7 / #26262E（--item-hover）                           | 无   | 同默认                                                                          | 同默认                                |
-| 选中 | #EAF2FF / #16243A（--selected-bg），左侧 2px --brand 强调条 | 无   | 名称 #1F2329 / #E7EAF0（--text-primary）Medium                                  | 同默认                                |
-
-### 4) 模型选择浮层 Model Picker
-
-遮罩 scrim：黑色 0.45（Light）/ 0.6（Dark）覆盖所在区域。
-浮层 modal：宽 460，bg `--surface`，border `--border`，radius 12，投影，padding 20，gap 16，居中。
-头部：标题 16 SemiBold（左）+ 关闭（28×28，radius 6，悬停 bg `--surface-hover`，图标 #6B7280 / --text-secondary）。
-搜索框：满宽，高 36，radius 8，bg `--surface-hover`，border `--border`，占位 `--text-meta`。
-分组标签：12px SemiBold `--text-meta`，gap 4。
-
-**选项 Option（36 高，radius 8，padding 12）**
-
-| 状态 | 背景                                 | 描边 | 文字                                | 图标                              |
-| ---- | ------------------------------------ | ---- | ----------------------------------- | --------------------------------- |
-| 默认 | 透明                                 | 无   | #1F2329 / #E7EAF0（--text-primary） | —                                 |
-| 悬停 | #F2F3F5 / #2A2A31（--surface-hover） | 无   | #1F2329 / #E7EAF0（--text-primary） | —                                 |
-| 选中 | #EAF2FF / #16243A（--selected-bg）   | 无   | #0052D9 / #5B8FF9（--brand）        | 勾选 #0052D9 / #5B8FF9（--brand） |
-
-**关闭按钮（28×28，radius 6）**
-
-| 状态 | 背景                                 | 描边 | 文字 | 图标                                  |
-| ---- | ------------------------------------ | ---- | ---- | ------------------------------------- |
-| 默认 | 透明                                 | 无   | —    | #6B7280 / #9AA0A6（--text-secondary） |
-| 悬停 | #F2F3F5 / #2A2A31（--surface-hover） | 无   | —    | #6B7280 / #9AA0A6（--text-secondary） |
+按钮上不再有独立的投递方式切换控件，按钮本身也保持纯图标（三种状态同一尺寸，控制行不会抖）：
+投递方式只在悬停提示里说明。默认值在设置 `pi-agent-chat.chatRunningSendBehavior` 里改，
+Alt+Enter 始终强制入队。
 
 ---
 
 ## 八、一致性清单
 
-### 共用 Token 的位置
+**新增或修改样式时：**
 
-- **底色**：页面用 `--bg-page`，卡片/输入/浮层用 `--surface`，悬停统一 `--surface-hover`，胶囊默认底用 `--surface-elevated`。
-- **描边**：默认 `--border`，悬停/强调用 `--border-strong`（Approve 用 `--approve-border`）。
-- **文字三档**：`--text-primary` / `--text-secondary` / `--text-meta`，禁用统一 `--text-disabled`，不另行取值。
-- **品牌与选中**：所有选中态底统一 `--selected-bg`，强调色统一 `--brand`，左侧强调条、勾选、选中描边复用同一值。
-- **警示**：Approve 与 danger 前景统一 `--danger`，底统一 `--danger-bg`。
-- **次级图标**：`--icon-secondary: #8A9099` 双主题不变。
-- **圆角/间距**：所有组件圆角取自 `--radius-*`、间距取自 `--space-*`，禁止散写数值。
-- **字体**：字号取自 `--text-*`、字重取自 `--weight-*`、行高取自 `--line-height-*`。
+1. 颜色 → 只用 `--pi-*`；确实需要新色号时，先在 `tokens.css` 里加 `--vscode-*`
+   映射（带回退链），不要在组件里写 `--vscode-*` 或 hex。
+2. 字号 → 只用五档语义变量；跑一遍 `derive-style-layer.mjs` 确认没有字面值。
+3. 图标 → 用 codicon，尺寸取 `--pi-icon-*`；需要新字形时在 `chat.css` /
+   `settings.css` 的码点表里补一行。
+4. 主题相关行为（如随主题重绘）→ 读 `<body>` 的 `vscode-*` 类，不要自己判断明暗。
+5. 改完用 `webview-vue/preview/` 至少在 Dark Modern、Light Modern、Dark High
+   Contrast 三套主题下看一眼。
 
-### 双主题如何只切 Token 不切结构
-
-1. Light 与 Dark **同名同义**变量一一对应，组件 CSS 只引用变量名，不写具体颜色。
-2. 切换主题仅 `document.documentElement.dataset.theme = 'dark'`，组件 className、结构、状态逻辑零改动。
-3. 双主题共用的非颜色项（`--icon-secondary`、`--font-*`、`--radius-*`、`--space-*`、`--text-* 字号`、`--weight-*`、`--line-height-*`）在 `:root` 定义一次即可，Dark 无需重复覆盖。
-4. 仅颜色类变量在 `[data-theme="dark"]` 中覆盖；新增组件时若需新颜色，先补 Token 再使用，保持「规范先行」。
-
----
-
-> 结尾：本文件为可落地规格，复制「颜色 Token / 字体 Token / 圆角 Token / 间距 Token」四段变量块即为代码样式基础，组件状态表直接驱动各组件 class 的状态样式。
+**验收图：** `docs/design/preview/` 下的 14 张由预览按真实主题渲出，随代码更新；
+`docs/design/01-*.png`、`_verify-*.png` 是上一版配色时期的截图，**已过期**，
+需要重新截取材于真实 VS Code 窗口时再生成。
