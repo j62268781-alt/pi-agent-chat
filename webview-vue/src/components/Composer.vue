@@ -26,12 +26,14 @@ import {
 } from "@/lib/input-tokens.ts";
 import { getModelIcon, modelIconHtml } from "@/lib/model-icons.ts";
 import { shortenWorkspacePath } from "@/lib/paths.ts";
+import { computeCacheHitPct, aggregateUsage } from "@/lib/usage.ts";
 import { useComposerStore, type PendingImage } from "@/stores/composer.ts";
 import type { ContextChip } from "@protocol/messages";
 import { useOverlaysStore } from "@/stores/overlays.ts";
 import { usePendingStore } from "@/stores/pending.ts";
 import { useSessionStore } from "@/stores/session.ts";
 import { useDisplayStore } from "@/stores/display.ts";
+import { useTranscriptStore } from "@/stores/transcript.ts";
 import Autocomplete from "./composer/Autocomplete.vue";
 import ModelPicker from "./composer/ModelPicker.vue";
 import PermissionPicker from "./composer/PermissionPicker.vue";
@@ -55,6 +57,7 @@ const session = useSessionStore();
 const display = useDisplayStore();
 const overlays = useOverlaysStore();
 const pending = usePendingStore();
+const transcript = useTranscriptStore();
 
 const inputEl = ref<HTMLElement | null>(null);
 const modelWrapEl = ref<HTMLElement | null>(null);
@@ -731,6 +734,10 @@ const ctxLines = computed(() => {
     lines.push(t("Usage:") + "   " + contextPercent.value.toFixed(1) + "%");
     lines.push(t("Context:") + " " + formatTokens(tokens) + " / " + formatTokens(total));
   }
+  // Session-wide share of the prompt that came from the prompt cache, not the
+  // last turn's: it is there as soon as a restored transcript renders.
+  const cacheHitPct = computeCacheHitPct(aggregateUsage(transcript.messages));
+  if (cacheHitPct != null) lines.push(t("Cache:") + "   " + cacheHitPct.toFixed(1) + "%");
   if (session.sessionCost != null)
     lines.push(t("Cost:") + "    $" + session.sessionCost.toFixed(3));
   return lines;
