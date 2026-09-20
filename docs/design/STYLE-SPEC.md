@@ -206,6 +206,12 @@ Alt+Enter 始终强制入队。
 5. 改完用 `webview-vue/preview/` 至少在 Dark Modern、Light Modern、Dark High
    Contrast 三套主题下看一眼。
 
-**验收图：** `docs/design/preview/` 下的 14 张由预览按真实主题渲出，随代码更新；
-`docs/design/01-*.png`、`_verify-*.png` 是上一版配色时期的截图，**已过期**，
-需要重新截取材于真实 VS Code 窗口时再生成。
+**验收不留截图**：`docs/design/preview/` 那批渲图已删除。仓库里没有生成它们的脚本，图就会随配色一改悄悄过期，比没有更误导 —— 需要看效果时直接跑预览：
+
+```
+pnpm --filter @pi-agent-chat/webview-vue dev
+# 浏览器打开 http://localhost:5173/preview.html?theme=dark_modern&lang=zh-cn
+# `?surface=editor|sidebar` `?streaming=0` `?fs=20` `?bare=1` 可驱动整套矩阵
+```
+
+`docs/design/01-*.png`、`_verify-*.png` 是上一版配色时期的截图，同样已过期。
