@@ -1131,7 +1131,12 @@ body {
   padding: 2px 0;
   font-size: var(--chat-fs);
 }
-.text-block > :last-child {
+/* The markdown renderer wraps every block in `.md-body`, so the reset has to
+ * reach the *content*, not `.text-block`'s own child: with `> :last-child` on
+ * `.text-block` the last paragraph kept its 8px and every block ended with a
+ * double gap (it also read as the answer's last paragraph having a big bottom
+ * margin, since a long answer is several blocks — see TurnBlock's finalBlocks). */
+.md-body > :last-child {
   margin-bottom: 0;
 }
 .text-block p {
