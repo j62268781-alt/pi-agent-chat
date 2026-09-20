@@ -12,7 +12,6 @@ import type { RpcEvent } from "@protocol/rpc";
 import { countDiffChanges } from "@/lib/diff";
 import { extractImages, extractText, isToolResultMessage } from "@/lib/message-parse";
 import { parseQuestionnaireResult, type QuestionnaireResult } from "@/lib/questionnaire";
-import { createCacheTracker, type CacheMiss } from "@/lib/usage";
 import { useSessionStore } from "./session";
 
 let uid = 0;
@@ -174,7 +173,6 @@ export const useTranscriptStore = defineStore("transcript", () => {
   const historyLoaded = ref(false);
   const historyLoading = ref(false);
   const retryAttempt = ref(0);
-  const cacheMiss = ref<CacheMiss | null>(null);
   const statusText = ref("");
 
   /** Index into `messages` of the assistant message currently streaming. */
@@ -185,7 +183,6 @@ export const useTranscriptStore = defineStore("transcript", () => {
    * subsequent mutations reactive, so the index is the safe thing to cache.
    */
   const toolLocations = new Map<string, { messageIndex: number; blockIndex: number }>();
-  const cache = createCacheTracker();
 
   const activeAssistant = computed<AssistantMessage | null>(() => {
     const index = activeAssistantIndex.value;
@@ -307,10 +304,8 @@ export const useTranscriptStore = defineStore("transcript", () => {
     historyLoaded.value = false;
     historyLoading.value = false;
     retryAttempt.value = 0;
-    cacheMiss.value = null;
     activeAssistantIndex.value = -1;
     toolLocations.clear();
-    cache.reset();
   }
 
   // ---------------------------------------------------------------- hydration
@@ -334,8 +329,6 @@ export const useTranscriptStore = defineStore("transcript", () => {
     }
     for (const entry of list) appendHydrated(entry);
     session.recomputeTotals(list);
-    // Seed the miss detector so a restored session does not report a false miss.
-    cache.reset();
   }
 
   function appendHistory(list: unknown[]): void {
@@ -396,8 +389,6 @@ export const useTranscriptStore = defineStore("transcript", () => {
         }
       }
       messages.value.push(assistant);
-      if (assistant.usage)
-        cache.record(assistant.usage, assistant.model, assistant.timestamp ?? undefined);
       return;
     }
 
@@ -689,11 +680,6 @@ export const useTranscriptStore = defineStore("transcript", () => {
           assistant.errorMessage =
             typeof message.errorMessage === "string" ? message.errorMessage : null;
           markTextFinalized(assistant);
-          if (assistant.usage) {
-            if (cache.record(assistant.usage, assistant.model, assistant.timestamp ?? undefined)) {
-              cacheMiss.value = cache.lastMiss;
-            }
-          }
         }
         activeAssistantIndex.value = -1;
         session.recomputeTotals(messages.value);
@@ -760,10 +746,6 @@ export const useTranscriptStore = defineStore("transcript", () => {
     }
   }
 
-  function dismissCacheMiss(): void {
-    cacheMiss.value = null;
-  }
-
   return {
     messages,
     restore,
@@ -773,7 +755,6 @@ export const useTranscriptStore = defineStore("transcript", () => {
     historyLoaded,
     historyLoading,
     retryAttempt,
-    cacheMiss,
     statusText,
     activeAssistant,
     isEmpty,
@@ -797,7 +778,6 @@ export const useTranscriptStore = defineStore("transcript", () => {
     endToolExecution,
     applyToolResult,
     applyEvent,
-    dismissCacheMiss,
   };
 });
 

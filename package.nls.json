@@ -16,7 +16,6 @@
   "pi.view.sessions": "Sessions",
   "pi.view.chat": "Pi",
   "pi.view.settings": "Settings",
-  "pi.icon.piLogo.desc": "Pi logo icon",
   "pi.badge.stars.desc": "Star pi-agent-chat on Github",
   "pi.config.title": "Pi",
   "pi.config.language.desc": "Interface language for Pi panels and sidebars. \"auto\" follows the VS Code display language (falling back to English); choosing explicitly overrides it (applies to webviews and runtime messages; command titles still follow the VS Code display language). Changing this reloads open panels.",

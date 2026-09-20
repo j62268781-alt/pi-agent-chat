@@ -16,7 +16,6 @@
   "pi.view.sessions": "会话",
   "pi.view.chat": "Pi",
   "pi.view.settings": "设置",
-  "pi.icon.piLogo.desc": "Pi 徽标图标",
   "pi.badge.stars.desc": "在 Github 上为 pi-agent-chat 加星标",
   "pi.config.title": "Pi",
   "pi.config.language.desc": "Pi 面板与侧边栏的界面语言。\"auto\" 跟随 VS Code 显示语言（未匹配则回退英文）；显式选择可覆盖（作用于 webview 与运行时消息；命令标题仍跟随 VS Code 显示语言）。修改后已打开的面板将重新加载。",

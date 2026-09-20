@@ -42,8 +42,6 @@
     "dev": "rolldown -c rolldown.config.ts -w",
     "dev:webview": "pnpm --filter @pi-agent-chat/webview-vue dev",
     "package": "pnpm run build && pnpx @vscode/vsce package --no-dependencies",
-    "install-local": "pnpm run package && node scripts/install-local.mjs",
-    "release": "node scripts/release.mjs",
     "fmt": "oxlint . --fix && oxfmt .",
     "lint": "oxlint . && oxfmt --check .",
     "typecheck": "tsgo --noEmit --skipLibCheck && node scripts/typecheck-pi-extensions.mjs && pnpm --filter @pi-agent-chat/webview-vue typecheck",
@@ -70,15 +68,6 @@
   },
   "l10n": "./l10n",
   "contributes": {
-    "icons": {
-      "pi-logo": {
-        "description": "%pi.icon.piLogo.desc%",
-        "default": {
-          "fontPath": "resources/fonts/pi-icons.woff2",
-          "fontCharacter": "\\F101"
-        }
-      }
-    },
     "commands": [
       {
         "command": "pi-agent-chat.open",
