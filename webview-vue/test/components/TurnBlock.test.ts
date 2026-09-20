@@ -44,6 +44,34 @@ const assistant = (block: Block): AssistantMessage => ({
   errorMessage: null,
 });
 
+const toolEntry = (id: string): Turn["workBlocks"][number] => {
+  const block: Block = {
+    kind: "tool",
+    id,
+    name: "read",
+    argsText: "",
+    args: { path: "src/app.ts" },
+    status: "done",
+    startedAt: T0,
+    durationMs: 120,
+    output: "file body",
+    diffText: "",
+    writeContent: "",
+    added: 0,
+    removed: 0,
+    filePath: "src/app.ts",
+    fileLine: null,
+    subagent: null,
+    questionnaire: null,
+  };
+  return { message: assistant(block), block };
+};
+
+const thinkingEntry = (): Turn["workBlocks"][number] => ({
+  message: assistant(THINKING),
+  block: THINKING,
+});
+
 /** A tool-using turn: work behind the fold, the answer in the clear. */
 const turn = (over: Partial<Turn> = {}): Turn => ({
   id: "turn-1",
@@ -111,5 +139,30 @@ describe("TurnBlock — is this turn still running?", () => {
     expect(wrapper.find(".work-block").exists()).toBe(false);
     // The blocks themselves are still on screen, just not folded.
     expect(wrapper.text()).toContain("推理");
+  });
+});
+
+// Work rows are one flat list: 已思考, then each tool call, every one of them a direct
+// child of `.work-body`. A run of consecutive calls used to get its own counter row
+// ("执行工具 N 次") — first as a fold, then as a label — but with the calls laid out
+// flat the count says nothing the rows do not (彬哥).
+describe("TurnBlock — the work rows", () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+  });
+
+  it("lays a run of tool calls out flat beside 已思考, with no counter row", () => {
+    const wrapper = mountTurn({
+      workBlocks: [thinkingEntry(), toolEntry("tool-1"), toolEntry("tool-2")],
+    });
+    const body = wrapper.get(".work-body");
+
+    // 3 rows, all siblings: 已思考 and the two calls. A counter row would be a 4th
+    // child (and not a `.msg`).
+    expect(body.element.children).toHaveLength(3);
+    for (const child of body.element.children) {
+      expect(child.classList.contains("msg")).toBe(true);
+    }
+    expect(wrapper.findAll(".tool-block")).toHaveLength(2);
   });
 });

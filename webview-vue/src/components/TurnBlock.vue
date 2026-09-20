@@ -76,41 +76,6 @@ const workTitle = computed(() => {
   return t("Running for {0}", formatDuration(Math.max(0, now.value - start)));
 });
 
-/** One block of the fold, or a run of consecutive tool calls. */
-interface Segment {
-  id: string;
-  tools?: Array<{
-    block: Turn["workBlocks"][number]["block"];
-    message: Turn["workBlocks"][number]["message"];
-  }>;
-  entry?: Turn["workBlocks"][number];
-}
-
-/**
- * Consecutive tool calls read as a single step, so they collapse into one
- * segment ("执行工具 N 次"); anything else (thinking, prose) stays its own row.
- * With `chatShowToolCallCount` off the run renders flat — the group header exists
- * only to carry the count.
- */
-const segments = computed<Segment[]>(() => {
-  const out: Segment[] = [];
-  for (const entry of props.turn.workBlocks) {
-    const last = out[out.length - 1];
-    if (entry.block.kind === "tool") {
-      if (last?.tools) last.tools.push(entry);
-      else out.push({ id: entry.block.id, tools: [entry] });
-    } else {
-      out.push({ id: entry.block.id, entry });
-    }
-  }
-  return out;
-});
-
-/** A run only earns a header when it groups more than one call. */
-function isGrouped(segment: Segment): boolean {
-  return display.showToolCallCount && (segment.tools?.length ?? 0) > 1;
-}
-
 /** Wall-clock duration of the turn: the user's message to the last block. */
 const turnDuration = computed(() => {
   const end = props.turn.messageTime;
@@ -220,29 +185,12 @@ async function forkTurn(): Promise<void> {
         </span>
       </summary>
       <div class="work-body">
-        <template v-for="segment in segments" :key="segment.id">
-          <!-- The run's own header is a label, not a second thing to click: it opens with
-             the fold, the way the board's screenshot shows it. -->
-          <details v-if="isGrouped(segment)" class="tool-group" open>
-            <summary class="tool-group-head">
-              <span class="tool-count-badge">{{ segment.tools?.length ?? 0 }}</span>
-              <span>{{ t("Ran {0} tools", segment.tools?.length ?? 0) }}</span>
-            </summary>
-            <div class="tool-group-body">
-              <div v-for="entry in segment.tools" :key="entry.block.id" class="msg assistant">
-                <BlockView :block="entry.block" />
-              </div>
-            </div>
-          </details>
-          <template v-else-if="segment.tools">
-            <div v-for="entry in segment.tools" :key="entry.block.id" class="msg assistant">
-              <BlockView :block="entry.block" />
-            </div>
-          </template>
-          <div v-else-if="segment.entry" class="msg assistant">
-            <BlockView :block="segment.entry.block" />
-          </div>
-        </template>
+        <!-- 每一步都是一行，同缩进、同级 —— 连续的工具调用也一样：不再有组、不再有
+             第二层折叠，也不再有「执行工具 N 次」那行计数（彬哥：都平铺了，几次一眼
+             就看得出来）。 -->
+        <div v-for="entry in turn.workBlocks" :key="entry.block.id" class="msg assistant">
+          <BlockView :block="entry.block" />
+        </div>
       </div>
     </details>
 

@@ -20,7 +20,6 @@ export const useDisplayStore = defineStore("display", () => {
 
   const runningSendBehavior = computed(() => settings.value.runningSendBehavior);
   const collapseWork = computed(() => settings.value.collapseWork);
-  const showToolCallCount = computed(() => settings.value.showToolCallCount);
   const expandToolCalls = computed(() => settings.value.expandToolCalls);
   const expandThinking = computed(() => settings.value.expandThinking);
   const keepReadingAnchor = computed(() => settings.value.keepReadingAnchor);
@@ -58,7 +57,6 @@ export const useDisplayStore = defineStore("display", () => {
     settings,
     runningSendBehavior,
     collapseWork,
-    showToolCallCount,
     expandToolCalls,
     expandThinking,
     keepReadingAnchor,

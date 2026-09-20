@@ -64,6 +64,14 @@
 .codicon-chevron-right::before {
   content: "\eab6";
 }
+/* 待发送行上的两个字形：↳（indent，表示这条还排在队里）和「插话」的回车箭头
+ * （reply）。字形本身是 codicon 的，只是这份子集里还没有声明。 */
+.codicon-indent::before {
+  content: "\ebf9";
+}
+.codicon-reply::before {
+  content: "\ea7d";
+}
 .codicon-shield::before {
   content: "\eb53";
 }
@@ -2370,86 +2378,122 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 .composer-dock {
   flex-shrink: 0;
   position: relative;
+  /* The composer's own inset is shared with the queue below, which lines its
+     bottom edge up with the input box's top border. */
+  --pi-composer-pad: 8px;
 }
+
+/* 待发送条：贴着输入框顶边的窄卡（彬哥的参考图），比 input 窄一圈、顶点圆角，
+   底边正好压在输入框的上边框上 —— 中间没有缝，读起来是一张卡片搭在 input 上。
+   它仍是叠加层（外面那层 absolute），队列再长也不会把消息区顶上去。 */
 .queue {
   position: absolute;
-  bottom: 100%;
-  left: 0;
-  right: 0;
+  bottom: calc(100% - var(--pi-composer-pad));
+  left: calc(var(--pi-composer-pad) + 12px);
+  right: calc(var(--pi-composer-pad) + 12px);
   z-index: 5;
-  padding: 6px 8px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
   /* An overlay has no ceiling of its own: a long queue would cover the whole
      transcript, so it scrolls instead. */
   max-height: 45vh;
   overflow-y: auto;
+  /* Same surface as `.composer-box`, so the two read as one piece. */
   background: color-mix(
     in srgb,
-    var(--pi-bg-page) calc(100% - 40% * var(--pi-bg-on, 0)),
+    var(--pi-bg-raised) calc(100% - 35% * var(--pi-bg-on, 0)),
     transparent
   );
-  backdrop-filter: var(--pi-bg-blur, none);
-  border-top: 1px solid var(--pi-border);
+  border: 1px solid var(--pi-border-input);
+  border-bottom: none;
+  border-radius: var(--pi-r-lg) var(--pi-r-lg) 0 0;
 }
+
+/* 一行一条排队消息：↳ + 正文 + 操作。行高压到 32px —— 参考图里这一条只有 35px
+   （含边框），而原先带标题、徽标、时间的面板有它两倍高。 */
 .queue-item {
   display: flex;
-  gap: 6px;
-  align-items: flex-start;
-  border: 1px solid var(--pi-border);
-  border-left: 3px solid var(--pi-info);
-  border-radius: 4px;
-  background: var(--pi-bg-subtle);
-  padding: 4px 8px;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  padding: 4px 12px;
   font-size: var(--chat-fs-12);
 }
-.queue-item.is-followup {
-  border-left-color: var(--pi-brand);
+
+.queue-item + .queue-item {
+  border-top: 1px solid var(--pi-border-divider);
 }
-.queue-badge {
-  flex-shrink: 0;
-  font-size: var(--chat-fs-10);
-  font-weight: 600;
-  padding: 1px 6px;
-  border-radius: 3px;
-  background: var(--pi-info);
-  color: var(--pi-text-on-solid);
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-}
-.queue-item.is-followup .queue-badge {
-  background: var(--pi-brand);
-}
+
 .queue-text {
   flex: 1 1 auto;
   min-width: 0;
-  white-space: pre-wrap;
-  word-break: break-word;
-  opacity: 0.9;
-  max-height: 60px;
   overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
-.queue-clear {
-  align-self: flex-end;
+
+/* ↳ 字形（codicon 里叫 indent）：这条消息还排在队伍里，没有发出去。 */
+.queue-lead {
+  flex-shrink: 0;
+  font-size: 14px;
+  color: var(--pi-text-muted);
+}
+
+/* 带图的那条在正文后面缀一个 +N，别让图片静悄悄地消失。 */
+.queue-images {
+  flex-shrink: 0;
+  padding: 1px 5px;
+  border-radius: var(--pi-r-xs);
+  background: var(--pi-bg-subtle);
+  color: var(--pi-text-muted);
+  font-size: var(--chat-fs-10);
+  font-variant-numeric: tabular-nums;
+}
+
+.queue-actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+}
+
+/* 参考图里三个动作同一种灰（#838280），插话是多一个字的文字按钮。 */
+.queue-action {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  width: 22px;
+  gap: 4px;
   height: 22px;
-  padding: 0;
+  padding: 0 6px;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--pi-r-sm);
   background: transparent;
-  color: var(--pi-text-secondary);
+  color: var(--pi-text-muted);
+  font-size: var(--chat-fs-12);
   cursor: pointer;
 }
-.queue-clear:hover {
+
+.queue-action:hover {
   background: var(--pi-bg-hover);
   color: var(--pi-text);
 }
-.queue-clear .codicon {
+
+.queue-action .codicon {
   font-size: 14px;
+}
+
+/* Rows pi queued itself: no handle, so no actions — just a type chip. */
+.queue-badge {
+  flex-shrink: 0;
+  padding: 1px 6px;
+  border-radius: var(--pi-r-xs);
+  background: var(--pi-bg-subtle);
+  color: var(--pi-text-secondary);
+  font-size: var(--chat-fs-10);
+}
+
+.queue-item.is-host .queue-text {
+  color: var(--pi-text-secondary);
 }
 
 .rewind-widget {
@@ -3335,7 +3379,6 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 
 /* ── F · widgets: queue, rewind ────────────────────────────────────── */
 
-.queue,
 .widget-card,
 .rewind-widget {
   padding: var(--pi-sp-6);
@@ -3345,32 +3388,15 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 
 /* .widget-card keeps its own translucent background — it carries the
  * chat-background-image color-mix, same as .toolbar and .composer-box. */
-.queue,
 .rewind-widget {
   background: var(--pi-bg-raised);
 }
 
-.queue-item,
 .rewind-row {
   padding: var(--pi-sp-2) var(--pi-sp-3);
   border-radius: var(--pi-r-sm);
 }
 
-.queue-badge {
-  padding: 3px var(--pi-sp-3);
-  border-radius: var(--pi-r-xs);
-  background: var(--pi-bg-subtle);
-  color: var(--pi-text-secondary);
-  font-family: var(--pi-mono);
-  font-size: var(--fs-10);
-}
-
-.queue-item.is-followup .queue-badge {
-  background: var(--pi-bg-subtle);
-}
-
-.queue-clear,
-.queue-clear:hover,
 /* Streaming and loading are already carried by `.text-block.is-streaming` and
  * the boot splash further up; the boards' F/W8 caret has no class in the
  * markup, so nothing is declared for it here. */
@@ -3502,6 +3528,10 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   font-size: var(--chat-fs-13);
   /* 与工具标题同权重：一行里标题总是最显眼的那一段（彬哥）。 */
   font-weight: 500;
+  /* 颜色也得跟「终端命令」「工具调用」一致：这些行是同一层级的步骤，只有
+   * 「已思考」是灰的，会被读成另一种东西（彬哥）。summary 上的次级灰由标题
+   * 自己覆盖掉，预览和图标各有各的颜色。 */
+  color: var(--pi-text);
   /* A three-character label like 已思考 must not break across lines to make room
    * for the preview; the preview is the part that can give. */
   flex-shrink: 0;
@@ -4404,82 +4434,6 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 }
 
 /* ---------------------------------------------------------------------------
-   Pending queue rows.
-
-   The composer's own queue used to be rendered by the host as bare strings;
-   it now has per-row actions, so these additions carry the header, the leading
-   icon, the trailing actions and the host-queue fallback rows. Rows stay
-   single-line and compact on purpose.
---------------------------------------------------------------------------- */
-.queue-head {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 0 2px;
-}
-
-.queue-title {
-  font-size: var(--chat-fs-10);
-  font-weight: 600;
-  letter-spacing: 0.3px;
-  text-transform: uppercase;
-  color: var(--pi-text-muted);
-}
-
-.queue-head .queue-clear {
-  margin-left: auto;
-}
-
-.queue-item.is-pending {
-  align-items: center;
-}
-
-.queue-lead {
-  flex-shrink: 0;
-  font-size: var(--chat-fs-12);
-  color: var(--pi-info);
-}
-
-.queue-item.is-pending .queue-text {
-  flex: 1 1 auto;
-  min-width: 0;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-.queue-time {
-  flex-shrink: 0;
-  font-size: var(--chat-fs-10);
-  font-variant-numeric: tabular-nums;
-  color: var(--pi-text-muted);
-}
-
-.queue-actions {
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  gap: 2px;
-  margin-left: auto;
-}
-
-.queue-action {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  font-size: var(--chat-fs-10);
-}
-
-.queue-action-label {
-  font-size: var(--chat-fs-10);
-}
-
-/* Rows pi queued itself: no handle, so no actions. */
-.queue-item.is-host {
-  opacity: 0.85;
-}
-
-/* ---------------------------------------------------------------------------
    Compact pass — transcript rhythm and session list (彬哥: 会话列表和气泡的间距
    都太松了).
 
@@ -5069,21 +5023,6 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   overflow-y: auto;
 }
 
-/* 队列卡片类型标签：与 .queue-badge 同尺寸但不上色，避免和图片角标抢注意力。 */
-.queue-type {
-  flex-shrink: 0;
-  padding: 1px 6px;
-  border: 1px solid var(--pi-border);
-  border-radius: 3px;
-  font-size: var(--chat-fs-10);
-  color: var(--pi-text-secondary);
-}
-
-.queue-type.is-steer {
-  border-color: var(--pi-info);
-  color: var(--pi-info);
-}
-
 /* ── 运行中发送方式切换 ──────────────────────────────────────────────────────
  * 空状态不再逐条教键盘；/ 与 @ 靠输入触发（弹窗可搜索），输入器里只留这一个
  * 「排队 / 插话」实体控件，引导文案因此缩到一行。 */
@@ -5234,62 +5173,6 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   margin-left: 7px;
   padding-left: 12px;
   border-left: 1px solid var(--pi-border);
-}
-
-/* 连续工具调用分段（「执行工具 N 次」），嵌套在「已处理」里的第二层折叠。 */
-.tool-group {
-  display: flex;
-  flex-direction: column;
-}
-
-.tool-group > .tool-group-head {
-  cursor: pointer;
-  list-style: none;
-  user-select: none;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 3px 6px;
-  font-size: var(--chat-fs-11);
-  color: var(--pi-text-muted);
-}
-
-.tool-group > .tool-group-head::-webkit-details-marker {
-  display: none;
-}
-
-/* 折叠箭头沿用 work-head 那两个已验证的字形（eab6 收起 / eab4 展开）。 */
-.tool-group > .tool-group-head:before {
-  content: "\eab6";
-  font-family: codicon;
-  font-size: 12px;
-  opacity: 0.7;
-}
-
-.tool-group[open] > .tool-group-head:before {
-  content: "\eab4";
-}
-
-/* 计数徽标：把「几次」提到行首，正文只留一句说明。 */
-.tool-count-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 16px;
-  height: 16px;
-  padding: 0 4px;
-  border-radius: var(--pi-r-sm);
-  background: var(--pi-bg-subtle);
-  color: var(--pi-text-muted);
-  font-size: var(--chat-fs-10);
-  font-variant-numeric: tabular-nums;
-}
-
-.tool-group-body {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  margin-left: 6px;
 }
 
 /* 底部实时状态行（「深度思考中 / 正在回复中」）：3×3 点阵图标 + 弱化文案，

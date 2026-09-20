@@ -417,11 +417,6 @@
           "default": true,
           "description": "%pi.config.chatCollapseWork.desc%"
         },
-        "pi-agent-chat.chatShowToolCallCount": {
-          "type": "boolean",
-          "default": true,
-          "description": "%pi.config.chatShowToolCallCount.desc%"
-        },
         "pi-agent-chat.chatExpandToolCalls": {
           "type": "boolean",
           "default": false,

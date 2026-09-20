@@ -67,8 +67,6 @@ export interface ChatDisplaySettings {
   runningSendBehavior: "queue" | "steer";
   /** Fold the reasoning/tool work of a finished turn (`chatCollapseWork`). */
   collapseWork: boolean;
-  /** Prefix the folded work header with its tool-call count (`chatShowToolCallCount`). */
-  showToolCallCount: boolean;
   /** Tool cards start expanded (`chatExpandToolCalls`). */
   expandToolCalls: boolean;
   /** Thinking blocks start expanded (`chatExpandThinking`). */
@@ -93,7 +91,6 @@ export type WebviewToExt =
       streamingBehavior?: StreamingBehavior;
     }
   | { type: "abort" }
-  | { type: "clearQueue" }
   | { type: "copy"; text: string }
   | { type: "openFile"; filePath: string; line: number | null }
   | { type: "setModel"; provider: string; modelId: string }

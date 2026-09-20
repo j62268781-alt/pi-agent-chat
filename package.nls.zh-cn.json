@@ -49,7 +49,6 @@
   "pi.config.chatRunningSendBehavior.queue": "先扣住这条消息，等 Agent 结束后再发。排队中的消息可以在发出前逐条引导或删除。",
   "pi.config.chatRunningSendBehavior.steer": "立刻把消息发出去以引导 Agent。消息不留在本地，发出后无法编辑或撤回。",
   "pi.config.chatCollapseWork.desc": "一轮结束后，把思考、工具调用与中间叙述折叠进一个可展开的区域。最终回答始终直接展开，不折叠。",
-  "pi.config.chatShowToolCallCount.desc": "在折叠的处理过程前显示这一段里的工具调用数量，例如「执行工具 12 次」。",
   "pi.config.chatExpandToolCalls.desc": "工具调用卡片默认展开，直接显示输入与响应详情。关闭时卡片默认折叠，只显示摘要行。",
   "pi.config.chatExpandThinking.desc": "模型思考结束后，思考块保持展开。关闭时，回答一开始就把思考折叠起来。",
   "pi.config.chatKeepReadingAnchor.desc": "把新一轮定位到视口顶部，内容填满后才贴底追随。关闭时，发送后直接定位到底部。",

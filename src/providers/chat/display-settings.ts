@@ -58,7 +58,6 @@ export function readChatDisplaySettings(): ChatDisplaySettings {
     runningSendBehavior:
       config.get<string>("chatRunningSendBehavior") === "steer" ? "steer" : "queue",
     collapseWork: config.get<boolean>("chatCollapseWork") ?? true,
-    showToolCallCount: config.get<boolean>("chatShowToolCallCount") ?? true,
     expandToolCalls: config.get<boolean>("chatExpandToolCalls") ?? false,
     expandThinking: config.get<boolean>("chatExpandThinking") ?? false,
     keepReadingAnchor: config.get<boolean>("chatKeepReadingAnchor") ?? false,
@@ -93,7 +92,6 @@ const LIVE_KEYS = [
   "chatSendShortcut",
   "chatRunningSendBehavior",
   "chatCollapseWork",
-  "chatShowToolCallCount",
   "chatExpandToolCalls",
   "chatExpandThinking",
   "chatKeepReadingAnchor",

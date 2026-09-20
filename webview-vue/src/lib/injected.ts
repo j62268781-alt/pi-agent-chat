@@ -50,7 +50,6 @@ export function displaySettings(): ChatDisplaySettings {
     sendShortcut: "enter",
     runningSendBehavior: "queue",
     collapseWork: true,
-    showToolCallCount: true,
     expandToolCalls: false,
     expandThinking: false,
     keepReadingAnchor: false,

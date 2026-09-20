@@ -49,7 +49,6 @@
   "pi.config.chatRunningSendBehavior.queue": "Hold the message and send it when the agent finishes. Queued messages can be steered or deleted individually before they are sent.",
   "pi.config.chatRunningSendBehavior.steer": "Send the message immediately to redirect the agent. Nothing is held back, so it cannot be edited or removed afterwards.",
   "pi.config.chatCollapseWork.desc": "Fold the thinking, tool calls and interim narration of a finished turn into a collapsible section. The final answer always stays expanded.",
-  "pi.config.chatShowToolCallCount.desc": "Show how many tool calls a folded section contains, e.g. \"Ran 12 tools\".",
   "pi.config.chatExpandToolCalls.desc": "Open tool call cards expanded, showing their input and result right away. When off, cards start collapsed and show only their summary line.",
   "pi.config.chatExpandThinking.desc": "Open thinking blocks expanded once the model stops reasoning. When off, thinking collapses as soon as the answer starts.",
   "pi.config.chatKeepReadingAnchor.desc": "Pin each new turn to the top of the viewport and follow the bottom only once it fills up. When off, sending always jumps straight to the bottom.",

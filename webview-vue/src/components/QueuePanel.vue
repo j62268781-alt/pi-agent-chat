@@ -1,20 +1,22 @@
 <!--
-  Pending-message panel (`#queue` in the legacy markup), sitting between the
-  transcript and the composer.
+  Pending-message strip, resting on the composer's top edge.
 
   Two sources, deliberately:
-  - the composer's own pending queue: every row has an id, so it can be steered
-    or deleted individually;
+  - the composer's own pending queue: every row has an id, so it can be steered,
+    edited or deleted individually;
   - pi's own steering/follow-up queue: read-only, because pi reports it as bare
     strings with no handle. In practice it stays empty now that "queue" messages
     are held locally, so it only ever shows up if a pi extension enqueues
     something itself.
+
+  The strip is exactly its rows — the panel title, the type badge and the
+  timestamp the first version carried were all saying what the row already
+  shows (彬哥: 对齐参考图，靠在 input 上、更小).
 -->
 <script setup lang="ts">
 import { computed } from "vue";
-import { post } from "@/lib/bridge.ts";
-import { formatTime } from "@/lib/format.ts";
 import { t } from "@/lib/i18n.ts";
+import { useComposerStore } from "@/stores/composer.ts";
 import { usePendingStore } from "@/stores/pending.ts";
 import { useTranscriptStore } from "@/stores/transcript.ts";
 
@@ -27,63 +29,43 @@ const hasAny = computed(
   () => !pending.isEmpty || hostSteering.value.length > 0 || hostFollowUp.value.length > 0,
 );
 
-function clearPending(): void {
-  pending.clear();
-}
-
-function clearHostQueue(): void {
-  post({ type: "clearQueue" });
+/**
+ * Pull a queued message back into the composer to change it. A draft that is
+ * already there is kept — the queued text is appended, never swapped in over
+ * what the user is typing.
+ */
+function edit(id: string): void {
+  const item = pending.take(id);
+  if (!item) return;
+  const composer = useComposerStore();
+  if (composer.draft.trim() === "") composer.setDraft(item.text);
+  else composer.insert(item.text);
+  if (item.images.length > 0) composer.addImages(item.images);
 }
 </script>
 
 <template>
   <div v-if="hasAny" id="queue" class="queue">
-    <div class="queue-head">
-      <span class="queue-title">{{ t("Pending") }}</span>
-      <button
-        v-if="!pending.isEmpty"
-        type="button"
-        class="queue-clear"
-        :aria-label="t('Clear queued messages')"
-        :title="t('Clear queued messages')"
-        @click="clearPending"
-      >
-        <span class="codicon codicon-clear-all"></span>
-      </button>
-      <button
-        v-else
-        type="button"
-        class="queue-clear"
-        :aria-label="t('Clear queued messages')"
-        :title="t('Clear queued messages')"
-        @click="clearHostQueue"
-      >
-        <span class="codicon codicon-clear-all"></span>
-      </button>
-    </div>
-
     <div v-for="item in pending.items" :key="item.id" class="queue-item is-pending">
-      <span class="codicon codicon-chevron-right queue-lead"></span>
-      <div class="queue-text" :title="item.text">{{ item.text }}</div>
-      <span v-if="item.images.length > 0" class="queue-badge">+{{ item.images.length }}</span>
-      <!-- 类型标签: what this entry is, before its buttons say what can be done. -->
-      <span class="queue-type" :class="item.mode === 'steer' ? 'is-steer' : 'is-queue'">
-        {{ item.mode === "steer" ? t("Steer") : t("Queued") }}
-      </span>
-      <span class="queue-time">{{ formatTime(item.createdAt) }}</span>
+      <span class="codicon codicon-indent queue-lead" aria-hidden="true"></span>
+      <span class="queue-text" :title="item.text">{{ item.text }}</span>
+      <span v-if="item.images.length > 0" class="queue-images">+{{ item.images.length }}</span>
       <div class="queue-actions">
         <button
           type="button"
-          class="icon-btn queue-action"
+          class="queue-action"
           :title="t('Send this now as a steering message')"
           @click="pending.steerNow(item.id)"
         >
-          <span class="codicon codicon-send"></span>
-          <span class="queue-action-label">{{ t("Steer") }}</span>
+          <span class="codicon codicon-reply"></span>
+          <span>{{ t("Steer") }}</span>
+        </button>
+        <button type="button" class="queue-action" :title="t('Edit')" @click="edit(item.id)">
+          <span class="codicon codicon-edit"></span>
         </button>
         <button
           type="button"
-          class="icon-btn queue-action"
+          class="queue-action"
           :title="t('Delete')"
           @click="pending.remove(item.id)"
         >
@@ -98,7 +80,7 @@ function clearHostQueue(): void {
       class="queue-item is-host"
     >
       <span class="queue-badge">{{ t("Queued") }}</span>
-      <div class="queue-text" :title="text">{{ text }}</div>
+      <span class="queue-text" :title="text">{{ text }}</span>
     </div>
 
     <div
@@ -107,7 +89,7 @@ function clearHostQueue(): void {
       class="queue-item is-host is-followup"
     >
       <span class="queue-badge">{{ t("Follow-up") }}</span>
-      <div class="queue-text" :title="text">{{ text }}</div>
+      <span class="queue-text" :title="text">{{ text }}</span>
     </div>
   </div>
 </template>
