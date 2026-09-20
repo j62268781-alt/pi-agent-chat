@@ -116,9 +116,15 @@ describe("transcript surface contract", () => {
       const painted = all
         .map((rule, position) => ({ rule, position }))
         .filter(
-          (entry) => entry.position > index && entry.rule.selectors.includes(selector) && /background/.test(entry.rule.body),
+          (entry) =>
+            entry.position > index &&
+            entry.rule.selectors.includes(selector) &&
+            /background/.test(entry.rule.body),
         );
-      expect(painted.map((entry) => entry.rule.selectors.join(",")), selector).toEqual([]);
+      expect(
+        painted.map((entry) => entry.rule.selectors.join(",")),
+        selector,
+      ).toEqual([]);
     }
   });
 

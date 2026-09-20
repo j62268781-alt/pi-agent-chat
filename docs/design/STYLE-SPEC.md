@@ -49,22 +49,22 @@
 
 ### 表面
 
-| 变量                  | 主题色号                                             | 用途                  |
-| --------------------- | ---------------------------------------------------- | --------------------- |
-| `--pi-bg-page`        | `editor.background`（侧栏态走 `sideBar.background`） | 页面底                |
-| `--pi-bg-raised`      | `editorWidget.background`                            | 悬浮卡片、弹层        |
-| `--pi-bg-surface`     | `sideBar.background`                                 | 次级面                |
-| `--pi-bg-subtle`      | `input.background`                                   | 输入框、内嵌面        |
-| `--pi-bg-hover`       | `list.hoverBackground`                               | 行悬停                |
-| `--pi-bg-selected`    | `list.activeSelectionBackground`                     | 选中行                |
-| `--pi-bg-bubble`      | `list.inactiveSelectionBackground`                   | 用户消息气泡          |
-| `--pi-bg-card`        | = `--pi-bg-bubble`                                   | 会话流唯一的「面」：气泡、引用、围栏代码、思考卡、参数卡、终端卡、问答卡 |
-| `--pi-bg-control`       | `foreground` 12% 混进 `sideBar.background`           | 控制条 chip（`+`、选择器、待命的发送钮） |
-| `--pi-bg-control-hover` | 同上取 20%                                     | 上述 chip 悬停                  |
-| `--pi-bg-think`       | `textBlockQuote.background`                          | 思考块底              |
-| `--pi-bg-code-inline` | `textPreformat.background`                           | 行内代码              |
-| `--pi-code-bg`        | `textCodeBlock.background`                           | 代码块 / mermaid 画布 |
-| `--pi-bg-overlay`     | 无对应色号，固定 `rgba(0,0,0,.45)`                   | 模态遮罩（主题无关）  |
+| 变量                    | 主题色号                                             | 用途                                                                     |
+| ----------------------- | ---------------------------------------------------- | ------------------------------------------------------------------------ |
+| `--pi-bg-page`          | `editor.background`（侧栏态走 `sideBar.background`） | 页面底                                                                   |
+| `--pi-bg-raised`        | `editorWidget.background`                            | 悬浮卡片、弹层                                                           |
+| `--pi-bg-surface`       | `sideBar.background`                                 | 次级面                                                                   |
+| `--pi-bg-subtle`        | `input.background`                                   | 输入框、内嵌面                                                           |
+| `--pi-bg-hover`         | `list.hoverBackground`                               | 行悬停                                                                   |
+| `--pi-bg-selected`      | `list.activeSelectionBackground`                     | 选中行                                                                   |
+| `--pi-bg-bubble`        | `list.inactiveSelectionBackground`                   | 用户消息气泡                                                             |
+| `--pi-bg-card`          | = `--pi-bg-bubble`                                   | 会话流唯一的「面」：气泡、引用、围栏代码、思考卡、参数卡、终端卡、问答卡 |
+| `--pi-bg-control`       | `foreground` 12% 混进 `sideBar.background`           | 控制条 chip（`+`、选择器、待命的发送钮）                                 |
+| `--pi-bg-control-hover` | 同上取 20%                                           | 上述 chip 悬停                                                           |
+| `--pi-bg-think`         | `textBlockQuote.background`                          | 思考块底                                                                 |
+| `--pi-bg-code-inline`   | `textPreformat.background`                           | 行内代码                                                                 |
+| `--pi-code-bg`          | `textCodeBlock.background`                           | 代码块 / mermaid 画布                                                    |
+| `--pi-bg-overlay`       | 无对应色号，固定 `rgba(0,0,0,.45)`                   | 模态遮罩（主题无关）                                                     |
 
 ### 文字与图标
 
@@ -168,15 +168,15 @@
 
 色值随主题变，因此状态表只规定 token 组合。下表是唯一契约。
 
-| 组件                     | 默认                                                                                      | 悬停                    | 选中 / 激活                                                | 禁用                                                   |
-| ------------------------ | ----------------------------------------------------------------------------------------- | ----------------------- | ---------------------------------------------------------- | ------------------------------------------------------ |
-| 图标按钮                 | `--pi-icon` + 透明底                                                                      | 底 `--pi-bg-hover`      | 字 `--pi-text-brand`                                       | `--pi-icon-disabled`                                   |
-| 发送按钮                 | 30×30、圆角 `--pi-r-md`、1px `--pi-border`（与上传按钮同规格），纯图标，底 `--pi-send-bg`、字 `--pi-send-fg` | 底 `--pi-send-bg-hover` | 停止态：底 `--pi-bg-control`、字 `--pi-danger`              | 底 `--pi-bg-control`、字 `--pi-text-disabled`，**不降透明度** |
-| 控制条 chip（`+` / 选择器） | 30×30（pill 同高）、圆角 `--pi-r-md`、1px `--pi-border`，底 `--pi-bg-control` | 底 `--pi-bg-control-hover` | 权限为 FullAccess 时整枚走危险软底 | 字 `--pi-text-disabled`，`opacity: .4` |
-| 行 / 列表项              | 透明                                                                                      | 底 `--pi-bg-hover`      | 底 `--pi-bg-selected`，字 `--pi-bg-selected-foreground`    | 字 `--pi-text-disabled`                                |
-| 输入框                   | 底 `--pi-bg-subtle`，描边 `--pi-border-input`                                             | —                       | **无焦点配色变化**：获得焦点时边框仍是 `--pi-border-input` | 字 `--pi-text-disabled`                                |
-| 危险操作                 | 字 / 描边 `--pi-danger`，软底 `--pi-danger-soft`                                          | 同左                    | 同左                                                       | `--pi-text-disabled`                                   |
-| 状态点（成功/进行/失败） | `--pi-success` / `--pi-info` / `--pi-danger`                                              | —                       | —                                                          | `--pi-text-muted`                                      |
+| 组件                        | 默认                                                                                                         | 悬停                       | 选中 / 激活                                                | 禁用                                                          |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------ | -------------------------- | ---------------------------------------------------------- | ------------------------------------------------------------- |
+| 图标按钮                    | `--pi-icon` + 透明底                                                                                         | 底 `--pi-bg-hover`         | 字 `--pi-text-brand`                                       | `--pi-icon-disabled`                                          |
+| 发送按钮                    | 30×30、圆角 `--pi-r-md`、1px `--pi-border`（与上传按钮同规格），纯图标，底 `--pi-send-bg`、字 `--pi-send-fg` | 底 `--pi-send-bg-hover`    | 停止态：底 `--pi-bg-control`、字 `--pi-danger`             | 底 `--pi-bg-control`、字 `--pi-text-disabled`，**不降透明度** |
+| 控制条 chip（`+` / 选择器） | 30×30（pill 同高）、圆角 `--pi-r-md`、1px `--pi-border`，底 `--pi-bg-control`                                | 底 `--pi-bg-control-hover` | 权限为 FullAccess 时整枚走危险软底                         | 字 `--pi-text-disabled`，`opacity: .4`                        |
+| 行 / 列表项                 | 透明                                                                                                         | 底 `--pi-bg-hover`         | 底 `--pi-bg-selected`，字 `--pi-bg-selected-foreground`    | 字 `--pi-text-disabled`                                       |
+| 输入框                      | 底 `--pi-bg-subtle`，描边 `--pi-border-input`                                                                | —                          | **无焦点配色变化**：获得焦点时边框仍是 `--pi-border-input` | 字 `--pi-text-disabled`                                       |
+| 危险操作                    | 字 / 描边 `--pi-danger`，软底 `--pi-danger-soft`                                                             | 同左                       | 同左                                                       | `--pi-text-disabled`                                          |
+| 状态点（成功/进行/失败）    | `--pi-success` / `--pi-info` / `--pi-danger`                                                                 | —                          | —                                                          | `--pi-text-muted`                                             |
 
 硬性规则：**饱和实心底上的前景一律用 `--pi-text-on-solid`**（即 `button.foreground`），
 不许叠加半透明主文字色。
