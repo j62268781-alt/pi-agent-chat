@@ -2,8 +2,10 @@
   Chat webview page: layout plus the host link.
 
   The transcript scrolls, the composer is pinned at the bottom, and the rewind /
-  widget / queue cards sit between them — the same vertical order the legacy
-  `index.html` used, so `chat.css` applies unchanged.
+  widget cards sit between them — the same vertical order the legacy
+  `index.html` used, so `chat.css` applies unchanged. The queue is the one
+  exception: it floats above the input inside the composer's dock, so a queued
+  message never pushes the transcript up.
 -->
 <script setup lang="ts">
 import { onMounted, onUnmounted } from "vue";
@@ -59,8 +61,11 @@ onUnmounted(() => {
     <ChatToolbar />
     <TranscriptView />
     <RewindWidget />
-    <QueuePanel />
-    <Composer />
+    <!-- Positioning context for the floating queue — see `.composer-dock`. -->
+    <div class="composer-dock">
+      <QueuePanel />
+      <Composer />
+    </div>
   </div>
 
   <Overlays />

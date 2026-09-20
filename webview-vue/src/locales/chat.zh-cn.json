@@ -215,5 +215,10 @@
   "Next image": "下一张",
   "Type something.": "自己写…",
   "Your answer…": "你的回答…",
-  "The previous session is still generating — stop it or wait before starting a new one.": "上一个会话仍在生成中——请先停止或等待完成，再开始新会话。"
+  "The previous session is still generating — stop it or wait before starting a new one.": "上一个会话仍在生成中——请先停止或等待完成，再开始新会话。",
+  "Yes": "允许",
+  "Yes, for this session": "本会话内允许",
+  "No": "拒绝",
+  "No, provide reason": "拒绝并说明理由",
+  "Yes, allow {0} for this session": "本会话内允许 {0}"
 }

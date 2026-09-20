@@ -6,6 +6,7 @@
 import { computed, nextTick, ref, watch } from "vue";
 import QuestionnaireDialog from "@/components/QuestionnaireDialog.vue";
 import { post } from "@/lib/bridge.ts";
+import { dialogOptionLabel } from "@/lib/dialog-options.ts";
 import { renderMarkdown } from "@/lib/markdown.ts";
 import { t } from "@/lib/i18n.ts";
 import {
@@ -79,6 +80,9 @@ const dialogOptions = computed<string[]>(() =>
 const isChoiceDialog = computed(
   () => overlays.dialog?.method === "select" && dialogOptions.value.length > 0,
 );
+
+/** Display text only — the option itself is what goes back to pi. */
+const optionLabels = computed(() => dialogOptions.value.map(dialogOptionLabel));
 const isDangerous = computed(() => /danger/i.test(dialogTitle.value));
 
 /** Focus the first action button when a choice dialog opens. */
@@ -171,8 +175,8 @@ function closeInfoPanel(): void {
           v-model="dialogValue"
           class="dialog-select"
         >
-          <option v-for="option in dialogOptions" :key="option" :value="option">
-            {{ option }}
+          <option v-for="(option, index) in dialogOptions" :key="option" :value="option">
+            {{ optionLabels[index] }}
           </option>
         </select>
 
@@ -199,7 +203,7 @@ function closeInfoPanel(): void {
               type="button"
               @click="respondDialog({ value: option, confirmed: true })"
             >
-              {{ option }}
+              {{ optionLabels[index] }}
             </button>
           </template>
           <template v-else>

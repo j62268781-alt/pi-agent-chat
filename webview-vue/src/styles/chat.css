@@ -2364,12 +2364,34 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   );
   backdrop-filter: var(--pi-bg-blur, none);
 }
-.queue {
+/* The dock exists so the queue can sit on the input's top edge instead of in
+   the column: as a flow item it took a row of its own, and every queued
+   message shoved the transcript up. */
+.composer-dock {
   flex-shrink: 0;
-  padding: 6px 8px 0;
+  position: relative;
+}
+.queue {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  z-index: 5;
+  padding: 6px 8px;
   display: flex;
   flex-direction: column;
   gap: 4px;
+  /* An overlay has no ceiling of its own: a long queue would cover the whole
+     transcript, so it scrolls instead. */
+  max-height: 45vh;
+  overflow-y: auto;
+  background: color-mix(
+    in srgb,
+    var(--pi-bg-page) calc(100% - 40% * var(--pi-bg-on, 0)),
+    transparent
+  );
+  backdrop-filter: var(--pi-bg-blur, none);
+  border-top: 1px solid var(--pi-border);
 }
 .queue-item {
   display: flex;
@@ -4716,13 +4738,17 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   margin-top: 1px;
 }
 
+/* One row per option: side by side, four labels of unequal length wrap into a
+   ragged block, and in the 300px sidebar the session-grant label alone takes
+   three lines. */
 .dialog-actions.choice-group {
   display: flex;
+  flex-direction: column;
   gap: 8px;
 }
 
 .dialog-actions.choice-group .choice-btn {
-  flex: 1;
+  width: 100%;
   justify-content: center;
   padding: 8px 12px;
   font-size: var(--chat-fs-13);
