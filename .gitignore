@@ -5,6 +5,7 @@ dist
 *.vsix
 package-lock.json
 .DS_Store
+test/
 
 # webview-vue build output
 webview-vue/dist
