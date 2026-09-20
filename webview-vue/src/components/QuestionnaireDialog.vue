@@ -187,12 +187,7 @@ onMounted(focusFirst);
 
     <footer class="qa-actions">
       <button class="btn" type="button" @click="emit('cancel')">{{ t("Cancel") }}</button>
-      <button
-        v-if="total > 1 && page > 0"
-        class="btn qa-back"
-        type="button"
-        @click="go(-1)"
-      >
+      <button v-if="total > 1 && page > 0" class="btn qa-back" type="button" @click="go(-1)">
         {{ t("Back") }}
       </button>
       <button

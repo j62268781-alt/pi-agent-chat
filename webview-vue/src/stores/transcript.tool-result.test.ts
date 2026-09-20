@@ -42,7 +42,10 @@ describe("transcript — a questionnaire tool result", () => {
       type: "tool_execution_end",
       toolCallId: "q1",
       isError: false,
-      result: { content: [{ type: "text", text: "Scope: user selected: 2. 整个模块" }], details: DETAILS },
+      result: {
+        content: [{ type: "text", text: "Scope: user selected: 2. 整个模块" }],
+        details: DETAILS,
+      },
     });
 
     const block = transcript.resolveToolLocation("q1");
@@ -58,7 +61,14 @@ describe("transcript — a questionnaire tool result", () => {
       {
         role: "assistant",
         timestamp: T0,
-        content: [{ type: "toolCall", id: "q1", name: "questionnaire", args: { questions: DETAILS.questions } }],
+        content: [
+          {
+            type: "toolCall",
+            id: "q1",
+            name: "questionnaire",
+            args: { questions: DETAILS.questions },
+          },
+        ],
       },
       {
         role: "toolResult",

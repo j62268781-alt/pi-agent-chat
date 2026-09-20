@@ -9,5 +9,5 @@
   //
   // A workspace window does not hold its folders, so the F5 host can open the repo
   // normally, and `.vscode/launch.json` passes ${workspaceFolder} to it.
-  "folders": [{ "path": "." }]
+  "folders": [{ "path": "." }],
 }

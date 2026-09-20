@@ -27,10 +27,7 @@ const props = defineProps<{ result: QuestionnaireResult }>();
           <span class="qa-num">{{ index + 1 }}</span>
           <span class="qa-label">{{ option.label }}</span>
         </li>
-        <li
-          v-if="answerFor(props.result, question)?.wasCustom"
-          class="qa-card-option is-picked"
-        >
+        <li v-if="answerFor(props.result, question)?.wasCustom" class="qa-card-option is-picked">
           <span class="qa-num codicon codicon-edit" aria-hidden="true"></span>
           <span class="qa-label">{{ answerFor(props.result, question)?.label }}</span>
         </li>

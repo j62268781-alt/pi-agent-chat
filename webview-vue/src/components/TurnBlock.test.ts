@@ -18,8 +18,20 @@ import TurnBlock from "./TurnBlock.vue";
 
 const T0 = 1_700_000_000_000;
 
-const TEXT: Block = { kind: "text", id: "text-1", markdown: "答案", streaming: false, collapsed: false };
-const THINKING: Block = { kind: "thinking", id: "think-1", text: "推理", running: false, open: false };
+const TEXT: Block = {
+  kind: "text",
+  id: "text-1",
+  markdown: "答案",
+  streaming: false,
+  collapsed: false,
+};
+const THINKING: Block = {
+  kind: "thinking",
+  id: "think-1",
+  text: "推理",
+  running: false,
+  open: false,
+};
 
 const assistant = (block: Block): AssistantMessage => ({
   kind: "assistant",

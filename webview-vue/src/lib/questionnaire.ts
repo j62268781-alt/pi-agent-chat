@@ -135,10 +135,7 @@ export function answerFor(
 }
 
 /** Record a picked option, numbered from 1 the way the tool reports it. */
-export function pickOption(
-  question: QuestionnaireQuestion,
-  index: number,
-): QuestionnaireAnswer {
+export function pickOption(question: QuestionnaireQuestion, index: number): QuestionnaireAnswer {
   const option = question.options[index];
   return {
     id: question.id,

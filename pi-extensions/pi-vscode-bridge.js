@@ -329,7 +329,10 @@ export default function (pi) {
     parameters: {
       type: "object",
       properties: {
-        latest: { type: "boolean", description: "Use the most recent selection even if an editor is focused" },
+        latest: {
+          type: "boolean",
+          description: "Use the most recent selection even if an editor is focused",
+        },
       },
       additionalProperties: false,
     },
@@ -358,13 +361,15 @@ export default function (pi) {
       required: ["filePath"],
       additionalProperties: false,
     },
-    execute: async (_toolCallId, params) => jsonResult("getDocumentSymbols", { filePath: params.filePath }),
+    execute: async (_toolCallId, params) =>
+      jsonResult("getDocumentSymbols", { filePath: params.filePath }),
   });
 
   registerToolIfEnabled({
     name: "vscode_workspace_symbols",
     label: "VS Code Workspace Symbols",
-    description: "Search symbols across the workspace by name — the fastest way to find where something lives.",
+    description:
+      "Search symbols across the workspace by name — the fastest way to find where something lives.",
     promptSnippet: "Find a symbol across the workspace.",
     parameters: {
       type: "object",
@@ -372,13 +377,15 @@ export default function (pi) {
       required: ["query"],
       additionalProperties: false,
     },
-    execute: async (_toolCallId, params) => jsonResult("getWorkspaceSymbols", { query: params.query }),
+    execute: async (_toolCallId, params) =>
+      jsonResult("getWorkspaceSymbols", { query: params.query }),
   });
 
   registerToolIfEnabled({
     name: "vscode_definition",
     label: "VS Code Definition",
-    description: "Jump from a position to what it refers to: the definition, its type, an implementation or a declaration.",
+    description:
+      "Jump from a position to what it refers to: the definition, its type, an implementation or a declaration.",
     promptSnippet: "Go to the definition/type/implementation of a symbol.",
     parameters: withPosition({
       kind: {
@@ -426,12 +433,16 @@ export default function (pi) {
       "Quick fixes and refactors the language server offers for a position or range, each with an id for vscode_apply_code_action.",
     promptSnippet: "List the quick fixes available at a position.",
     parameters: withPosition({
-      endLine: { type: "number", description: "0-based end line, for a range (default: the same position)" },
+      endLine: {
+        type: "number",
+        description: "0-based end line, for a range (default: the same position)",
+      },
       endCharacter: { type: "number", description: "0-based end character, for a range" },
     }),
     execute: async (_toolCallId, params) => {
       const start = { line: params.line, character: params.character };
-      const hasRange = typeof params.endLine === "number" && typeof params.endCharacter === "number";
+      const hasRange =
+        typeof params.endLine === "number" && typeof params.endCharacter === "number";
       const end = hasRange ? { line: params.endLine, character: params.endCharacter } : start;
       return jsonResult("getCodeActions", {
         filePath: params.filePath,
@@ -452,13 +463,15 @@ export default function (pi) {
       required: ["actionId"],
       additionalProperties: false,
     },
-    execute: async (_toolCallId, params) => jsonResult("executeCodeAction", { actionId: params.actionId }),
+    execute: async (_toolCallId, params) =>
+      jsonResult("executeCodeAction", { actionId: params.actionId }),
   });
 
   registerToolIfEnabled({
     name: "vscode_open_file",
     label: "VS Code Open File",
-    description: "Open a file in the editor, optionally revealing a position — how you show the user where something is.",
+    description:
+      "Open a file in the editor, optionally revealing a position — how you show the user where something is.",
     promptSnippet: "Open a file (and position) in the editor.",
     parameters: {
       type: "object",
@@ -475,7 +488,10 @@ export default function (pi) {
       const body = { filePath: params.filePath };
       if (typeof params.preview === "boolean") body.preview = params.preview;
       if (typeof params.line === "number") {
-        const at = { line: params.line, character: typeof params.character === "number" ? params.character : 0 };
+        const at = {
+          line: params.line,
+          character: typeof params.character === "number" ? params.character : 0,
+        };
         body.selection = { start: at, end: at };
       }
       return jsonResult("openFile", body);
@@ -493,13 +509,15 @@ export default function (pi) {
       required: ["filePath"],
       additionalProperties: false,
     },
-    execute: async (_toolCallId, params) => jsonResult("saveDocument", { filePath: params.filePath }),
+    execute: async (_toolCallId, params) =>
+      jsonResult("saveDocument", { filePath: params.filePath }),
   });
 
   registerToolIfEnabled({
     name: "vscode_format",
     label: "VS Code Format",
-    description: "Format a file — or a range of it — with the formatter the editor is configured to use.",
+    description:
+      "Format a file — or a range of it — with the formatter the editor is configured to use.",
     promptSnippet: "Format a file or range with the editor's formatter.",
     parameters: {
       type: "object",
@@ -519,8 +537,14 @@ export default function (pi) {
       return jsonResult("formatRange", {
         filePath: params.filePath,
         selection: {
-          start: { line: params.startLine, character: typeof params.startCharacter === "number" ? params.startCharacter : 0 },
-          end: { line: params.endLine, character: typeof params.endCharacter === "number" ? params.endCharacter : 0 },
+          start: {
+            line: params.startLine,
+            character: typeof params.startCharacter === "number" ? params.startCharacter : 0,
+          },
+          end: {
+            line: params.endLine,
+            character: typeof params.endCharacter === "number" ? params.endCharacter : 0,
+          },
         },
       });
     },
@@ -542,7 +566,10 @@ export default function (pi) {
       additionalProperties: false,
     },
     execute: async (_toolCallId, params) => {
-      const result = await jsonResult("getNotifications", { limit: params.limit, since: params.since });
+      const result = await jsonResult("getNotifications", {
+        limit: params.limit,
+        since: params.since,
+      });
       if (params.clear) await callBridge("clearNotifications");
       return result;
     },
