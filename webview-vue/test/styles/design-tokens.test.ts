@@ -90,8 +90,9 @@ describe("the chat input's control row", () => {
         new RegExp(`${selector.replace(/[.()]/g, "\\$&")}\\s*\\{([^}]*)\\}`).exec(css)?.[1] ?? "";
       expect(body, selector).toContain("width: var(--pi-h-chat-control)");
       expect(body, selector).toContain("height: var(--pi-h-chat-control)");
-      // An icon-only control in VS Code's chat input is a circle.
-      expect(body, selector).toContain("border-radius: var(--pi-r-full)");
+      // A rounded square on the pills' own corner, not VS Code's circle: the
+      // bar had squares before the token pass and 彬哥 picked them back.
+      expect(body, selector).toContain("border-radius: var(--pi-r-md)");
     }
   });
 

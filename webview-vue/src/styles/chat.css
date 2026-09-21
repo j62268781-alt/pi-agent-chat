@@ -3138,13 +3138,15 @@ body {
 }
 
 /* One hairline with the pills and the `+`, so the bar's controls read as the
- * same kind of object in every state. Shape is where VS Code is opinionated:
- * an icon-only control in its chat input is a circle, not a rounded square. */
+ * same kind of object in every state. The shape is the corner token the pills
+ * use, not a circle: VS Code's own chat input draws its icon-only controls as
+ * circles, and the panel followed that for a pass — but a rounded square is
+ * what this bar had before it and what 彬哥 picked when asked (2026-09-21). */
 .composer-controls-bar > .send-btn {
   width: var(--pi-h-chat-control);
   height: var(--pi-h-chat-control);
   border: var(--pi-stroke) solid var(--pi-border);
-  border-radius: var(--pi-r-full);
+  border-radius: var(--pi-r-md);
 }
 
 /* ── composer polish ──────────────────────────────────────────────────────
@@ -3160,16 +3162,16 @@ body {
 
 /* ── one icon size for everything in the bar ─────────────────────────────── */
 
-/* The Plus is the same size and shape as the send button — VS Code renders
- * attach and submit as two circles of one size. .icon-btn is 32px globally (set
- * for the toolbar), so this is scoped to the control bar; it keeps the pills'
- * fill and hairline, which is what makes the `+` and the model picker look like
- * the two halves of one row rather than two different widgets. */
+/* The Plus is the same size and shape as the send button, both on the corner
+ * token the pills use. .icon-btn is 32px globally (set for the toolbar), so this
+ * is scoped to the control bar; it keeps the pills' fill and hairline, which is
+ * what makes the `+` and the model picker look like the two halves of one row
+ * rather than two different widgets. */
 .composer-controls-bar > .icon-btn:not(.send-btn) {
   width: var(--pi-h-chat-control);
   height: var(--pi-h-chat-control);
   border: var(--pi-stroke) solid var(--pi-border);
-  border-radius: var(--pi-r-full);
+  border-radius: var(--pi-r-md);
   background: var(--pi-bg-control);
   color: var(--pi-icon);
 }
