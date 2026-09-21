@@ -3269,14 +3269,17 @@ body {
   height: 16px;
 }
 
-/* One height, one inner rhythm — and the height is VS Code's chat-input row,
- * so the pills sit on the same 22px line as the `+` and the send button. */
+/* One height, one inner rhythm — and the height is the bar's own row, so the
+ * pills sit on the same line as the `+` and the send button. The padding is
+ * symmetric (it was 12 left / 10 right), so the icon-and-label group sits on the
+ * pill's centre: the leftover pixel either side is the icon art's own bearing,
+ * which changes with the model, so padding is the wrong place to chase it. */
 .model-trigger,
 .thinking-trigger,
 .permission-trigger {
   gap: var(--pi-sp-2);
   height: var(--pi-h-chat-control);
-  padding: 0 var(--pi-sp-4) 0 var(--pi-sp-5);
+  padding: 0 var(--pi-sp-5);
 }
 
 /* The board's pills are hug-contents. The old 140px cap clipped "Smart
