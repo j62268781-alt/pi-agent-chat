@@ -170,16 +170,17 @@ async function forkTurn(): Promise<void> {
   </div>
 
   <div v-for="message in turn.leading" :key="message.id" class="system-row">
-    <!-- Compaction reads as a divider: "正在压缩…" while it runs (pulsing icon),
-         "已压缩上下文" once done — clicking that one opens the summary. -->
+    <!-- Compaction reads as a divider: 「正在压缩」 while it runs (the label
+         pulses), 「已完成压缩」 once done — clicking that one opens the summary.
+         No glyph: the label is the whole row, the loading below it stays the
+         transcript's own status row. -->
     <details v-if="message.variant === 'compaction'" class="compaction-divider">
       <summary
         class="compaction-divider-label"
         :class="{ 'is-running': !message.text }"
         :title="message.text || undefined"
       >
-        <span class="codicon codicon-checklist"></span>
-        <span>{{ message.text ? t("Context compacted") : t("Compacting…") }}</span>
+        <span>{{ message.text ? t("Context compacted") : t("Compacting") }}</span>
       </summary>
       <div v-if="message.text" class="compaction-summary-body">{{ message.text }}</div>
     </details>

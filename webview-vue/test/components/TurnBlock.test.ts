@@ -207,3 +207,43 @@ describe("TurnBlock — the work rows", () => {
     expect(wrapper.findAll(".tool-block")).toHaveLength(2);
   });
 });
+
+// The compaction row is a divider whose label is text: no glyph, one span between
+// the two rules. The running one says so and has nothing to expand, the finished
+// one opens the summary on click.
+describe("TurnBlock — the compaction divider", () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+  });
+
+  const withCompaction = (text: string) =>
+    mountTurn({
+      leading: [{ kind: "system", id: "sys-1", variant: "compaction", text, timestamp: null }],
+    });
+
+  it("keeps the running label bare — no glyph, nothing to expand", () => {
+    const wrapper = withCompaction("");
+    const label = wrapper.get(".compaction-divider-label");
+
+    expect(label.text()).toBe(t("Compacting"));
+    expect(label.classes()).toContain("is-running");
+    expect(label.find(".codicon").exists()).toBe(false);
+    // The span is the whole label; the flanking rules are its pseudo-elements.
+    expect(label.element.children).toHaveLength(1);
+
+    const details = wrapper.get(".compaction-divider").element;
+    expect(details).toBeInstanceOf(HTMLDetailsElement);
+    expect((details as HTMLDetailsElement).open).toBe(false);
+    expect(wrapper.find(".compaction-summary-body").exists()).toBe(false);
+  });
+
+  it("names the finished state and keeps the summary behind the click", () => {
+    const wrapper = withCompaction("## 摘要");
+    const label = wrapper.get(".compaction-divider-label");
+
+    expect(label.text()).toBe(t("Context compacted"));
+    expect(label.classes()).not.toContain("is-running");
+    expect(label.attributes("title")).toBe("## 摘要");
+    expect(wrapper.get(".compaction-summary-body").text()).toBe("## 摘要");
+  });
+});

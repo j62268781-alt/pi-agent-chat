@@ -1,17 +1,12 @@
-import codiconTtf from "@vscode/codicons/dist/codicon.ttf?inline";
 import { createPinia } from "pinia";
 import { createApp } from "vue";
 import App from "@/App.vue";
+import { installCodiconFont } from "@/lib/codicon-font";
 import { language } from "@/lib/injected";
 import { useDisplayStore } from "@/stores/display";
 import "@/tokens.css";
 
-// `@vscode/codicons` is shipped as a subset: only the glyphs referenced by the
-// components and stylesheets are declared, so the @font-face rule is registered
-// here instead of pulling in the package's full stylesheet.
-const codiconStyle = document.createElement("style");
-codiconStyle.textContent = `@font-face{font-family:"codicon";font-display:block;src:url(${codiconTtf}) format("truetype")}`;
-document.head.prepend(codiconStyle);
+installCodiconFont();
 
 document.documentElement.lang = language();
 

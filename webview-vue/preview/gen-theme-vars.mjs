@@ -59,6 +59,26 @@ const THEMES = [
 /** Named colour constants the registry uses; resolved the way the bundle resolves them. */
 const CONSTANTS = { white: "#ffffff", black: "#000000" };
 
+/**
+ * Ids whose defaults are computed rather than written as hex, so the scan above
+ * cannot see them. Each entry records the bundle expression it comes from, so
+ * the value can be re-checked when VS Code is updated.
+ *
+ *   chat.requestBackground  {dark:hi(rn,.62), light:hi(rn,.62), …}   // rn = editor.background
+ *   chat.requestBorder      {dark:new $e(new ri(255,255,255,.1)), light:…(0,0,0,.1), …}
+ */
+const COMPUTED_IDS = {
+  "chat.requestBackground": {
+    dark: "color-mix(in srgb, var(--vscode-editor-background) 62%, transparent)",
+    light: "color-mix(in srgb, var(--vscode-editor-background) 62%, transparent)",
+    hcDark: "var(--vscode-editor-background)",
+  },
+  "chat.requestBorder": {
+    dark: "rgba(255, 255, 255, 0.1)",
+    light: "rgba(0, 0, 0, 0.1)",
+  },
+};
+
 async function loadTheme(file, seen = new Set()) {
   if (seen.has(file)) return {};
   seen.add(file);
@@ -99,7 +119,8 @@ function toVariable(id) {
 }
 
 const defaults = await loadRegistryDefaults();
-console.log(`registry defaults: ${defaults.size} colour ids`);
+for (const [id, kinds] of Object.entries(COMPUTED_IDS)) defaults.set(id, kinds);
+console.log(`registry defaults: ${defaults.size} colour ids (incl. computed)`);
 
 const themes = [];
 for (const theme of THEMES) {

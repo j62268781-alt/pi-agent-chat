@@ -35,9 +35,6 @@
 .codicon-debug-stop::before {
   content: "\ead7";
 }
-.codicon-checklist::before {
-  content: "\eab3";
-}
 .codicon-info::before {
   content: "\ea74";
 }
@@ -1104,10 +1101,6 @@ body {
   word-break: break-word;
   line-height: 1.5;
 }
-.user-bubble {
-  background: var(--pi-brand);
-  color: var(--pi-text-on-solid);
-}
 .user-bubble .bubble-imgs {
   display: flex;
   flex-wrap: wrap;
@@ -1338,13 +1331,22 @@ body {
   font-size: var(--chat-fs-12);
 }
 
-/* ── compaction divider (彬哥: 分割线样式，完成后显示「已压缩上下文」) ──────
+/* ── compaction divider (彬哥: 分割线样式，完成后显示「已完成压缩」) ──────────
  * Replaces the boxed `.compaction-block` card for the in-stream compaction
  * rows. The rules flanking the label are the summary's own ::before/::after, so
  * an expanded summary body drops below the divider without breaking it. The
  * running state has nothing to expand (`cursor: default`), the finished one
- * opens the summary on click. */
+ * opens the summary on click. The label is bare text — no glyph, the pulse is on
+ * the text, and the rules stay a hairline.
+ *
+ * The vertical margin is the transcript's own breathing room rather than a
+ * divider-specific number. The label carries no card padding, so on the flex
+ * rhythm alone (6px) it glued itself to the line below — 8px between line boxes
+ * against the 20–22px the tool cards leave each other. 20px puts 34px of air
+ * between the label's ink and the next line's ink, which is what the reference
+ * panel leaves, and keeps the box spacing symmetric. */
 .compaction-divider {
+  margin: var(--pi-sp-8) 0;
   font-size: var(--chat-fs-11);
   color: var(--pi-text-secondary);
 }
@@ -1352,7 +1354,6 @@ body {
 .compaction-divider-label {
   display: flex;
   align-items: center;
-  gap: 8px;
   list-style: none;
   user-select: none;
   min-width: 0;
@@ -1374,7 +1375,9 @@ body {
   cursor: default;
 }
 
-.compaction-divider-label.is-running .codicon {
+/* The `> span` keeps the pulse off the ::before/::after rules: they are part of
+ * the label, so animating the label itself would blink the whole divider. */
+.compaction-divider-label.is-running > span {
   animation: session-status-pulse 1.4s ease-in-out infinite;
 }
 
@@ -3443,11 +3446,6 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   max-width: 100%;
 }
 
-.user-bubble {
-  background: var(--pi-bg-bubble);
-  color: var(--pi-text);
-}
-
 /* A wide panel (the editor area) gets the board's own rhythm. The sidebar is
  * only ~300px, where 32px gutters would eat a fifth of the width. */
 @media (min-width: 720px) {
@@ -5242,10 +5240,10 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
  * 之前每加一张卡就换一个底：气泡 #37373D、围栏代码 #2B2B2B、思考卡 #313131、
  * 参数卡 #181818、终端卡 #2B2B2B，字色也有 #CCCCCC / #D0D0D0 / #9D9D9D 三种，
  * 内距 8/12、8/10、10/12 三种 —— 彬哥：输入侧和展开的灰底不同步、间距没对齐、
- * 该用圆角。现在一处定死：同底（`--pi-bg-card`，就是气泡的底）、同字色（正文）、
- * 同内距（与气泡的 8px 12px）、同圆角（`--pi-r-lg`），描边全部去掉 —— 同色之后
- * 框只是多出来的一条线。终端卡保留它的 `$`、等宽与绿/红结果行，思考卡与参数卡
- * 保留各自的字号，那些是内容不是「面」。 */
+ * 该用圆角。现在一处定死：同底（`--pi-bg-card`）、同字色（正文）、同内距（8px
+ * 12px）、同圆角（`--pi-r-lg`），描边全部去掉 —— 同色之后框只是多出来的一条线。
+ * 终端卡保留它的 `$`、等宽与绿/红结果行，思考卡与参数卡保留各自的字号，那些是
+ * 内容不是「面」。发送方气泡是唯一的例外，见这条规则下面。 */
 .user-bubble,
 .text-block blockquote,
 .text-block pre,
@@ -5261,4 +5259,45 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   border-radius: var(--pi-r-lg);
   background: var(--pi-bg-card);
   color: var(--pi-text);
+}
+
+/* The card's padding is meant to be the whole gap. A markdown paragraph carries
+ * `margin: 0 0 8px`, so the last one inside a card doubles the bottom (measured
+ * 16px below the text against 8px above) — and a heading at the top would add its
+ * own margin the same way. Only *direct* children: nested blocks keep their
+ * spacing between each other. */
+.user-bubble > :first-child,
+.text-block blockquote > :first-child,
+.text-block pre > :first-child,
+.thinking-body > :first-child,
+.tool-args > :first-child,
+.tool-json > :first-child,
+.code-block > :first-child,
+.term > :first-child,
+.qa-card > :first-child,
+.compaction-summary-body > :first-child {
+  margin-top: 0;
+}
+
+.user-bubble > :last-child,
+.text-block blockquote > :last-child,
+.text-block pre > :last-child,
+.thinking-body > :last-child,
+.tool-args > :last-child,
+.tool-json > :last-child,
+.code-block > :last-child,
+.term > :last-child,
+.qa-card > :last-child,
+.compaction-summary-body > :last-child {
+  margin-bottom: 0;
+}
+
+/* The sender's block is the one surface that is not a card. VS Code paints a
+ * chat request with its own colour, and it is the honest match: the shared card
+ * fill is `list.inactiveSelectionBackground`, i.e. "a selected list row", which
+ * is also why the text gains contrast here (7.4 → 10.3 in Dark Modern, 9.0 →
+ * 11.2 in Light). Geometry stays with the block above — only the surface moves. */
+.user-bubble {
+  border: 1px solid var(--pi-border-bubble);
+  background: var(--pi-bg-bubble);
 }

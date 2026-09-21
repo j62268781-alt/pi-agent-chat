@@ -52,12 +52,16 @@
   );
   --pi-bg-overlay: rgba(0, 0, 0, 0.45); /* no theme id exists for a modal scrim */
 
-  --pi-bg-bubble: var(--vscode-list-inactiveSelectionBackground, var(--pi-bg-subtle, #313131));
-  /* The one surface of the transcript: the user's bubble and every expanded card
-   * (quote, fenced code, reasoning, tool args, terminal, Q&A) sit on this. It
-   * reads as "the same object on the same layer", so the bubble doubles as the
-   * reference — retint here, nowhere else. */
-  --pi-bg-card: var(--pi-bg-bubble);
+  /* The sender's own message. VS Code paints a chat request with its own id,
+   * which is the honest match for this block, plus a hairline border — the fill
+   * is the page colour at 62%, so the border is what defines it. */
+  --pi-bg-bubble: var(--vscode-chat-requestBackground, var(--pi-bg-subtle, #313131));
+  --pi-border-bubble: var(--vscode-chat-requestBorder, var(--pi-border));
+
+  /* The transcript's shared card surface: quote, fenced code, reasoning, tool
+   * args, terminal, Q&A all sit on this, so they read as "the same object on the
+   * same layer". Retint here, nowhere else. */
+  --pi-bg-card: var(--vscode-list-inactiveSelectionBackground, var(--pi-bg-subtle, #313131));
   /* Control fills — the composer bar's `+`, the pickers and the resting send
    * button. No theme token is safe for these: `badge-background` is a
    * count/brand colour (2026-dark paints it #307E9F, hc_light #0F4A85), and
@@ -117,16 +121,13 @@
   /* ── text ──────────────────────────────────────────────────────────────── */
 
   --pi-text: var(--vscode-foreground, #cccccc);
-  /* VS Code derives this as foreground at 70%; when a theme computes it away,
-   * do the same thing rather than fall back to full-strength text. */
-  --pi-text-secondary: var(
-    --vscode-descriptionForeground,
-    color-mix(in srgb, var(--pi-text) 70%, transparent)
-  );
-  --pi-text-muted: var(
-    --vscode-descriptionForeground,
-    color-mix(in srgb, var(--pi-text) 70%, transparent)
-  );
+  /* VS Code's own registry formula for this colour is `foreground @ 70%`
+   * (`Ni(on,.7)`), which is what it resolves to in every dark theme. Light
+   * Modern declares it as the full foreground colour instead, which flattens
+   * every timestamp and meta row into body text — so the formula is applied
+   * here rather than taking the theme's value. */
+  --pi-text-secondary: color-mix(in srgb, var(--pi-text) 70%, transparent);
+  --pi-text-muted: color-mix(in srgb, var(--pi-text) 70%, transparent);
   --pi-text-faint: color-mix(in srgb, var(--pi-text) 55%, transparent);
   --pi-text-disabled: var(
     --vscode-disabledForeground,

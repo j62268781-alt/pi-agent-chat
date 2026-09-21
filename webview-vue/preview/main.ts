@@ -11,6 +11,7 @@
 import { createPinia } from "pinia";
 import { createApp, nextTick } from "vue";
 import ChatPage from "@/pages/ChatPage.vue";
+import { installCodiconFont } from "@/lib/codicon-font";
 import { language } from "@/lib/injected";
 import { useComposerStore } from "@/stores/composer";
 import { useDisplayStore } from "@/stores/display";
@@ -51,6 +52,7 @@ function applyTheme(next: PreviewTheme): void {
 
 await import("./styles/index");
 
+installCodiconFont();
 applyTheme(theme);
 document.documentElement.lang = language();
 

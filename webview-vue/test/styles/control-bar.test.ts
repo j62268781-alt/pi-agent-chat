@@ -77,11 +77,11 @@ describe("control-bar fill contract", () => {
 });
 
 describe("transcript surface contract", () => {
-  /** Everything the transcript paints as a block. Each one used to pick its own
-   * grey, which is how five surfaces, three ink colours and three paddings
-   * ended up on one screen. */
+  /** Everything the transcript paints as a *card*. Each one used to pick its own
+   * grey, which is how five surfaces, three ink colours and three paddings ended
+   * up on one screen. The sender's block is deliberately absent: it is a request,
+   * not a card — see the two tests at the end of this block. */
   const SURFACES = [
-    ".user-bubble",
     ".text-block blockquote",
     ".text-block pre",
     ".thinking-body",
@@ -106,8 +106,8 @@ describe("transcript surface contract", () => {
     const all = rules(chat);
     const convergence = all.find(
       (rule) =>
-        rule.selectors.includes(".user-bubble") &&
         rule.selectors.includes(".term") &&
+        rule.selectors.includes(".qa-card") &&
         rule.body.includes("--pi-bg-card"),
     );
     expect(convergence, "the convergence block was deleted").toBeDefined();
@@ -128,9 +128,33 @@ describe("transcript surface contract", () => {
     }
   });
 
-  it("aliases the card onto the bubble instead of picking a sixth grey", () => {
+  it("takes the card fill from a theme id rather than picking a sixth grey", () => {
     const value = /--pi-bg-card:\s*([^;]+);/.exec(tokens)?.[1] ?? "";
-    expect(value.trim()).toBe("var(--pi-bg-bubble)");
+    expect(value).toContain("--vscode-");
+  });
+
+  it("paints the sender's block as a chat request, and after the cards so it wins", () => {
+    // The card fill means "an unfocused selected list row"; a message the user
+    // sent is a request, and VS Code has its own ids for exactly that. This is
+    // the one surface allowed to differ — the rule has to come after the
+    // convergence block for the cascade to land.
+    const value = /--pi-bg-bubble:\s*([^;]+);/.exec(tokens)?.[1] ?? "";
+    expect(value).toContain("--vscode-chat-requestBackground");
+    expect(/--pi-border-bubble:\s*([^;]+);/.exec(tokens)?.[1] ?? "").toContain(
+      "--vscode-chat-requestBorder",
+    );
+
+    const bubble = declarations(chat, ".user-bubble");
+    expect(bubble).toContain("background: var(--pi-bg-bubble)");
+    expect(bubble).toContain("border: 1px solid var(--pi-border-bubble)");
+
+    const all = rules(chat);
+    const convergence = all.findIndex((rule) => rule.body.includes("--pi-bg-card"));
+    const override = all.findIndex(
+      (rule) => rule.selectors.includes(".user-bubble") && /--pi-bg-bubble/.test(rule.body),
+    );
+    expect(override, "the bubble override is missing").toBeGreaterThan(-1);
+    expect(override, "the bubble override is before the cards").toBeGreaterThan(convergence);
   });
 });
 

@@ -201,6 +201,9 @@ export const THEMES: PreviewTheme[] = [
       "--vscode-terminalStickyScrollHover-background": "#2A2D2E",
       "--vscode-welcomePage-tileBorder": "#ffffff1a",
       "--vscode-walkthrough-stepTitle-foreground": "#ffffff",
+      "--vscode-chat-requestBackground":
+        "color-mix(in srgb, var(--vscode-editor-background) 62%, transparent)",
+      "--vscode-chat-requestBorder": "rgba(255, 255, 255, 0.1)",
       "--vscode-checkbox-border": "#3C3C3C",
       "--vscode-editor-inactiveSelectionBackground": "#3A3D41",
       "--vscode-editorIndentGuide-background1": "#404040",
@@ -488,6 +491,9 @@ export const THEMES: PreviewTheme[] = [
       "--vscode-terminalStickyScrollHover-background": "#F0F0F0",
       "--vscode-welcomePage-tileBorder": "#0000001a",
       "--vscode-walkthrough-stepTitle-foreground": "#000000",
+      "--vscode-chat-requestBackground":
+        "color-mix(in srgb, var(--vscode-editor-background) 62%, transparent)",
+      "--vscode-chat-requestBorder": "rgba(0, 0, 0, 0.1)",
       "--vscode-checkbox-border": "#CECECE",
       "--vscode-editor-inactiveSelectionBackground": "#E5EBF1",
       "--vscode-editorIndentGuide-background1": "#D3D3D3",
@@ -785,6 +791,9 @@ export const THEMES: PreviewTheme[] = [
       "--vscode-terminalStickyScrollHover-background": "#2A2D2E",
       "--vscode-welcomePage-tileBorder": "#ffffff1a",
       "--vscode-walkthrough-stepTitle-foreground": "#ffffff",
+      "--vscode-chat-requestBackground":
+        "color-mix(in srgb, var(--vscode-editor-background) 62%, transparent)",
+      "--vscode-chat-requestBorder": "rgba(255, 255, 255, 0.1)",
       "--vscode-checkbox-border": "#6B6B6B",
       "--vscode-editor-inactiveSelectionBackground": "#3A3D41",
       "--vscode-editorIndentGuide-background1": "#404040",
@@ -1005,6 +1014,9 @@ export const THEMES: PreviewTheme[] = [
       "--vscode-terminalStickyScrollHover-background": "#F0F0F0",
       "--vscode-welcomePage-tileBorder": "#0000001a",
       "--vscode-walkthrough-stepTitle-foreground": "#000000",
+      "--vscode-chat-requestBackground":
+        "color-mix(in srgb, var(--vscode-editor-background) 62%, transparent)",
+      "--vscode-chat-requestBorder": "rgba(0, 0, 0, 0.1)",
       "--vscode-checkbox-border": "#919191",
       "--vscode-editor-inactiveSelectionBackground": "#E5EBF1",
       "--vscode-editorIndentGuide-background1": "#D3D3D3",
@@ -1230,6 +1242,8 @@ export const THEMES: PreviewTheme[] = [
       "--vscode-terminalStickyScrollHover-background": "#E48B39",
       "--vscode-welcomePage-tileBorder": "#ffffff1a",
       "--vscode-walkthrough-stepTitle-foreground": "#ffffff",
+      "--vscode-chat-requestBackground": "var(--vscode-editor-background)",
+      "--vscode-chat-requestBorder": "rgba(255, 255, 255, 0.1)",
       "--vscode-editorIndentGuide-background1": "#FFFFFF",
       "--vscode-editorIndentGuide-activeBackground1": "#FFFFFF",
       "--vscode-sideBarTitle-foreground": "#FFFFFF",
@@ -1424,6 +1438,9 @@ export const THEMES: PreviewTheme[] = [
       "--vscode-terminalStickyScrollHover-background": "#0f4a85",
       "--vscode-welcomePage-tileBorder": "#0000001a",
       "--vscode-walkthrough-stepTitle-foreground": "#000000",
+      "--vscode-chat-requestBackground":
+        "color-mix(in srgb, var(--vscode-editor-background) 62%, transparent)",
+      "--vscode-chat-requestBorder": "rgba(0, 0, 0, 0.1)",
       "--vscode-actionBar-toggledBackground": "#dddddd",
       "--vscode-titleBar-inactiveBackground": "#FFFFFF",
       "--vscode-statusBar-inactiveBackground": "#FFFFFF",
@@ -1614,6 +1631,9 @@ export const THEMES: PreviewTheme[] = [
       "--vscode-terminalStickyScrollHover-background": "#2A2D2E",
       "--vscode-welcomePage-tileBorder": "#ffffff1a",
       "--vscode-walkthrough-stepTitle-foreground": "#ffffff",
+      "--vscode-chat-requestBackground":
+        "color-mix(in srgb, var(--vscode-editor-background) 62%, transparent)",
+      "--vscode-chat-requestBorder": "rgba(255, 255, 255, 0.1)",
       "--vscode-checkbox-border": "#707070",
       "--vscode-editor-inactiveSelectionBackground": "#27678260",
       "--vscode-editorIndentGuide-background1": "#8384854D",
@@ -2035,6 +2055,9 @@ export const THEMES: PreviewTheme[] = [
       "--vscode-terminalStickyScrollHover-background": "#F0F0F0",
       "--vscode-welcomePage-tileBorder": "#0000001a",
       "--vscode-walkthrough-stepTitle-foreground": "#000000",
+      "--vscode-chat-requestBackground":
+        "color-mix(in srgb, var(--vscode-editor-background) 62%, transparent)",
+      "--vscode-chat-requestBorder": "rgba(0, 0, 0, 0.1)",
       "--vscode-checkbox-border": "#868686",
       "--vscode-editor-inactiveSelectionBackground": "#0069CC1A",
       "--vscode-editorIndentGuide-background1": "#F7F7F740",

@@ -49,33 +49,33 @@
 
 ### 表面
 
-| 变量                    | 主题色号                                             | 用途                                                                     |
-| ----------------------- | ---------------------------------------------------- | ------------------------------------------------------------------------ |
-| `--pi-bg-page`          | `editor.background`（侧栏态走 `sideBar.background`） | 页面底                                                                   |
-| `--pi-bg-raised`        | `editorWidget.background`                            | 悬浮卡片、弹层                                                           |
-| `--pi-bg-surface`       | `sideBar.background`                                 | 次级面                                                                   |
-| `--pi-bg-subtle`        | `input.background`                                   | 输入框、内嵌面                                                           |
-| `--pi-bg-hover`         | `list.hoverBackground`                               | 行悬停                                                                   |
-| `--pi-bg-selected`      | `list.activeSelectionBackground`                     | 选中行                                                                   |
-| `--pi-bg-bubble`        | `list.inactiveSelectionBackground`                   | 用户消息气泡                                                             |
-| `--pi-bg-card`          | = `--pi-bg-bubble`                                   | 会话流唯一的「面」：气泡、引用、围栏代码、思考卡、参数卡、终端卡、问答卡 |
-| `--pi-bg-control`       | `foreground` 12% 混进 `sideBar.background`           | 控制条 chip（`+`、选择器、待命的发送钮）                                 |
-| `--pi-bg-control-hover` | 同上取 20%                                           | 上述 chip 悬停                                                           |
-| `--pi-bg-think`         | `textBlockQuote.background`                          | 思考块底                                                                 |
-| `--pi-bg-code-inline`   | `textPreformat.background`                           | 行内代码                                                                 |
-| `--pi-code-bg`          | `textCodeBlock.background`                           | 代码块 / mermaid 画布                                                    |
-| `--pi-bg-overlay`       | 无对应色号，固定 `rgba(0,0,0,.45)`                   | 模态遮罩（主题无关）                                                     |
+| 变量                                    | 主题色号                                             | 用途                                                               |
+| --------------------------------------- | ---------------------------------------------------- | ------------------------------------------------------------------ |
+| `--pi-bg-page`                          | `editor.background`（侧栏态走 `sideBar.background`） | 页面底                                                             |
+| `--pi-bg-raised`                        | `editorWidget.background`                            | 悬浮卡片、弹层                                                     |
+| `--pi-bg-surface`                       | `sideBar.background`                                 | 次级面                                                             |
+| `--pi-bg-subtle`                        | `input.background`                                   | 输入框、内嵌面                                                     |
+| `--pi-bg-hover`                         | `list.hoverBackground`                               | 行悬停                                                             |
+| `--pi-bg-selected`                      | `list.activeSelectionBackground`                     | 选中行                                                             |
+| `--pi-bg-bubble` / `--pi-border-bubble` | `chat.requestBackground` / `chat.requestBorder`      | 发送方气泡（唯一不作卡片的「面」，见下）                           |
+| `--pi-bg-card`                          | `list.inactiveSelectionBackground`                   | 会话流唯一的「面」：引用、围栏代码、思考卡、参数卡、终端卡、问答卡 |
+| `--pi-bg-control`                       | `foreground` 12% 混进 `sideBar.background`           | 控制条 chip（`+`、选择器、待命的发送钮）                           |
+| `--pi-bg-control-hover`                 | 同上取 20%                                           | 上述 chip 悬停                                                     |
+| `--pi-bg-think`                         | `textBlockQuote.background`                          | 思考块底                                                           |
+| `--pi-bg-code-inline`                   | `textPreformat.background`                           | 行内代码                                                           |
+| `--pi-code-bg`                          | `textCodeBlock.background`                           | 代码块 / mermaid 画布                                              |
+| `--pi-bg-overlay`                       | 无对应色号，固定 `rgba(0,0,0,.45)`                   | 模态遮罩（主题无关）                                               |
 
 ### 文字与图标
 
-| 变量                                      | 主题色号                                                | 用途           |
-| ----------------------------------------- | ------------------------------------------------------- | -------------- |
-| `--pi-text`                               | `foreground`                                            | 正文           |
-| `--pi-text-secondary` / `--pi-text-muted` | `descriptionForeground`（缺席时取 `foreground` 的 70%） | 次要、元信息   |
-| `--pi-text-faint`                         | `foreground` 的 55%                                     | 最弱信息       |
-| `--pi-text-disabled`                      | `disabledForeground`                                    | 禁用           |
-| `--pi-text-brand`                         | `textLink.foreground`                                   | 链接、可点文字 |
-| `--pi-icon`                               | `icon.foreground`                                       | 图标默认色     |
+| 变量                                      | 主题色号                                                                      | 用途           |
+| ----------------------------------------- | ----------------------------------------------------------------------------- | -------------- |
+| `--pi-text`                               | `foreground`                                                                  | 正文           |
+| `--pi-text-secondary` / `--pi-text-muted` | `foreground` 的 70%（VS Code 注册表公式，不取主题的 `descriptionForeground`） | 次要、元信息   |
+| `--pi-text-faint`                         | `foreground` 的 55%                                                           | 最弱信息       |
+| `--pi-text-disabled`                      | `disabledForeground`                                                          | 禁用           |
+| `--pi-text-brand`                         | `textLink.foreground`                                                         | 链接、可点文字 |
+| `--pi-icon`                               | `icon.foreground`                                                             | 图标默认色     |
 
 ### 状态（四态齐全，软底由主色派生）
 
@@ -145,11 +145,12 @@
 
 | 项   | 规格                                                                                         |
 | ---- | -------------------------------------------------------------------------------------------- |
-| 字体 | `@vscode/codicons`（subset，`main.ts` 注册 `@font-face`）                                    |
+| 字体 | `@vscode/codicons`（subset，`lib/codicon-font.ts` 注册 `@font-face`，两个入口共用）          |
 | 尺寸 | `--pi-icon-lg: 16px`、`--pi-icon-md: 14px`、`--pi-icon-sm: 12px`，**固定**，不随字号设置缩放 |
 | 基线 | `.codicon` 统一 `line-height: 1`、`vertical-align: middle`、`flex: none`                     |
 | 颜色 | `--pi-icon` / `--pi-icon-muted` / `--pi-icon-brand` / `--pi-icon-disabled`                   |
 | 例外 | 品牌图形与上下文占用环是 SVG 图形，不是图标，不参与替换                                      |
+| 例外 | 压缩分割线（`正在压缩` / `已完成压缩`）是**纯文字标签**夹在两条细线之间，不带字形            |
 
 ---
 
@@ -207,10 +208,13 @@ Alt+Enter 始终强制入队。
 3. 图标 → 用 codicon，尺寸取 `--pi-icon-*`；需要新字形时在 `chat.css` /
    `settings.css` 的码点表里补一行。
 4. 主题相关行为（如随主题重绘）→ 读 `<body>` 的 `vscode-*` 类，不要自己判断明暗。
-5. 会话流的「面」只有一种 → 气泡与所有展开卡（引用、围栏代码、思考、参数、终端、
-   问答）共用 `--pi-bg-card` + 正文色 + `8px 12px` 内距 + `--pi-r-lg`，收敛规则写在
+5. 会话流的「面」只有一种 → 所有展开卡（引用、围栏代码、思考、参数、终端、问答）
+   共用 `--pi-bg-card` + 正文色 + `8px 12px` 内距 + `--pi-r-lg`，收敛规则写在
    `chat.css` 末尾。**新加一张卡不要再自己挑底色**（历史上每张卡各取一种，攒出了
-   5 种灰、3 种字色、3 种内距）。
+   5 种灰、3 种字色、3 种内距）。唯一例外是**发送方气泡**：它不是卡片而是「请求」，
+   取 VS Code 自己的 `chat.request*`（底 = 页面色 62% + 一圈细描边）。这样它的文字
+   对比度反而更高（Dark Modern 7.4→10.3、Light 9.0→11.2），也不会读成「列表选中行」
+   —— 卡片底那个色号的语义正是「失焦的选中行」。
 6. 改完用 `webview-vue/preview/` 至少在 Dark Modern、Light Modern、Dark High
    Contrast 三套主题下看一眼。
 
