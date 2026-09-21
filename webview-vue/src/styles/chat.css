@@ -3299,10 +3299,15 @@ body {
 
 /* The number keeps the full foreground ink at 10px — the ring around it already
  * carries the state colour, and a 10px digit in that colour fails contrast on a
- * white panel. */
+ * white panel.
+ *
+ * Capped, though: `--pi-fs-micro` is derived from the chat font size setting
+ * while the gauge is a fixed 28px box, and at `chatFontSize: 18` the rung is
+ * 13.8px — measured, "100" is then 22.4px against the 21px hole and the digits
+ * cross the stroke. 10px is what the hole holds with a margin at every size. */
 .ctx-ring-label {
   position: relative;
-  font-size: var(--pi-fs-micro);
+  font-size: min(var(--pi-fs-micro), 10px);
   line-height: 1;
   color: var(--pi-text);
   font-variant-numeric: tabular-nums;

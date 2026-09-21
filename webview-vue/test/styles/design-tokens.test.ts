@@ -107,7 +107,7 @@ describe("the chat input's control row", () => {
   });
 
   it("draws the context ring's outer edge on that same control size", () => {
-    // The ring's box is taller than the row so a 10px percentage fits in its
+    // The ring's box is taller than the row so a 10px reading fits in its
     // hole, but the stroke lands on 26px — `2 × (r + stroke/2)` in the viewBox —
     // which is what lines its edge up with the circles beside it.
     const ring = /\.ctx-ring\s*\{([^}]*)\}/.exec(chat)?.[1] ?? "";
@@ -117,5 +117,13 @@ describe("the chat input's control row", () => {
       readFileSync("src/components/Composer.vue", "utf8"),
     );
     expect(viewBox, "the ring's viewBox moved").not.toBeNull();
+  });
+
+  it("caps the ring's reading at what the gauge can hold", () => {
+    // `--pi-fs-micro` is derived from the chat font size setting, the gauge is a
+    // fixed 28px box, and the hole is 21px. At `chatFontSize: 18` the rung is
+    // 13.8px, where "100" measures 22.4px — the digits crossed the stroke.
+    const label = /\.ctx-ring-label\s*\{([^}]*)\}/.exec(chat)?.[1] ?? "";
+    expect(label).toContain("font-size: min(var(--pi-fs-micro), 10px)");
   });
 });
