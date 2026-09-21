@@ -252,8 +252,9 @@ body {
 }
 
 /* The permission pill yields first as the bar tightens (higher shrink than
- * the model picker) and never goes below the "+" button's 30px footprint;
- * its label ellipsises smoothly on the way down instead of snapping. */
+ * the model picker) and never goes below the `+` button's footprint — the two
+ * read the same token, so they stay the same size; its label ellipsises
+ * smoothly on the way down instead of snapping. */
 .composer-controls-bar > .permission-wrap {
   flex-shrink: 4;
   min-width: var(--pi-h-chat-control);
@@ -272,44 +273,6 @@ body {
 }
 .composer-controls-bar > .icon-btn {
   flex-shrink: 0;
-}
-.ctx-ring {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  flex-shrink: 0;
-  color: var(--pi-brand);
-}
-.ctx-ring svg {
-  width: 18px;
-  height: 18px;
-  transform: rotate(-90deg);
-  display: block;
-}
-.ctx-ring-track {
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2;
-  opacity: 0.3;
-}
-.ctx-ring-prog {
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-dasharray: 100;
-  stroke-dashoffset: 100;
-  transition:
-    stroke-dashoffset 0.3s ease,
-    color 0.3s ease;
-}
-.ctx-ring.is-warn {
-  color: var(--pi-warning);
-}
-.ctx-ring.is-error {
-  color: var(--pi-danger);
 }
 .ctx-tooltip {
   position: fixed;
@@ -2769,29 +2732,6 @@ body {
   font-size: var(--pi-fs-micro);
 }
 
-/* ── F · context usage ring ──────────────────────────────────────────────── */
-
-.ctx-ring {
-  width: 28px;
-  height: 28px;
-}
-
-.ctx-ring-track {
-  stroke: var(--pi-border);
-}
-
-.ctx-ring-prog {
-  stroke: var(--pi-brand);
-}
-
-.ctx-ring.is-warn .ctx-ring-prog {
-  stroke: var(--pi-warning);
-}
-
-.ctx-ring.is-error .ctx-ring-prog {
-  stroke: var(--pi-danger);
-}
-
 /* ── F · widgets: queue, rewind ────────────────────────────────────── */
 
 .widget-card,
@@ -3234,11 +3174,10 @@ body {
   color: var(--pi-icon);
 }
 
-/* Inside the bar the glyphs are the compact size: 12px in a 22px control is
- * what VS Code's own chat input uses; 16px is the chrome size the rest of the
- * panel keeps. */
+/* Inside the bar the glyphs follow the bar's own row: 14px in a 26px control
+ * keeps the ratio VS Code's chat input has at 12px in 22px. */
 .composer-controls-bar .codicon {
-  font-size: var(--pi-icon-sm);
+  font-size: var(--pi-icon-md);
 }
 
 .composer-controls-bar > .icon-btn:not(.send-btn):hover {
@@ -3307,16 +3246,31 @@ body {
 
 /* ── context ring ────────────────────────────────────────────────────────── */
 
-/* The board draws the ring at 28px; VS Code puts its own usage widget on the
- * chat input's 22px row, and the rest of the bar is on that row now, so the box
- * follows and the gauge inside fills it. */
+/* One gauge, declared once. The box is 28px so a 10px reading fits in the
+ * hole, but the *ring* is 26px across (`r 11.75 + 2.5 stroke` in a 28 unit
+ * viewBox) so its outer edge lines up with the 26px circles beside it — at the
+ * old 18px-in-a-22px-box it read as a smaller, unrelated widget (彬哥: the row
+ * looked unaligned). The label is a sibling of the `<svg>`, not a child: the
+ * svg carries `rotate(-90deg)` to start the arc at twelve o'clock, which would
+ * turn the number on its side too. */
 .ctx-ring {
-  width: var(--pi-h-chat-control);
-  height: var(--pi-h-chat-control);
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  color: var(--pi-brand);
 }
+
 .ctx-ring svg {
-  width: 20px;
-  height: 20px;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+  display: block;
 }
 
 /* This is why the unconsumed arc looked almost invisible on a white panel: the
@@ -3325,8 +3279,39 @@ body {
  * Opacity goes back to 1 and the track takes a mid grey that survives a white
  * background. */
 .ctx-ring-track {
+  fill: none;
   stroke: var(--pi-icon-disabled);
+  stroke-width: 2.5;
   opacity: 1;
+}
+
+.ctx-ring-prog {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  transition:
+    stroke-dashoffset 0.3s ease,
+    color 0.3s ease;
+}
+
+/* The number keeps the full foreground ink at 10px — the ring around it already
+ * carries the state colour, and a 10px digit in that colour fails contrast on a
+ * white panel. */
+.ctx-ring-label {
+  position: relative;
+  font-size: var(--pi-fs-micro);
+  line-height: 1;
+  color: var(--pi-text);
+  font-variant-numeric: tabular-nums;
+}
+.ctx-ring.is-warn {
+  color: var(--pi-warning);
+}
+.ctx-ring.is-error {
+  color: var(--pi-danger);
 }
 
 /* ── narrow composer: icons only ─────────────────────────────────────────── */
@@ -3369,11 +3354,11 @@ body {
     display: none;
   }
 
-  /* `min-width` rather than `width`: it fills the wrap's own 30px floor (which
-   * the 30px `+` button also sets) instead of leaving a 6px dead slot. */
+  /* `min-width` rather than `width`: it fills the wrap's own floor (which the
+   * `+` button also sets, off the same token) instead of leaving a dead slot. */
   .permission-trigger {
     gap: 0;
-    min-width: 30px;
+    min-width: var(--pi-h-chat-control);
   }
 }
 
@@ -3403,15 +3388,22 @@ body {
     min-width: 70px;
   }
 
+  /* The gauge gives its extra 2px back and drops the number with them: at this
+   * width the hole is the row's own size, and a 10px "100%" no longer fits in
+   * it. The ring itself is still readable as a ring. */
   .ctx-ring {
-    width: 24px;
-    height: 24px;
+    width: var(--pi-h-chat-control);
+    height: var(--pi-h-chat-control);
+  }
+
+  .ctx-ring-label {
+    display: none;
   }
 
   .send-btn {
     /* The bar's own gap collapses to 1px down here, which would glue the send
      * chip to the context ring; buy that pair a readable gutter back. No size
-     * here: `.composer-controls-bar > .send-btn` keeps it at the bar's 30px. */
+     * here: `.composer-controls-bar > .send-btn` keeps it on the bar's token. */
     margin-left: 5px;
   }
 }

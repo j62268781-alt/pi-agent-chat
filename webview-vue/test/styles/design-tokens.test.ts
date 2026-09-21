@@ -71,15 +71,20 @@ describe("component sheets", () => {
   });
 });
 
-describe("the chat input follows VS Code's own input geometry", () => {
+describe("the chat input's control row", () => {
   /** The bar's two icon-only controls: the `+` and the send button. */
   const controls = [
     [".composer-controls-bar > .send-btn", chat],
     [".composer-controls-bar > .icon-btn:not(.send-btn)", chat],
   ] as const;
 
-  it("sizes them on the 22px chat-input row", () => {
-    expect(tokens).toMatch(/--pi-h-chat-control:\s*22px;/);
+  it("sizes them on the bar's own 26px row", () => {
+    // The row started as VS Code's own `--chat-input-control-height` (22px).
+    // 22 next to a 13px label made every control in the bar read as small print,
+    // so the bar's row is deliberately one notch above the host's now — the
+    // token is what the two circles, the pills' height and the permission
+    // pill's floor all read, so this one value moves the whole row.
+    expect(tokens).toMatch(/--pi-h-chat-control:\s*26px;/);
     for (const [selector, css] of controls) {
       const body =
         new RegExp(`${selector.replace(/[.()]/g, "\\$&")}\\s*\\{([^}]*)\\}`).exec(css)?.[1] ?? "";
@@ -95,7 +100,22 @@ describe("the chat input follows VS Code's own input geometry", () => {
     expect(body).toContain("border-radius: var(--pi-r-lg)");
   });
 
-  it("carries the compact glyph inside the bar", () => {
-    expect(chat).toMatch(/\.composer-controls-bar \.codicon\s*\{[^}]*var\(--pi-icon-sm\)/);
+  it("keeps the glyph-to-control ratio the host's row has", () => {
+    // 12 in 22 is the host's ratio; the bar's own rung carries it to 14 in 26.
+    expect(tokens).toMatch(/--pi-icon-md:\s*14px;/);
+    expect(chat).toMatch(/\.composer-controls-bar \.codicon\s*\{[^}]*var\(--pi-icon-md\)/);
+  });
+
+  it("draws the context ring's outer edge on that same control size", () => {
+    // The ring's box is taller than the row so a 10px percentage fits in its
+    // hole, but the stroke lands on 26px — `2 × (r + stroke/2)` in the viewBox —
+    // which is what lines its edge up with the circles beside it.
+    const ring = /\.ctx-ring\s*\{([^}]*)\}/.exec(chat)?.[1] ?? "";
+    expect(ring).toContain("width: 28px");
+    expect(ring).toContain("height: 28px");
+    const viewBox = /<svg viewBox="0 0 28 28">/.exec(
+      readFileSync("src/components/Composer.vue", "utf8"),
+    );
+    expect(viewBox, "the ring's viewBox moved").not.toBeNull();
   });
 });

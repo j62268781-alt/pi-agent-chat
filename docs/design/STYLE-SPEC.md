@@ -34,8 +34,9 @@
 6. **双主题 = 主题自己切。** 不再有 `[data-theme="dark"]` 与手写 Dark 变量块，
    也不再有 `body.vscode-dark` 覆盖。高对比度因此免费获得。
 7. **唯一不跟宿主的是控件高度。** `--pi-h-*`（工具栏 48、控件 32/36/28、行 40）
-   是面板的布局骨架，动它等于重做布局；chat 输入区除外，那里的控件按 VS Code
-   的 22px 行（`--chat-input-control-height`）走 `--pi-h-chat-control`。
+   是面板的布局骨架，动它等于重做布局；chat 输入区原本照抄 VS Code 的 22px 行
+   （`--chat-input-control-height`），**现在比它高一档到 26px**——22px 的控件配 13px
+   标签，整排读起来都像小字（彬哥 2026-09-21），它现在是自己的一档。
 
 ---
 
@@ -211,28 +212,29 @@ VS Code 设置编辑器的做法是：**标签 = 界面字号 + 600 字重 + 实
 | `--pi-sp-7`…`-10`                       | `spacing.size160…size320`                     | 16 / 20 / 24 / 32   |
 | `--pi-stroke`                           | `strokeThickness`                             | 1px                 |
 | `--pi-icon-lg` / `sm`                   | `codiconFontSize` / `codiconFontSize.compact` | 16 / 12             |
+| `--pi-icon-md`                          | —（面板自己的）                               | 14                  |
 
 角色分工（沿用原设计，只是值整体跟着宿主缩了一档）：卡片与弹层 `lg`、控件 `md`、
 小片 `sm`、徽标 `xs`、正圆 `full`。
 
-- **14px 那一档取消了**：VS Code 的间距梯子没有 14。编号是稳定 id 不是序号，
-  所以留空不重排。
-- 控件高度仍是自己的：工具栏 48、控件 32 / 36 / 28、行 40。**例外**是 chat 输入区，
-  它按 VS Code 的 22px 行（`--chat-input-control-height`）走 `--pi-h-chat-control`，
-  见下。
+- **间距的 14px 那一档取消了**：VS Code 的间距梯子没有 14。编号是稳定 id 不是序号，
+  所以留空不重排。（图标那档的 `--pi-icon-md` = 14 是另一回事，见下：它是控制条
+  自己的字形，宿主只发 16 与 12。）
+- 控件高度仍是自己的：工具栏 48、控件 32 / 36 / 28、行 40。**chat 输入区也归到
+  自己这边**：`--pi-h-chat-control` = 26px，比宿主的 22px 输入行高一档，见下。
 - 阴影：`--pi-shadow-popup` / `-menu` / `-modal`（主题无关，沿用原值）。
 
-### 聊天输入区：跟 VS Code 的输入区一致
+### 聊天输入区：跟 VS Code 的输入区一致（高度除外）
 
 VS Code 把它自己的 chat 输入区写死了规格。跟它的部分：
 
-| 项         | 值                                                                              |
-| ---------- | ------------------------------------------------------------------------------- |
-| 输入容器   | 圆角 `--pi-r-lg`（`cornerRadius-large`）                                        |
-| 控件行     | 高 `--pi-h-chat-control` = 22px（= VS Code 的 `--chat-input-control-height`）   |
-| 纯图标控件 | `+` 与发送钮都是正圆（`--pi-r-full`）                                           |
-| 字形       | 控制条内的 codicon 取 compact 12px，不是 chrome 的 16px                         |
-| 占用环     | 同一条 22px 行（VS Code 的 usage widget 也在 `--chat-input-control-height` 上） |
+| 项         | 值                                                                                                                                                            |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 输入容器   | 圆角 `--pi-r-lg`（`cornerRadius-large`）                                                                                                                      |
+| 控件行     | 高 `--pi-h-chat-control` = **26px**（自己的一档，比宿主的 22px 输入行高一档）                                                                                 |
+| 纯图标控件 | `+` 与发送钮都是正圆（`--pi-r-full`）                                                                                                                         |
+| 字形       | 控制条内的 codicon 取 `--pi-icon-md` = 14px，保持宿主 22px 行上 12px 的字形/控件比                                                                            |
+| 占用环     | 框 28px（数字要放进环孔），**外径仍是 26px**——`r 11.75 + stroke 2.5`（28 的 viewBox），跟同排圆钮对齐；环内是 10px 的整数读数，`%` 只在 `aria-label` 与悬停卡 |
 
 **故意不跟的三处**（都是本面板已有的契约，见 `test/styles/control-bar.test.ts`）：
 输入容器底色走 `--pi-bg-raised`（要给用户自定义背景图留透明度通道），不是 VS Code 的
@@ -241,6 +243,9 @@ VS Code 把它自己的 chat 输入区写死了规格。跟它的部分：
 是个按钮（Dark Modern 的 `button.secondaryBackground` 是全透明）。
 
 容器与输入框之间那条分隔细线也是本面板自己的决定，VS Code 没有。
+
+**环里为什么没有 `%`**：10px 下量过——`100%` 宽 24.4px，环孔只有 21px；`100` 是
+16.2px。所以孔里只放整数，单位交给 `aria-label`（`上下文用量 100%`）和悬停卡首行。
 
 ---
 
@@ -251,9 +256,9 @@ VS Code 把它自己的 chat 输入区写死了规格。跟它的部分：
 | 组件                     | 默认                                                                                                      | 悬停                       | 选中 / 激活                                                | 禁用                                                          |
 | ------------------------ | --------------------------------------------------------------------------------------------------------- | -------------------------- | ---------------------------------------------------------- | ------------------------------------------------------------- |
 | 图标按钮                 | `--pi-icon` + 透明底                                                                                      | 底 `--pi-bg-hover`         | 字 `--pi-text-brand`                                       | `--pi-icon-disabled`                                          |
-| 发送按钮                 | 22×22 正圆、`--pi-stroke` `--pi-border`（与上传按钮同规格），纯图标，底 `--pi-send-bg`、字 `--pi-send-fg` | 底 `--pi-send-bg-hover`    | 停止态：底 `--pi-bg-control`、字 `--pi-danger`             | 底 `--pi-bg-control`、字 `--pi-text-disabled`，**不降透明度** |
-| 控制条 chip（`+`）       | 22×22 正圆、`--pi-stroke` `--pi-border`，底 `--pi-bg-control`                                             | 底 `--pi-bg-control-hover` | —                                                          | 字 `--pi-text-disabled`，`opacity: .4`                        |
-| 控制条 pill（选择器）    | 高 22px、圆角 `--pi-r-md`、`--pi-stroke` `--pi-border`，底 `--pi-bg-control`                              | 底 `--pi-bg-control-hover` | 权限为 FullAccess 时整枚走危险软底                         | 字 `--pi-text-disabled`，`opacity: .4`                        |
+| 发送按钮                 | 26×26 正圆、`--pi-stroke` `--pi-border`（与上传按钮同规格），纯图标，底 `--pi-send-bg`、字 `--pi-send-fg` | 底 `--pi-send-bg-hover`    | 停止态：底 `--pi-bg-control`、字 `--pi-danger`             | 底 `--pi-bg-control`、字 `--pi-text-disabled`，**不降透明度** |
+| 控制条 chip（`+`）       | 26×26 正圆、`--pi-stroke` `--pi-border`，底 `--pi-bg-control`                                             | 底 `--pi-bg-control-hover` | —                                                          | 字 `--pi-text-disabled`，`opacity: .4`                        |
+| 控制条 pill（选择器）    | 高 26px、圆角 `--pi-r-md`、`--pi-stroke` `--pi-border`，底 `--pi-bg-control`                              | 底 `--pi-bg-control-hover` | 权限为 FullAccess 时整枚走危险软底                         | 字 `--pi-text-disabled`，`opacity: .4`                        |
 | 行 / 列表项              | 透明                                                                                                      | 底 `--pi-bg-hover`         | 底 `--pi-bg-selected`，字 `--pi-bg-selected-foreground`    | 字 `--pi-text-disabled`                                       |
 | 输入框                   | 底 `--pi-bg-subtle`，描边 `--pi-border-input`                                                             | —                          | **无焦点配色变化**：获得焦点时边框仍是 `--pi-border-input` | 字 `--pi-text-disabled`                                       |
 | 危险操作                 | 字 / 描边 `--pi-danger`，软底 `--pi-danger-soft`                                                          | 同左                       | 同左                                                       | `--pi-text-disabled`                                          |

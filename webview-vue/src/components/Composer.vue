@@ -708,6 +708,26 @@ const ctxRingClass = computed(() => ({
 }));
 const ctxDashOffset = computed(() => String(100 - contextPercent.value));
 
+/**
+ * The gauge's own number. `contextPercent` answers 0 both for "nothing is in
+ * the context yet" and for "the host has not reported usage at all", so the
+ * label keys off a real reading — the same pair of numbers the hover card
+ * needs — rather than off the percentage.
+ *
+ * The `%` stays out of the ring: measured at 10px, "100%" is 24.4px and the
+ * ring's hole is 21px, while "100" is 16.2px. The unit lives on the element's
+ * own label (and the hover card's first line) instead.
+ */
+const ctxHasReading = computed(() => {
+  const usage = session.contextUsage;
+  return typeof usage?.tokens === "number" && typeof usage.contextWindow === "number";
+});
+const ctxPercentWhole = computed(() => Math.round(contextPercent.value));
+const ctxPercentLabel = computed(() => String(ctxPercentWhole.value));
+const ctxAriaLabel = computed(() =>
+  ctxHasReading.value ? t("Context usage") + " " + ctxPercentWhole.value + "%" : t("Context usage"),
+);
+
 // ---- context-usage readout -------------------------------------------------
 //
 // The ring is an indicator, not a readout: the numbers live in a hover card
@@ -990,22 +1010,26 @@ onUnmounted(() => {
           class="ctx-ring"
           :class="ctxRingClass"
           role="img"
-          :aria-label="t('Context usage')"
+          :aria-label="ctxAriaLabel"
           @mouseenter="onCtxEnter"
           @mouseleave="onCtxLeave"
         >
-          <svg viewBox="0 0 16 16">
-            <circle class="ctx-ring-track" cx="8" cy="8" r="6"></circle>
+          <!-- `28` unit viewBox with the stroke centred on 11.75 puts the ring's
+               outer edge at 26px, the row's own control size; the percentage
+               sits in the 21px hole that leaves. -->
+          <svg viewBox="0 0 28 28">
+            <circle class="ctx-ring-track" cx="14" cy="14" r="11.75"></circle>
             <circle
               id="ctx-ring-prog"
               class="ctx-ring-prog"
-              cx="8"
-              cy="8"
-              r="6"
+              cx="14"
+              cy="14"
+              r="11.75"
               pathLength="100"
               :style="{ strokeDashoffset: ctxDashOffset }"
             ></circle>
           </svg>
+          <span v-if="ctxHasReading" class="ctx-ring-label">{{ ctxPercentLabel }}</span>
         </span>
         <button
           id="send"

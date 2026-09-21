@@ -202,9 +202,13 @@
   );
 
   /* Fixed, like VS Code's own chrome: the chat font size setting is about
-   * reading prose, not about how big a gear glyph is. The two rungs are the
-   * host's — 16 for chrome, 12 for the compact controls inside the chat input. */
+   * reading prose, not about how big a gear glyph is. `lg` and `sm` are the
+   * host's two rungs — 16 for chrome, 12 for the compact controls. `md` is ours:
+   * the control bar's row is 26px rather than the host's 22px (see
+   * `--pi-h-chat-control`), and its glyph is one rung up to keep the same
+   * glyph-to-control ratio. */
   --pi-icon-lg: var(--vscode-codiconFontSize, 16px);
+  --pi-icon-md: 14px;
   --pi-icon-sm: var(--vscode-codiconFontSize-compact, 12px);
   /* VS Code computes its slider colour from a palette constant, so it may not
    * arrive as a variable; the previous hard-coded grey stays as the fallback. */
@@ -278,15 +282,18 @@ body.pi-surface-sidebar {
 
 /* Ours, not the host's: VS Code builds its own chrome around a 22px row, but
  * these sizes are the panel's layout skeleton (toolbar, rows, inputs) and
- * moving them is a redesign, not a token swap. The chat input's own controls do
- * follow VS Code — `--pi-h-chat-control` is its `--chat-input-control-height`. */
+ * moving them is a redesign, not a token swap. `--pi-h-chat-control` started as
+ * the host's `--chat-input-control-height` and is deliberately one notch above
+ * it now: at 22px the `+`, the pills and the send button read as small print
+ * next to 13px labels (彬哥), and everything in the bar follows this one value —
+ * the two circles, the pills' height, the permission pill's floor. */
 :root {
   --pi-h-toolbar: 48px;
   --pi-h-control: 32px;
   --pi-h-control-lg: 36px;
   --pi-h-control-sm: 28px;
   --pi-h-row: 40px;
-  --pi-h-chat-control: 22px;
+  --pi-h-chat-control: 26px;
 }
 
 /* ── elevation ───────────────────────────────────────────────────────────── */
