@@ -117,6 +117,24 @@ body {
   margin: 0;
   padding: 0;
 }
+/* Form controls do not inherit type: Chromium hands a bare `button` its own
+ * `13.3333px Arial`, so every control this sheet does not font-set renders in a
+ * different family at a different size from the panel around it — measured on 25
+ * of the 28 controls in this panel, `.queue-action`'s 引导 included (that one
+ * carries CJK, so it was rendering in Arial's fallback rather than ours).
+ *
+ * Two declarations, taken from normalize.css and no more: its
+ * `line-height: 1.15` and `margin: 0` would move baselines this sheet pins by
+ * hand, and the rest of that file is engine-quirk patching for browsers a
+ * webview never runs. */
+button,
+input,
+optgroup,
+select,
+textarea {
+  font-family: inherit;
+  font-size: 100%;
+}
 body {
   font-family: var(--pi-font);
   font-size: var(--chat-fs);

@@ -136,6 +136,23 @@ body {
   padding: 0;
 }
 
+/* Form controls do not inherit type: Chromium hands a bare `button` its own
+ * `13.3333px Arial`, so every control this sheet does not font-set renders in a
+ * different family at a different size from the panel around it. Two
+ * declarations, taken from normalize.css and no more — its `line-height: 1.15`
+ * and `margin: 0` would move baselines this sheet pins by hand, and the rest of
+ * that file patches browsers a webview never runs. The chat build carries the
+ * same rule in chat.css; each page ships its own stylesheet, so it must exist
+ * here too. */
+button,
+input,
+optgroup,
+select,
+textarea {
+  font-family: inherit;
+  font-size: 100%;
+}
+
 /* Vue mounts into an extra `#app` div. Without a definite size on it,
  * `.app { height: 100% }` resolves against `auto` and `.content` grows past the
  * viewport instead of scrolling — `body { overflow: hidden }` then clips it, so

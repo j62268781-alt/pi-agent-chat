@@ -156,6 +156,21 @@
    用户在 VS Code 里改字体，面板跟着变。
 4. 行高按用途分开：正文 1.5，元信息 1.4，标题 1.3。
 
+### 基础层：三条重置，且只从 normalize.css 取两行
+
+两份样式表（聊天 / 设置）各自带一层基础重置，两边都必须有这三条：`* { box-sizing: border-box }`、
+`html, body` 的 `margin/padding: 0`、以及**表单控件的字体继承**——`button, input, optgroup,
+select, textarea { font-family: inherit; font-size: 100% }`。
+
+第三条不是装饰：Chromium 会给裸 `button` 一个它自己的 `13.3333px Arial`，不写它，凡是没有显式
+设字体的控件都会以另一种字族、另一号字出现（实测聊天面板 28 个控件里 25 个中招，`.queue-action`
+的「引导」还带中文，走的是 Arial 的 CJK 回落）。
+
+**不引 normalize.css 这个包**：它的前提是"一份样式要在多个引擎里一致"，而 webview 只跑 VS Code
+的 Chromium；它的 `line-height: 1.15` 与 `margin: 0` 会把本面板手工钉住的基线（药丸的 `text-box`
+cap 带、26px 控件行）重新推一遍，`summary { display: list-item }` 还会碰工作折叠与压缩分隔线的
+`<details>`。契约在 `test/styles/base-layer.test.ts`。
+
 ### 设置面板的文字层级（照 VS Code 自己的设置编辑器）
 
 VS Code 设置编辑器的做法是：**标签 = 界面字号 + 600 字重 + 实色**，只有描述是弱化的
