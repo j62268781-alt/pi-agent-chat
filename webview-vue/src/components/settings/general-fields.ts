@@ -56,18 +56,6 @@ export const SETTING_GROUPS: readonly SettingGroup[] = [
         options: ["off", "minimal", "low", "medium", "high", "xhigh", "max"],
       },
       {
-        key: "hideThinkingBlock",
-        label: t("Hide thinking block"),
-        type: "bool",
-        desc: t("Hide thinking blocks in output"),
-      },
-      {
-        key: "showCacheMissNotices",
-        label: t("Show cache-miss notices"),
-        type: "bool",
-        desc: t("Show transcript notices for significant prompt-cache misses"),
-      },
-      {
         key: "thinkingBudgets",
         label: t("Thinking budgets"),
         type: "json",
@@ -78,19 +66,6 @@ export const SETTING_GROUPS: readonly SettingGroup[] = [
   {
     title: t("UI & Display"),
     fields: [
-      { key: "theme", label: t("Theme"), type: "string", def: "dark", placeholder: "dark" },
-      {
-        key: "externalEditor",
-        label: t("External editor"),
-        type: "string",
-        desc: t('Command for Ctrl+G external editor (e.g. "code --wait")'),
-      },
-      {
-        key: "quietStartup",
-        label: t("Quiet startup"),
-        type: "bool",
-        desc: t("Hide startup header"),
-      },
       {
         key: "defaultProjectTrust",
         label: t("Default project trust"),
@@ -98,75 +73,7 @@ export const SETTING_GROUPS: readonly SettingGroup[] = [
         options: ["ask", "always", "never"],
         desc: t("Fallback project trust behavior (global only)"),
       },
-      {
-        key: "collapseChangelog",
-        label: t("Collapse changelog"),
-        type: "bool",
-        desc: t("Show condensed changelog after updates"),
-      },
       { key: "enableInstallTelemetry", label: t("Install telemetry"), type: "bool", def: true },
-      {
-        key: "enableAnalytics",
-        label: t("Analytics"),
-        type: "bool",
-        desc: t("Opt-in analytics data sharing"),
-      },
-      { key: "trackingId", label: t("Tracking ID"), type: "string" },
-      {
-        key: "doubleEscapeAction",
-        label: t("Double-escape action"),
-        type: "enum",
-        options: ["tree", "fork", "none"],
-        def: "tree",
-      },
-      {
-        key: "treeFilterMode",
-        label: t("Tree filter mode"),
-        type: "enum",
-        options: ["default", "no-tools", "user-only", "labeled-only", "all"],
-        def: "default",
-      },
-      {
-        key: "editorPaddingX",
-        label: t("Editor padding X"),
-        type: "number",
-        min: 0,
-        max: 3,
-        def: 0,
-      },
-      { key: "outputPad", label: t("Output pad"), type: "number", min: 0, max: 1, def: 1 },
-      {
-        key: "autocompleteMaxVisible",
-        label: t("Autocomplete max visible"),
-        type: "number",
-        min: 3,
-        max: 20,
-        def: 5,
-      },
-      {
-        key: "showHardwareCursor",
-        label: t("Show hardware cursor"),
-        type: "bool",
-        desc: t("Show the terminal cursor while TUI positions it for IME support"),
-      },
-      {
-        key: "tuiMode",
-        label: t("TUI mode"),
-        type: "enum",
-        options: ["regular", "fullscreen"],
-        def: "regular",
-        desc: t('Interactive TUI mode: "regular" or experimental "fullscreen"'),
-      },
-      {
-        key: "fullscreenScrollbar",
-        label: t("Fullscreen scrollbar"),
-        type: "enum",
-        options: ["auto", "always", "hidden"],
-        def: "auto",
-        desc: t(
-          'Fullscreen transcript scrollbar: "auto" shows it while scrolling, "always" keeps it visible, "hidden" hides it',
-        ),
-      },
     ],
   },
   {
@@ -178,18 +85,6 @@ export const SETTING_GROUPS: readonly SettingGroup[] = [
         type: "string",
         placeholder: "http://127.0.0.1:7890",
         desc: t("Applied as HTTP_PROXY and HTTPS_PROXY (global only)"),
-      },
-    ],
-  },
-  {
-    title: t("Warnings"),
-    fields: [
-      {
-        key: "warnings.anthropicExtraUsage",
-        label: t("Anthropic extra usage warning"),
-        type: "bool",
-        def: true,
-        desc: t("Show a warning when Anthropic subscription auth may use paid extra usage"),
       },
     ],
   },
@@ -228,12 +123,6 @@ export const SETTING_GROUPS: readonly SettingGroup[] = [
         type: "number",
         def: 16384,
         desc: t("Tokens reserved for branch summarization"),
-      },
-      {
-        key: "branchSummary.skipPrompt",
-        label: t("Skip prompt"),
-        type: "bool",
-        desc: t('Skip "Summarize branch?" prompt on /tree navigation'),
       },
     ],
   },
@@ -346,32 +235,10 @@ export const SETTING_GROUPS: readonly SettingGroup[] = [
     ],
   },
   {
-    title: t("Model Cycling"),
-    fields: [
-      {
-        key: "enabledModels",
-        label: t("Enabled models"),
-        type: "string[]",
-        desc: t("Model patterns for Ctrl+P cycling (one per line, globs like claude-* supported)"),
-      },
-    ],
-  },
-  {
-    title: t("Markdown"),
-    fields: [
-      { key: "markdown.codeBlockIndent", label: t("Code block indent"), type: "string", def: "  " },
-      {
-        key: "markdown.mermaid",
-        label: t("Mermaid rendering"),
-        type: "enum",
-        options: ["off", "final", "streaming"],
-        def: "streaming",
-        desc: t('Mermaid rendering mode: "off", "final", or "streaming"'),
-      },
-    ],
-  },
-  {
-    title: t("Resources"),
+    // 「资源加载位置」, not 「资源」 — the sidebar section named Resources holds
+    // the tabs that edit the resources themselves. This group only says where pi
+    // loads them from, and one name for both reads as a duplicate control.
+    title: t("Resource Locations"),
     fields: [
       {
         key: "packages",
@@ -389,26 +256,25 @@ export const SETTING_GROUPS: readonly SettingGroup[] = [
         key: "skills",
         label: t("Skills"),
         type: "string[]",
-        desc: t("Local skill file paths or directories (one per line)"),
+        desc: t(
+          "Extra skill paths or directories (one per line); the skills themselves are edited in the Skills tab",
+        ),
       },
       {
         key: "prompts",
         label: t("Prompts"),
         type: "string[]",
-        desc: t("Local prompt template paths or directories (one per line)"),
+        desc: t(
+          "Extra prompt template paths or directories (one per line); the templates are edited in the Prompt Templates tab",
+        ),
       },
       {
         key: "themes",
         label: t("Themes"),
         type: "string[]",
-        desc: t("Local theme file paths or directories (one per line)"),
-      },
-      {
-        key: "enableSkillCommands",
-        label: t("Enable skill commands"),
-        type: "bool",
-        def: true,
-        desc: t("Register skills as /skill:name commands"),
+        desc: t(
+          "Local theme file paths or directories (one per line) — themes have no tab of their own",
+        ),
       },
     ],
   },

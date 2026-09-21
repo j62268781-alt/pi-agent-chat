@@ -42,20 +42,9 @@ const hint = computed(() =>
   ),
 );
 
-/** Which scope a saved agent lives in; built-ins resolve to their override. */
+/** Which scope a saved agent lives in. */
 function scopeFor(agent: AgentItem): string {
   return agent.source === "project" ? "project" : "user";
-}
-
-function badgeVariant(agent: AgentItem): string {
-  if (agent.source === "user") return "user";
-  if (agent.source === "project") return "project";
-  if (agent.source === "builtin") return agent.hasOverride ? "cli" : "builtin";
-  return "other";
-}
-
-function sourceLabel(agent: AgentItem): string {
-  return agent.source === "builtin" && agent.hasOverride ? t("builtin+override") : t(agent.source);
 }
 
 /** The saved model stays selectable even when it left the registry. */
@@ -144,7 +133,7 @@ function save(): void {
         :description="agent.description"
       >
         <template #badges>
-          <ItemBadge :label="sourceLabel(agent)" :variant="badgeVariant(agent)" />
+          <ItemBadge :label="t(agent.source)" :variant="agent.source" />
           <ItemBadge v-if="agent.model" :label="agent.model" variant="package" />
         </template>
         <template #actions>
@@ -160,16 +149,6 @@ function save(): void {
             <span class="codicon codicon-go-to-file"></span>
           </button>
           <button
-            v-if="agent.isBuiltin && agent.hasOverride"
-            class="btn-icon"
-            type="button"
-            :title="t('Reset to builtin')"
-            @click="store.send({ type: 'resetBuiltin', name: agent.name, scope: scopeFor(agent) })"
-          >
-            <span class="codicon codicon-discard"></span>
-          </button>
-          <button
-            v-if="!agent.isBuiltin"
             class="btn-icon btn-danger"
             type="button"
             :title="t('Delete')"

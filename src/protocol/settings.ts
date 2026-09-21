@@ -125,9 +125,7 @@ export interface AgentItem {
   model?: string;
   systemPrompt: string;
   disableModelInvocation: boolean;
-  isBuiltin: boolean;
-  hasOverride: boolean;
-  source: "builtin" | "user" | "project";
+  source: "user" | "project";
   filePath: string;
 }
 
@@ -239,6 +237,14 @@ export interface SysPromptTabData {
 /** `~/.pi/agent/settings.json`, verbatim. */
 export interface GeneralTabData {
   values: Record<string, unknown>;
+  /**
+   * Candidate values per field key, for the fields whose value has to match
+   * something that exists elsewhere (`defaultProvider` names a provider,
+   * `defaultModel` a model). Free text with a suggestion list, not a closed
+   * enum: pi still accepts a value the registry did not report — no auth, a
+   * gateway that was just added — and blocking it here would be a dead end.
+   */
+  suggestions?: Record<string, string[]>;
 }
 
 /**
@@ -369,12 +375,10 @@ export type WebviewToSettings =
   | { type: "oauthLogout"; providerId: string }
   | { type: "saveApiKey"; providerId: string; apiKey: string }
   | { type: "removeApiKey"; providerId: string }
-  | { type: "writeModelsJson"; data: ModelsJson }
   // ---- agents ----
   | { type: "createAgent"; scope: string; data: AgentFormData }
   | { type: "updateAgent"; scope: string; data: AgentFormData }
   | { type: "deleteAgent"; name: string; scope: string }
-  | { type: "resetBuiltin"; name: string; scope: string }
   | { type: "openAgentFile"; filePath: string }
   // ---- prompts ----
   | { type: "createPrompt"; scope: string; data: PromptFormData }

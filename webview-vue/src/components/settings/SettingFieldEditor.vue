@@ -8,13 +8,31 @@
 -->
 <script setup lang="ts">
 import { computed } from "vue";
+import { t } from "@/lib/i18n.ts";
 import type { EditorValue, SettingField } from "./general-fields.ts";
 
-defineProps<{ field: SettingField }>();
+const props = withDefaults(
+  defineProps<{
+    field: SettingField;
+    /** Values the host just reported for this field, e.g. the model ids. */
+    suggestions?: string[];
+  }>(),
+  { suggestions: () => [] },
+);
 const value = defineModel<EditorValue>({ required: true });
 
 /** Every control except the checkbox binds to the string form. */
 const text = computed(() => (typeof value.value === "string" ? value.value : ""));
+
+/**
+ * Typed something the registry does not list. A warning, never a block: the
+ * registry can be empty (no auth) or miss a gateway added since it last
+ * refreshed, and pi accepts the value either way.
+ */
+const unmatched = computed(
+  () =>
+    props.suggestions.length > 0 && text.value !== "" && !props.suggestions.includes(text.value),
+);
 
 function onText(event: Event): void {
   value.value = (event.target as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement).value;
@@ -68,9 +86,20 @@ function onCheck(event: Event): void {
         @input="onText"
       ></textarea>
 
-      <input v-else :value="text" :placeholder="field.placeholder" @input="onText" />
+      <input
+        v-else
+        :value="text"
+        :placeholder="field.placeholder"
+        :class="{ 'field-unmatched': unmatched }"
+        :list="suggestions.length ? `${field.key}-suggest` : undefined"
+        @input="onText"
+      />
+      <datalist v-if="suggestions.length" :id="`${field.key}-suggest`">
+        <option v-for="option in suggestions" :key="option" :value="option"></option>
+      </datalist>
     </template>
 
     <div v-if="field.desc" class="cfg-desc">{{ field.desc }}</div>
+    <div v-if="unmatched" class="field-warning">{{ t("Unrecognized value") }}</div>
   </div>
 </template>

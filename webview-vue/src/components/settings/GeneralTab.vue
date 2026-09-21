@@ -176,6 +176,7 @@ function save(): void {
           v-for="field in group.fields"
           :key="field.key"
           :field="field"
+          :suggestions="data.suggestions?.[field.key] ?? []"
           :model-value="editors[field.key] ?? ''"
           @update:model-value="editors[field.key] = $event"
         />

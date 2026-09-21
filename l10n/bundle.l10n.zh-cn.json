@@ -55,7 +55,6 @@
   "Open Pi Settings": "打开 Pi 设置",
   "Open Models settings": "打开模型设置",
   "Open VS Code settings": "打开 VS Code 设置",
-  "\"{0}\" is a built-in agent. Edit its model instead.": "\"{0}\" 是内置 agent。请改为编辑它的模型。",
   "pi-agent-chat on GitHub": "pi-agent-chat 的 GitHub 主页",
   "Pi binary not found. Install it globally?": "未找到 Pi 可执行文件。要全局安装吗？",
   "Pi Chat": "Pi 聊天",

@@ -19,7 +19,6 @@ import {
 } from "../../services/settings/settings-config.ts";
 import {
   readModelsJson,
-  writeModelsJson,
   addProvider,
   updateProvider,
   renameProvider,
@@ -48,8 +47,6 @@ import {
   listAgents,
   writeAgent,
   deleteAgent,
-  resetBuiltin,
-  isBuiltinName,
   isValidAgentName,
 } from "../../services/agents/agents-config.ts";
 import {
@@ -265,42 +262,30 @@ export async function openSettingsPanel(
           removeApiKey(msg.providerId);
           await postTabData("models");
           break;
-        case "writeModelsJson":
-          writeModelsJson(msg.data);
-          await postTabData("models");
-          break;
 
         // ---- Agents ----
         case "createAgent": {
-          const builtinDir = getBuiltinAgentsDir(extensionUri);
           const scope = resolveScope(msg.scope);
           if (scope === "project" && !cwd)
             throw new Error(t("No workspace folder for project scope"));
           if (!isValidAgentName(msg.data.name))
             throw new Error(t("Invalid agent name: {0}", msg.data.name));
-          if (isBuiltinName(builtinDir, msg.data.name))
-            throw new Error(t('"{0}" is a built-in agent. Edit its model instead.', msg.data.name));
-          writeAgent(builtinDir, msg.data.name, msg.data, scope, cwd);
+          writeAgent(msg.data.name, msg.data, scope, cwd);
           await postTabData("agents");
           break;
         }
         case "updateAgent": {
-          const builtinDir = getBuiltinAgentsDir(extensionUri);
           const scope = resolveScope(msg.scope);
           if (scope === "project" && !cwd)
             throw new Error(t("No workspace folder for project scope"));
           if (!isValidAgentName(msg.data.name))
             throw new Error(t("Invalid agent name: {0}", msg.data.name));
-          writeAgent(builtinDir, msg.data.name, msg.data, scope, cwd);
+          writeAgent(msg.data.name, msg.data, scope, cwd);
           await postTabData("agents");
           break;
         }
         case "deleteAgent":
-          deleteAgent(getBuiltinAgentsDir(extensionUri), msg.name, resolveScope(msg.scope), cwd);
-          await postTabData("agents");
-          break;
-        case "resetBuiltin":
-          resetBuiltin(getBuiltinAgentsDir(extensionUri), msg.name, resolveScope(msg.scope), cwd);
+          deleteAgent(msg.name, resolveScope(msg.scope), cwd);
           await postTabData("agents");
           break;
         case "openAgentFile": {
@@ -495,7 +480,7 @@ async function buildTabData(
       return { providers, modelsJson, oauthStatuses, apikeyStatuses };
     }
     case "agents": {
-      const agents = listAgents(getBuiltinAgentsDir(extensionUri), cwd);
+      const agents = listAgents(cwd);
       const models = await getAvailableAgentModels();
       const agentsDir = join(getAgentDir(), "agents");
       return {
@@ -604,7 +589,25 @@ async function buildTabData(
       return { values };
     }
     case "settings": {
-      return { values: readSettingsJson() };
+      // The two default-* keys name things the model registry knows about, so
+      // the tab gets the current list to suggest against. An empty list (no
+      // auth, registry unreachable) simply means no suggestions.
+      const keys = await getAvailableAgentModels();
+      const providers = new Set<string>();
+      const models = new Set<string>();
+      for (const key of keys) {
+        const at = key.indexOf("/");
+        if (at < 0) continue;
+        providers.add(key.slice(0, at));
+        models.add(key.slice(at + 1));
+      }
+      return {
+        values: readSettingsJson(),
+        suggestions: {
+          defaultProvider: [...providers].sort((a, b) => a.localeCompare(b)),
+          defaultModel: [...models].sort((a, b) => a.localeCompare(b)),
+        },
+      };
     }
     case "commit": {
       const cfg = vscode.workspace.getConfiguration("pi-agent-chat");
@@ -651,12 +654,10 @@ function computeSourceLabel(si: { origin: string; source: string; scope: string 
 
 // Fork change: the bundled subagent extension and its built-in agent definitions
 // were removed — subagents come from the user-installed pi-subagents package, and
-// agent definitions live in `~/.pi/agent/agents/` (pi-subagents-native). Point the
-// Agents tab at a non-existent directory so nothing is reported as "built-in" and
-// user / project scope creation is never blocked by a same-name builtin.
-function getBuiltinAgentsDir(extensionUri: vscode.Uri): string {
-  return join(extensionUri.fsPath, "pi-extensions", "agents.retired");
-}
+// agent definitions live in `~/.pi/agent/agents/` (pi-subagents-native). Nothing
+// can be "built-in" any more, so the Agents tab has no builtin tier at all: no
+// same-name builtin to block user / project scope creation, and nothing to reset
+// an override back to.
 
 /**
  * Install state of an optional pi ecosystem package. Both pi-subagents and

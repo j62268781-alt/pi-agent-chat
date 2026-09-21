@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync
 import { join } from "node:path";
 import { getAgentDir, parseFrontmatter } from "@earendil-works/pi-coding-agent";
 
-export type AgentSource = "builtin" | "user" | "project";
+export type AgentSource = "user" | "project";
 
 export interface AgentFile {
   name: string;
@@ -11,8 +11,6 @@ export interface AgentFile {
   model?: string;
   systemPrompt: string;
   disableModelInvocation: boolean;
-  isBuiltin: boolean;
-  hasOverride: boolean;
   source: AgentSource;
   filePath: string;
 }
@@ -107,8 +105,6 @@ function parseAgentFile(filePath: string, source: AgentSource): AgentFile | null
     model: typeof frontmatter.model === "string" ? frontmatter.model : undefined,
     systemPrompt: body,
     disableModelInvocation,
-    isBuiltin: false,
-    hasOverride: false,
     source,
     filePath,
   };
@@ -132,57 +128,26 @@ function loadAgentsFromDir(dir: string, source: AgentSource): AgentFile[] {
   return agents;
 }
 
-export function listBuiltinAgentNames(builtinDir: string): Set<string> {
-  return new Set(loadAgentsFromDir(builtinDir, "builtin").map((a) => a.name));
-}
-
-export function listAgents(builtinDir: string, projectDir?: string): AgentFile[] {
-  const builtins = loadAgentsFromDir(builtinDir, "builtin");
-  const userAgents = loadAgentsFromDir(getUserAgentsDir(), "user");
-  const projectAgents = projectDir
-    ? loadAgentsFromDir(getProjectAgentsDir(projectDir), "project")
-    : [];
-
-  const userByName = new Map(userAgents.map((u) => [u.name, u]));
-  const projectByName = new Map(projectAgents.map((p) => [p.name, p]));
-  const builtinByName = new Map(builtins.map((b) => [b.name, b]));
-  const allNames = new Set<string>([
-    ...builtinByName.keys(),
-    ...userByName.keys(),
-    ...projectByName.keys(),
-  ]);
-
-  const result: AgentFile[] = [];
-  for (const name of allNames) {
-    const isBuiltin = builtinByName.has(name);
-    const proj = projectByName.get(name);
-    const user = userByName.get(name);
-    const builtin = builtinByName.get(name);
-    if (proj) {
-      result.push({ ...proj, isBuiltin, hasOverride: isBuiltin, source: "project" });
-    } else if (user) {
-      result.push({ ...user, isBuiltin, hasOverride: isBuiltin, source: "user" });
-    } else if (builtin) {
-      result.push({ ...builtin, isBuiltin: true, hasOverride: false, source: "builtin" });
+/**
+ * The agents the user owns, project scope winning over user scope by name.
+ *
+ * There used to be a third, "builtin" tier: the fork shipped its own subagent
+ * extension plus bundled agent definitions. Both are gone (subagents come from
+ * the user-installed pi-subagents package) and nothing can be built in any more.
+ */
+export function listAgents(projectDir?: string): AgentFile[] {
+  const byName = new Map<string, AgentFile>();
+  for (const agent of loadAgentsFromDir(getUserAgentsDir(), "user")) byName.set(agent.name, agent);
+  if (projectDir) {
+    for (const agent of loadAgentsFromDir(getProjectAgentsDir(projectDir), "project")) {
+      byName.set(agent.name, agent);
     }
   }
-  result.sort((a, b) => {
-    if (a.isBuiltin !== b.isBuiltin) return a.isBuiltin ? -1 : 1;
-    return a.name.localeCompare(b.name);
-  });
-  return result;
+  return [...byName.values()].sort((a, b) => a.name.localeCompare(b.name));
 }
 
-export function readAgent(
-  builtinDir: string,
-  name: string,
-  projectDir?: string,
-): AgentFile | undefined {
-  return listAgents(builtinDir, projectDir).find((a) => a.name === name);
-}
-
-export function isBuiltinName(builtinDir: string, name: string): boolean {
-  return listBuiltinAgentNames(builtinDir).has(name);
+export function readAgent(name: string, projectDir?: string): AgentFile | undefined {
+  return listAgents(projectDir).find((a) => a.name === name);
 }
 
 function resolveScopeDir(scope: "user" | "project", projectDir?: string): string {
@@ -194,7 +159,6 @@ function resolveScopeDir(scope: "user" | "project", projectDir?: string): string
 }
 
 export function writeAgent(
-  builtinDir: string,
   name: string,
   data: AgentFormData,
   scope: "user" | "project" = "user",
@@ -203,47 +167,23 @@ export function writeAgent(
   if (!isValidAgentName(name)) throw new Error(`Invalid agent name: ${name}`);
   if (data.name !== name) throw new Error(`Agent name mismatch: ${name} vs ${data.name}`);
 
-  const builtin = isBuiltinName(builtinDir, name);
   const targetDir = resolveScopeDir(scope, projectDir);
   const targetPath = join(targetDir, `${name}.md`);
   writeFileSync(targetPath, serializeAgent(data), "utf8");
 
   const parsed = parseAgentFile(targetPath, scope);
   if (!parsed) throw new Error(`Failed to write agent: ${name}`);
-  return { ...parsed, isBuiltin: builtin, hasOverride: builtin, source: scope };
+  return parsed;
 }
 
 export function deleteAgent(
-  builtinDir: string,
   name: string,
   scope: "user" | "project" = "user",
   projectDir?: string,
 ): void {
   if (!isValidAgentName(name)) throw new Error(`Invalid agent name: ${name}`);
-  if (isBuiltinName(builtinDir, name)) {
-    const dir = resolveScopeDir(scope, projectDir);
-    const overridePath = join(dir, `${name}.md`);
-    if (existsSync(overridePath)) {
-      rmSync(overridePath, { force: true });
-      return;
-    }
-    throw new Error(`Cannot delete built-in agent: ${name}`);
-  }
   const dir = resolveScopeDir(scope, projectDir);
   const filePath = join(dir, `${name}.md`);
   if (!existsSync(filePath)) throw new Error(`Agent not found: ${name}`);
   rmSync(filePath, { force: true });
-}
-
-export function resetBuiltin(
-  builtinDir: string,
-  name: string,
-  scope: "user" | "project" = "user",
-  projectDir?: string,
-): void {
-  if (!isBuiltinName(builtinDir, name)) throw new Error(`Not a built-in agent: ${name}`);
-  const dir = resolveScopeDir(scope, projectDir);
-  const overridePath = join(dir, `${name}.md`);
-  if (!existsSync(overridePath)) throw new Error(`No override to reset for: ${name}`);
-  rmSync(overridePath, { force: true });
 }

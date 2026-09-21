@@ -1161,6 +1161,20 @@ body {
   line-height: 1.5;
 }
 
+/* A value outside the host's suggestion list. Warning, not error: pi accepts
+ * it, we just cannot confirm the thing exists. The border rule repeats the
+ * shared input selector's `:not()`s because that is what it has to outrank. */
+.cfg-field input.field-unmatched:not([type="checkbox"]):not([type="radio"]) {
+  border-color: var(--pi-warning);
+}
+
+.field-warning {
+  margin: 2px 0 var(--pi-sp-2);
+  color: var(--pi-text-warning);
+  font-size: var(--pi-fs-meta);
+  line-height: 1.5;
+}
+
 /* ── toast (board F W1) ──────────────────────────────────────────────────── */
 
 .toast {
