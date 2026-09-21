@@ -26,6 +26,8 @@
   "Cache miss": "缓存未命中",
   "Cache miss after {0}m idle": "空闲 {0} 分钟后缓存未命中",
   "Cache miss after model switch": "切换模型后缓存未命中",
+  "Cache read": "读缓存",
+  "Cache write": "写缓存",
   "Cancel": "取消",
   "Cancelled": "已取消",
   "Close": "关闭",

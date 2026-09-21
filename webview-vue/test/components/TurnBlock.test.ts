@@ -97,13 +97,24 @@ describe("TurnBlock — is this turn still running?", () => {
     setActivePinia(createPinia());
   });
 
-  it("reads as processed when the session is idle, and carries the closing line", () => {
+  it("says nothing about a plain success on the closing line, and carries it", () => {
     const wrapper = mountTurn({}, true);
 
+    // The fold head labels the group it folds; the closing line has nothing to
+    // report about a turn that simply worked (彬哥).
     expect(wrapper.get(".work-head").text()).toContain(t("Processed"));
     const status = wrapper.get(".msg-status-line");
-    expect(status.text()).toContain(t("Processed"));
+    expect(status.find(".msg-outcome").exists()).toBe(false);
+    expect(status.text()).not.toContain(t("Processed"));
     expect(status.get(".msg-duration").text().trim()).not.toBe("");
+  });
+
+  it("still names a failure and a stop on the closing line", () => {
+    const failed = mountTurn({ errorMessage: "boom" }, true);
+    expect(failed.get(".msg-status-line .msg-outcome").text()).toBe(t("failed"));
+
+    const stopped = mountTurn({ stopReason: "aborted" }, true);
+    expect(stopped.get(".msg-status-line .msg-outcome").text()).toBe(t("Stopped"));
   });
 
   it("keeps a settled turn in the middle settled while the session streams", () => {
@@ -155,7 +166,7 @@ describe("TurnBlock — the turn's cache counters", () => {
     return { message: { ...assistant(block), usage }, block };
   };
 
-  it("sums the turn's messages, stays compact and keeps the full string on hover", () => {
+  it("sums the turn's messages and spells the buckets out on hover", () => {
     const wrapper = mountTurn({
       workBlocks: [
         usageEntry("text-a", {
@@ -169,9 +180,12 @@ describe("TurnBlock — the turn's cache counters", () => {
       finalBlocks: [usageEntry("text-b", { input: 300, output: 40, cacheRead: 5000 })],
     });
 
+    // `R24k W900` was what 彬哥 asked about; the line says what the numbers are.
     const span = wrapper.get(".msg-status-line span[title]");
-    expect(span.text()).toBe("R24k W900");
-    expect(span.attributes("title")).toBe(`\u21911.5k \u2193380 R24k W900 $0.0123`);
+    expect(span.text()).toBe(`${t("Cache read")} 24k ${t("Cache write")} 900`);
+    expect(span.attributes("title")).toBe(
+      `\u21911.5k \u2193380 ${t("Cache read")} 24k ${t("Cache write")} 900 $0.0123`,
+    );
   });
 
   it("stays out of the line when the provider reported no cache activity", () => {

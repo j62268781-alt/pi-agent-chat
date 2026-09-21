@@ -45,10 +45,11 @@ function readUsage(value: unknown): UsageNumbers | null {
 
 /**
  * Summary text for one assistant message's usage, e.g.
- * `"1 Turn ↑12.3k ↓1.2k R8k W2k $0.0123 ctx:21k"`.
+ * `"1 Turn ↑12.3k ↓1.2k 读缓存 8k 写缓存 2k $0.0123 ctx:21k"`.
  *
- * The glyph format is kept from the original (`↑`/`↓` in/out, `R`/`W` cache
- * buckets, `ctx:` watermark, 4-decimal cost); only the turn word is localized.
+ * The arrows, the `ctx:` watermark and the 4-decimal cost are kept from the
+ * original; the two cache buckets are spelled out instead of `R`/`W`, which
+ * nobody could read (彬哥). Only the turn word is localized when the count is 1.
  * The model name is not appended here — the caller renders it separately.
  */
 export function formatUsage(usage: unknown): string {
@@ -58,8 +59,8 @@ export function formatUsage(usage: unknown): string {
   if (u.turns) parts.push(u.turns + " " + (u.turns > 1 ? t("Turns") : t("Turn")));
   if (u.input) parts.push("\u2191" + formatTokens(u.input));
   if (u.output) parts.push("\u2193" + formatTokens(u.output));
-  if (u.cacheRead) parts.push("R" + formatTokens(u.cacheRead));
-  if (u.cacheWrite) parts.push("W" + formatTokens(u.cacheWrite));
+  if (u.cacheRead) parts.push(t("Cache read") + " " + formatTokens(u.cacheRead));
+  if (u.cacheWrite) parts.push(t("Cache write") + " " + formatTokens(u.cacheWrite));
   if (u.costTotal) parts.push("$" + u.costTotal.toFixed(4));
   if (u.contextTokens) parts.push("ctx:" + formatTokens(u.contextTokens));
   return parts.join(" ");

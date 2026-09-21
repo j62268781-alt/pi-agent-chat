@@ -52,11 +52,24 @@ onUnmounted(() => {
   if (ticker !== undefined) clearInterval(ticker);
 });
 
-/** Outcome word of a settled turn, shared by the fold head and the status line. */
+/** Outcome word of a settled turn: the fold head's label. */
 const outcome = computed(() => {
   if (props.turn.errorMessage) return t("failed");
   if (props.turn.stopReason === "aborted") return t("Stopped");
   return t("Processed");
+});
+
+/**
+ * What the closing status line says about the outcome — nothing, usually.
+ *
+ * 「已处理」 on every single turn was a word with nothing behind it (彬哥), and
+ * the fold head above already carries it whenever there is work to fold. A
+ * failure or a stop is the case the line exists for, so only those speak.
+ */
+const settledOutcome = computed(() => {
+  if (props.turn.errorMessage) return t("failed");
+  if (props.turn.stopReason === "aborted") return t("Stopped");
+  return "";
 });
 
 const outcomeClass = computed(() => {
@@ -87,9 +100,10 @@ const turnDuration = computed(() => {
 
 /**
  * Cache counters for the whole turn — every assistant message in it, not just
- * the last one, because a turn that uses tools is several messages. Kept to the
- * two cache buckets on the line itself: a sidebar row has no room for the full
- * `↑12.3k ↓1.2k R8k W2k $0.0123`, which is what the span's hover title shows.
+ * the last one, because a turn that uses tools is several messages. The two
+ * buckets are spelled out (读缓存/写缓存): `R205K` was the first thing 彬哥 had to
+ * ask about, and a counter nobody can read is not a counter. The span's hover
+ * title carries the rest of the picture (`formatUsage`).
  */
 const turnUsage = computed(() => {
   const messages = [...props.turn.workBlocks, ...props.turn.finalBlocks].map(
@@ -97,8 +111,8 @@ const turnUsage = computed(() => {
   );
   const totals = aggregateUsage(messages);
   const parts: string[] = [];
-  if (totals.cacheRead) parts.push("R" + formatTokens(totals.cacheRead));
-  if (totals.cacheWrite) parts.push("W" + formatTokens(totals.cacheWrite));
+  if (totals.cacheRead) parts.push(t("Cache read") + " " + formatTokens(totals.cacheRead));
+  if (totals.cacheWrite) parts.push(t("Cache write") + " " + formatTokens(totals.cacheWrite));
   if (parts.length === 0) return null;
   return { short: parts.join(" "), full: formatUsage(totals) };
 });
@@ -225,13 +239,16 @@ async function forkTurn(): Promise<void> {
     <BlockView :block="entry.block" />
   </div>
 
-  <!-- Every settled turn closes with its own status line: outcome, duration and
-       the timestamp. While the turn runs the head already counts the seconds, so
-       the line stays out of the way until there is an outcome to report.
+  <!-- Every settled turn closes with its own status line: the outcome when it
+       was not a plain success, the duration and the timestamp. While the turn
+       runs the head already counts the seconds, so the line stays out of the
+       way until there is an outcome to report.
        Forking belongs here, not on the user bubble: a turn is only a branch
        point once the answer has landed. -->
   <div v-if="turn.messageTime && !running" class="msg-meta msg-status-line">
-    <span v-if="hasContent" class="msg-outcome" :class="outcomeClass">{{ outcome }}</span>
+    <span v-if="hasContent && settledOutcome" class="msg-outcome" :class="outcomeClass">
+      {{ settledOutcome }}
+    </span>
     <span v-if="hasContent && turnDuration" class="msg-duration">
       {{ t("Worked for {0}", turnDuration) }}
     </span>
