@@ -3175,8 +3175,17 @@ body {
 }
 
 /* Inside the bar the glyphs follow the bar's own row: 14px in a 26px control
- * keeps the ratio VS Code's chat input has at 12px in 22px. */
-.composer-controls-bar .codicon {
+ * keeps the ratio VS Code's chat input has at 12px in 22px.
+ *
+ * Scoped to the bar's own four controls, and that scope is the point: both
+ * pickers render *inside* the bar's DOM (`#model-popup` lives in `.model-wrap`,
+ * `#permission-popup` in `.permission-wrap`), so a bare descendant selector
+ * reached every glyph in them as well. The permission list's shield/unlock and
+ * the model list's rows dropped from their own sizes to the bar's — measured
+ * 16px → 14px next to 13.3px row text — which is 彬哥's "弹窗出来的 icon 都小
+ * 了很多". */
+.composer-controls-bar > .icon-btn .codicon,
+.composer-controls-bar > .select-wrap > button .codicon {
   font-size: var(--pi-icon-md);
 }
 

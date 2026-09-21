@@ -102,8 +102,21 @@ describe("the chat input's control row", () => {
 
   it("keeps the glyph-to-control ratio the host's row has", () => {
     // 12 in 22 is the host's ratio; the bar's own rung carries it to 14 in 26.
+    // Which controls read it is the next test's business.
     expect(tokens).toMatch(/--pi-icon-md:\s*14px;/);
-    expect(chat).toMatch(/\.composer-controls-bar \.codicon\s*\{[^}]*var\(--pi-icon-md\)/);
+  });
+
+  it("keeps the bar's glyph size out of the pickers' own popups", () => {
+    // Both pickers render *inside* the bar's DOM — `#model-popup` in
+    // `.model-wrap`, `#permission-popup` in `.permission-wrap` — so an unscoped
+    // descendant selector reached every glyph in them: the permission list's
+    // shield/unlock and the model rows fell from their own 16px to the bar's,
+    // which is 彬哥's "弹窗出来的 icon 都小了很多". The bar's rule names its four
+    // controls instead.
+    expect(chat).not.toMatch(/\.composer-controls-bar \.codicon\s*\{/);
+    expect(chat).toMatch(
+      /\.composer-controls-bar > \.select-wrap > button \.codicon\s*\{[^}]*var\(--pi-icon-md\)/,
+    );
   });
 
   it("draws the context ring's outer edge on that same control size", () => {
