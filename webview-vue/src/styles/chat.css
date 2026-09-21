@@ -3230,9 +3230,22 @@ body {
   padding-bottom: var(--pi-sp-1);
 }
 
-.composer-controls-bar > .icon-btn:not(.send-btn):hover {
+.composer-controls-bar > .icon-btn:not(.send-btn):hover:not(:disabled) {
   background: var(--pi-bg-control-hover);
   color: var(--pi-text);
+}
+
+/* A disabled control in the bar keeps its fill and fades only its ink. The
+ * global `.icon-btn:disabled` drops the whole button to 40% opacity, and the `+`
+ * is disabled for the whole of a running turn while the pills beside it never
+ * disable — measured, its fill washed out to 240 against their 225, which is
+ * 彬哥's "底色应该要和上传图片的那个一致". `.send-btn:disabled` has carried its own
+ * version of this rule since an empty composer looked like an unpainted square;
+ * the `+` follows it now. */
+.composer-controls-bar > .icon-btn:not(.send-btn):disabled {
+  background: var(--pi-bg-control);
+  color: var(--pi-text-disabled);
+  opacity: 1;
 }
 
 /* Icons used to sit *outside* the pill: .model-icon-slot and .permission-icon
@@ -3270,16 +3283,18 @@ body {
 }
 
 /* One height, one inner rhythm — and the height is the bar's own row, so the
- * pills sit on the same line as the `+` and the send button. The padding is
- * symmetric (it was 12 left / 10 right), so the icon-and-label group sits on the
- * pill's centre: the leftover pixel either side is the icon art's own bearing,
- * which changes with the model, so padding is the wrong place to chase it. */
+ * pills sit on the same line as the `+` and the send button. Symmetric, so the
+ * icon-and-label group sits on the pill's centre (it was 12 left / 10 right), and
+ * on the 8px rung rather than 12: 彬哥 read the pills as over-padded beside the
+ * `+` (whose glyph keeps 5px inside its 26px box) and asked twice for the
+ * padding to go. Zero would put the label on the 6px corner, so this is the
+ * step down rather than the floor. */
 .model-trigger,
 .thinking-trigger,
 .permission-trigger {
   gap: var(--pi-sp-2);
   height: var(--pi-h-chat-control);
-  padding: 0 var(--pi-sp-5);
+  padding: 0 var(--pi-sp-3);
 }
 
 /* The board's pills are hug-contents. The old 140px cap clipped "Smart

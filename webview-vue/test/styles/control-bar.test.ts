@@ -74,6 +74,18 @@ describe("control-bar fill contract", () => {
       expect(body, name).toContain("var(--pi-border)");
     }
   });
+  it("keeps a disabled control's fill, fading only its ink", () => {
+    // `.icon-btn:disabled` drops the whole button to 40% opacity, and the `+` is
+    // disabled for the whole of a running turn while the pills beside it never
+    // disable — measured against the card, its fill washed out to 240 next to
+    // their 225, which is 彬哥's "底色应该要和上传图片的那个一致". The send button has
+    // carried the same rule since an empty composer looked like an unpainted
+    // square; the `+` follows it.
+    const body = declarations(chat, ".composer-controls-bar > .icon-btn:not(.send-btn):disabled");
+    expect(body).toContain("background: var(--pi-bg-control)");
+    expect(body).toContain("opacity: 1");
+    expect(body).toContain("var(--pi-text-disabled)");
+  });
 });
 
 describe("transcript surface contract", () => {
