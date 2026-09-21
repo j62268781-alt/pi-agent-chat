@@ -146,7 +146,7 @@ describe("transcript surface contract", () => {
 
     const bubble = declarations(chat, ".user-bubble");
     expect(bubble).toContain("background: var(--pi-bg-bubble)");
-    expect(bubble).toContain("border: 1px solid var(--pi-border-bubble)");
+    expect(bubble).toContain("border: var(--pi-stroke) solid var(--pi-border-bubble)");
 
     const all = rules(chat);
     const convergence = all.findIndex((rule) => rule.body.includes("--pi-bg-card"));

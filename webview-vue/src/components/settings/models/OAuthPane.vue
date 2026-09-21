@@ -60,7 +60,7 @@ function cancel(): void {
 
       <template v-else-if="store.oauth.type === 'device_code'">
         <strong>{{ t("Device Code") }}</strong>
-        <p style="font-size: var(--fs-16); font-weight: bold; letter-spacing: 2px">
+        <p style="font-size: var(--pi-fs-title); font-weight: bold; letter-spacing: 2px">
           {{ store.oauth.userCode ?? "" }}
         </p>
         <p v-if="store.oauth.verificationUri">
@@ -111,7 +111,7 @@ function cancel(): void {
       </template>
 
       <template v-else-if="store.oauth.type === 'success'">
-        <p style="color: #4caf50">
+        <p class="oauth-ok">
           <span class="codicon codicon-check"></span> {{ t("Connected successfully!") }}
         </p>
         <div class="btn-row">
@@ -127,7 +127,7 @@ function cancel(): void {
       </template>
 
       <template v-else-if="store.oauth.type === 'error'">
-        <p style="color: #d32f2f">{{ t("Error: {0}", store.oauth.message ?? "") }}</p>
+        <p class="oauth-fail">{{ t("Error: {0}", store.oauth.message ?? "") }}</p>
         <div class="btn-row">
           <button
             class="btn-secondary"

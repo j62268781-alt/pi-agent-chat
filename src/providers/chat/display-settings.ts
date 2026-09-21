@@ -52,7 +52,7 @@ export function resolveChatBackground(path?: string): string {
 export function readChatDisplaySettings(): ChatDisplaySettings {
   const config = vscode.workspace.getConfiguration("pi-agent-chat");
   return {
-    fontSize: config.get<number>("chatFontSize") ?? 14,
+    fontSize: config.get<number>("chatFontSize") ?? 13,
     surface: resolveUiMode() === "sidebar" ? "sidebar" : "editor",
     backgroundImage: resolveChatBackground(config.get<string>("chatBackgroundImage")),
     backgroundOpacity: config.get<number>("chatBackgroundOpacity") ?? 1,

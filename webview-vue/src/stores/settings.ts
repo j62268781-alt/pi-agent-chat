@@ -22,12 +22,15 @@ import { isSettingsTabId } from "@protocol/settings";
 import { post } from "@/lib/bridge.ts";
 import { t } from "@/lib/i18n.ts";
 
-/** One entry of the sidebar. Labels/icons are webview-owned: `init.tabs` only
- * carries ids, so the presentation lives here. */
+/** One entry of the sidebar. Labels/icons/groups are webview-owned: `init.tabs`
+ * only carries ids, so the presentation lives here. */
 export interface TabDescriptor {
   id: SettingsTabId;
   label: string;
   icon: string;
+  /** The sidebar heading this tab sits under. Consecutive entries sharing a
+   * group render as one section, so the array below is also the section order. */
+  group: string;
 }
 
 export interface SettingsToast {
@@ -40,21 +43,27 @@ export interface SettingsToast {
 
 /** Icon ids must already have a `::before` rule in `styles/settings.css`. */
 function tabDescriptors(): TabDescriptor[] {
+  const preferences = t("Preferences");
+  const resources = t("Resources");
+  const generation = t("Generation");
   return [
-    { id: "models", label: t("Models"), icon: "codicon-versions" },
-    { id: "agents", label: t("Agents"), icon: "codicon-hubot" },
-    { id: "prompts", label: t("Prompt Templates"), icon: "codicon-quote" },
-    { id: "skills", label: t("Skills"), icon: "codicon-rocket" },
-    { id: "mcp", label: t("MCP Servers"), icon: "codicon-server" },
-    { id: "commit", label: t("Commit Message"), icon: "codicon-git-commit" },
-    { id: "sysprompt", label: t("System Prompt"), icon: "codicon-file-text" },
-    { id: "settings", label: t("Settings"), icon: "codicon-settings-gear" },
+    // The two config tabs lead: they are what a user opens the panel for, and
+    // they are the only pair that edits a file the other one also reads.
+    { id: "general", label: t("General"), icon: "codicon-tools", group: preferences },
+    { id: "settings", label: t("Settings"), icon: "codicon-settings-gear", group: preferences },
+    { id: "models", label: t("Models"), icon: "codicon-versions", group: resources },
+    { id: "agents", label: t("Agents"), icon: "codicon-hubot", group: resources },
+    { id: "prompts", label: t("Prompt Templates"), icon: "codicon-quote", group: resources },
+    { id: "skills", label: t("Skills"), icon: "codicon-rocket", group: resources },
+    { id: "mcp", label: t("MCP Servers"), icon: "codicon-server", group: resources },
+    { id: "commit", label: t("Commit Message"), icon: "codicon-git-commit", group: generation },
+    { id: "sysprompt", label: t("System Prompt"), icon: "codicon-file-text", group: generation },
   ];
 }
 
 export const useSettingsStore = defineStore("settings", () => {
   const tabs = ref<TabDescriptor[]>(tabDescriptors());
-  const activeTab = ref<SettingsTabId>("models");
+  const activeTab = ref<SettingsTabId>("general");
   /** Per-tab `tabData` cache, keyed by tab id. */
   const data = ref<Record<string, unknown>>({});
   const loading = ref(true);
@@ -136,7 +145,7 @@ export const useSettingsStore = defineStore("settings", () => {
     const initial =
       message.initialTab && isSettingsTabId(message.initialTab) ? message.initialTab : null;
     ready.value = true;
-    selectTab(initial ?? tabs.value[0]?.id ?? "models");
+    selectTab(initial ?? tabs.value[0]?.id ?? "general");
   }
 
   function applyTabData(tab: string, payload: Record<string, unknown>): void {
@@ -153,6 +162,11 @@ export const useSettingsStore = defineStore("settings", () => {
     switch (what) {
       case "settings":
         showToast(t("Settings saved — restart pi to apply"), "success");
+        break;
+      case "chat":
+        // VS Code config, read live — no restart, and the open chat panels get a
+        // `displaySettings` push off the config-change event.
+        showToast(t("Chat settings saved"), "success");
         break;
       case "system":
         showToast(t("System prompt saved"), "success");

@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>pi-agent-chat · settings preview</title>
+    <!--
+      The settings webview's design preview. `window.__PI__` stands in for what
+      the host substitutes into the built HTML, and `preview/settings-host.ts`
+      answers the panel's own RPC with fixtures.
+
+        ?theme=dark_modern   one of preview/themes.generated.ts
+        ?tab=settings        which tab to open first
+        ?lang=zh-cn|en
+        ?fs=13
+    -->
+    <script>
+      const params = new URLSearchParams(location.search);
+      const num = (key, fallback) => {
+        const value = Number(params.get(key));
+        return Number.isFinite(value) && value > 0 ? value : fallback;
+      };
+      window.__PI__ = {
+        home: "/Users/joeson",
+        sep: "/",
+        workspace: "/Users/joeson/Documents/pi-agent-chat",
+        lang: params.get("lang") || "zh-cn",
+        mermaidTheme: "default",
+        display: JSON.stringify({
+          fontSize: num("fs", 13),
+          backgroundImage: "",
+          backgroundOpacity: 1,
+          sendShortcut: "enter",
+          runningSendBehavior: "queue",
+          collapseWork: false,
+          expandToolCalls: true,
+          expandThinking: true,
+          keepReadingAnchor: false,
+        }),
+      };
+    </script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="./settings-main.ts"></script>
+  </body>
+</html>

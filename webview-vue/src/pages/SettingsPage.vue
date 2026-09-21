@@ -20,9 +20,11 @@ import ModelsTab from "@/components/settings/ModelsTab.vue";
 import PromptsTab from "@/components/settings/PromptsTab.vue";
 import SkillsTab from "@/components/settings/SkillsTab.vue";
 import SysPromptTab from "@/components/settings/SysPromptTab.vue";
+import { CHAT_SETTING_GROUPS } from "@/components/settings/general-fields.ts";
 import { useSettingsLink } from "@/composables/useSettingsLink.ts";
 import { t } from "@/lib/i18n.ts";
 import { useSettingsStore } from "@/stores/settings.ts";
+import type { TabDescriptor } from "@/stores/settings.ts";
 import "@/styles/settings.css";
 
 const store = useSettingsStore();
@@ -37,12 +39,30 @@ const skills = computed(() => store.tabData("skills"));
 const mcp = computed(() => store.tabData("mcp"));
 const commit = computed(() => store.tabData("commit"));
 const sysprompt = computed(() => store.tabData("sysprompt"));
-const general = computed(() => store.tabData("settings"));
+/** 常规: our own VS Code settings. */
+const general = computed(() => store.tabData("general"));
+/** 设置: pi's settings.json. */
+const piSettings = computed(() => store.tabData("settings"));
 
 /** Covers both "never loaded" and "the first load of this tab is in flight". */
 const showPlaceholder = computed(
   () => !store.ready || (store.loading && store.data[store.activeTab] === undefined),
 );
+
+/**
+ * The sidebar in sections. Consecutive tabs that share a group render under one
+ * heading, so `store.tabs` stays the single source of both the order and the
+ * grouping — no second list to keep in step.
+ */
+const navSections = computed(() => {
+  const sections: { label: string; tabs: TabDescriptor[] }[] = [];
+  for (const tab of store.tabs) {
+    const last = sections[sections.length - 1];
+    if (last && last.label === tab.group) last.tabs.push(tab);
+    else sections.push({ label: tab.group, tabs: [tab] });
+  }
+  return sections;
+});
 
 let detach: (() => void) | undefined;
 
@@ -62,17 +82,20 @@ onUnmounted(() => detach?.());
           <span class="codicon codicon-refresh"></span>
         </button>
       </div>
-      <button
-        v-for="tab in store.tabs"
-        :key="tab.id"
-        class="nav-tab"
-        :class="{ active: tab.id === store.activeTab }"
-        type="button"
-        @click="store.selectTab(tab.id)"
-      >
-        <span class="codicon" :class="tab.icon"></span>
-        <span class="nav-label">{{ tab.label }}</span>
-      </button>
+      <template v-for="section in navSections" :key="section.label">
+        <div class="nav-group">{{ section.label }}</div>
+        <button
+          v-for="tab in section.tabs"
+          :key="tab.id"
+          class="nav-tab"
+          :class="{ active: tab.id === store.activeTab }"
+          type="button"
+          @click="store.selectTab(tab.id)"
+        >
+          <span class="codicon" :class="tab.icon"></span>
+          <span class="nav-label">{{ tab.label }}</span>
+        </button>
+      </template>
     </nav>
 
     <main class="content">
@@ -85,7 +108,14 @@ onUnmounted(() => detach?.());
         <McpTab v-else-if="store.activeTab === 'mcp' && mcp" :data="mcp" />
         <CommitTab v-else-if="store.activeTab === 'commit' && commit" :data="commit" />
         <SysPromptTab v-else-if="store.activeTab === 'sysprompt' && sysprompt" :data="sysprompt" />
-        <GeneralTab v-else-if="store.activeTab === 'settings' && general" :data="general" />
+        <GeneralTab
+          v-else-if="store.activeTab === 'general' && general"
+          :data="general"
+          :groups="CHAT_SETTING_GROUPS"
+          tab="general"
+          save-type="saveChatSettings"
+        />
+        <GeneralTab v-else-if="store.activeTab === 'settings' && piSettings" :data="piSettings" />
         <div v-else class="tab-placeholder">{{ t("Select a tab to get started") }}</div>
       </template>
     </main>

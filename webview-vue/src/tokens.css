@@ -24,12 +24,20 @@
  * `webview-vue/preview/` is the supported way to look at a specific theme.
  *
  * TYPE is five semantic steps driven by the user's `pi-agent-chat.chatFontSize`
- * (`--chat-fs`), plus code text that follows the editor. The older numeric names
- * (`--chat-fs-12`, `--fs-11`, …) survive as aliases onto the semantic steps so
- * existing rules keep working; retire them by renaming their call sites.
+ * (`--chat-fs`), plus code text that follows the editor. The numeric names that
+ * used to sit in front of them (`--chat-fs-12`, `--fs-11`, …) are gone: nine
+ * aliases onto five steps, so every one of them was already a rounding of the
+ * step it named. Write `--pi-fs-*`.
  *
- * GEOMETRY (radii, spacing, control heights, shadows) is unchanged by the theme
- * migration that introduced this file.
+ * GEOMETRY (radii, spacing, hairlines) comes from VS Code too. The host ships
+ * its *size tokens* to every webview next to the colours — `getWebviewThemeData`
+ * merges the colour registry with the size-token registry — so
+ * `--vscode-cornerRadius-*`, `--vscode-spacing-size*`, `--vscode-codiconFontSize*`
+ * and `--vscode-strokeThickness` are all readable inside a webview. Sourcing the
+ * panel's geometry from them keeps our rounding on the host's scale and lets a
+ * future VS Code retune move the panel with it; the fallbacks are the values
+ * VS Code 1.138 resolves to, so older hosts and the preview land on the same
+ * shape. Control heights stay ours — see the block at the bottom.
  */
 
 :root {
@@ -113,6 +121,9 @@
     --vscode-panel-border,
     var(--vscode-widget-border, var(--vscode-editorGroup-border, #2b2b2b))
   );
+  /* The width of a hairline. VS Code's own chrome reads this token for every
+   * border it draws, so the panel does too. */
+  --pi-stroke: var(--vscode-strokeThickness, 1px);
   --pi-border-input: var(--vscode-input-border, var(--vscode-panel-border));
   --pi-border-divider: var(--vscode-editorGroup-border, var(--vscode-panel-border));
   --pi-border-brand: var(--vscode-focusBorder, var(--vscode-button-background));
@@ -191,25 +202,34 @@
   );
 
   /* Fixed, like VS Code's own chrome: the chat font size setting is about
-   * reading prose, not about how big a gear glyph is. */
-  --pi-icon-lg: 16px;
+   * reading prose, not about how big a gear glyph is. The two rungs are the
+   * host's — 16 for chrome, 12 for the compact controls inside the chat input. */
+  --pi-icon-lg: var(--vscode-codiconFontSize, 16px);
+  --pi-icon-sm: var(--vscode-codiconFontSize-compact, 12px);
   /* VS Code computes its slider colour from a palette constant, so it may not
    * arrive as a variable; the previous hard-coded grey stays as the fallback. */
   --pi-scrollbar: var(--vscode-scrollbarSlider-background, rgba(127, 127, 127, 0.4));
 
   /* ── type ──────────────────────────────────────────────────────────────── */
 
-  /* Five steps, all driven by the chat font size setting: 10/12/14/16/18 at the
-   * default 14, and proportional when the user changes it. */
-  --pi-fs-micro: calc(var(--chat-fs) * 10 / 14);
-  --pi-fs-meta: calc(var(--chat-fs) * 12 / 14);
+  /* Five steps, all driven by the chat font size setting: 10/12/13/16/20 at the
+   * default 13, and proportional when the user changes it. The ratios are VS
+   * Code's own chat ladder — `--vscode-chat-font-size-body-*`, an em scale over
+   * the 13px UI size — so 12 is its body-s, 16 its body-xl and 20 its body-xxl
+   * (the size it gives markdown h1). */
+  --pi-fs-micro: calc(var(--chat-fs) * 10 / 13);
+  --pi-fs-meta: calc(var(--chat-fs) * 12 / 13);
   --pi-fs-body: var(--chat-fs);
-  --pi-fs-title: calc(var(--chat-fs) * 16 / 14);
-  --pi-fs-display: calc(var(--chat-fs) * 18 / 14);
+  --pi-fs-title: calc(var(--chat-fs) * 16 / 13);
+  --pi-fs-display: calc(var(--chat-fs) * 20 / 13);
 
   /* Code reads at the editor's size and family, so a snippet in the chat and
    * the same snippet in the editor agree. */
   --pi-fs-code: var(--vscode-editor-font-size, var(--pi-fs-meta));
+  /* The settings panel's base. The host overwrites it inline from
+   * `pi-agent-chat.chatFontSize` (as it does `--chat-fs` on the chat side); this
+   * is only the value before that push lands. */
+  --fs: var(--vscode-font-size, 13px);
   --pi-font: var(--vscode-font-family, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
   --pi-mono: var(--vscode-editor-font-family, ui-monospace, "SF Mono", Menlo, monospace);
 }
@@ -221,62 +241,52 @@ body.pi-surface-sidebar {
   --pi-bg-page: var(--vscode-sideBar-background, #181818);
 }
 
-/* Numeric aliases. Nine steps onto five, both panels — `-11` and `-12` were
- * doing the same job, and so were `-15` and `-16`. Every rule that still says
- * `var(--chat-fs-12)` gets the meta step. Rename call sites to retire this. */
-:root {
-  --chat-fs-8: var(--pi-fs-micro);
-  --chat-fs-9: var(--pi-fs-micro);
-  --chat-fs-10: var(--pi-fs-micro);
-  --chat-fs-11: var(--pi-fs-meta);
-  --chat-fs-12: var(--pi-fs-meta);
-  --chat-fs-13: var(--pi-fs-body);
-  --chat-fs-14: var(--pi-fs-body);
-  --chat-fs-15: var(--pi-fs-title);
-  --chat-fs-16: var(--pi-fs-title);
-
-  --fs-10: var(--pi-fs-micro);
-  --fs-11: var(--pi-fs-micro);
-  --fs-12: var(--pi-fs-meta);
-  --fs-13: var(--pi-fs-body);
-  --fs-14: var(--pi-fs-body);
-  --fs-16: var(--pi-fs-title);
-}
-
 /* ── radii ───────────────────────────────────────────────────────────────── */
 
+/* VS Code's corner scale, taken from the host: `xSmall 2 / small 4 / medium 6 /
+ * large 8 / xLarge 12 / circle 9999`. The panel's own roles map onto it one for
+ * one — cards and popups are `large`, controls `medium`, chips `small`, badges
+ * `xSmall` — so nothing in the panel rounds a corner the host would not. */
 :root {
-  --pi-r-xs: 4px;
-  --pi-r-sm: 6px;
-  --pi-r-md: 8px;
-  --pi-r-lg: 12px;
-  --pi-r-xl: 16px;
-  --pi-r-full: 999px;
+  --pi-r-xs: var(--vscode-cornerRadius-xSmall, 2px);
+  --pi-r-sm: var(--vscode-cornerRadius-small, 4px);
+  --pi-r-md: var(--vscode-cornerRadius-medium, 6px);
+  --pi-r-lg: var(--vscode-cornerRadius-large, 8px);
+  --pi-r-xl: var(--vscode-cornerRadius-xLarge, 12px);
+  --pi-r-full: var(--vscode-cornerRadius-circle, 999px);
 }
 
 /* ── spacing ─────────────────────────────────────────────────────────────── */
 
+/* VS Code's spacing ladder is 2px-grained (2, 4, 6, 8, 10, 12, 16, 20, 24, 28,
+ * 32, 36, 40); every step here is one of its rungs. There is no 14 — the rung
+ * this scale used to have — so 6 is gone: the numbers are stable ids rather
+ * than indices, and a site that wants "a bit more than 12" takes 7. */
 :root {
-  --pi-sp-1: 4px;
-  --pi-sp-2: 6px;
-  --pi-sp-3: 8px;
-  --pi-sp-4: 10px;
-  --pi-sp-5: 12px;
-  --pi-sp-6: 14px;
-  --pi-sp-7: 16px;
-  --pi-sp-8: 20px;
-  --pi-sp-9: 24px;
-  --pi-sp-10: 32px;
+  --pi-sp-1: var(--vscode-spacing-size40, 4px);
+  --pi-sp-2: var(--vscode-spacing-size60, 6px);
+  --pi-sp-3: var(--vscode-spacing-size80, 8px);
+  --pi-sp-4: var(--vscode-spacing-size100, 10px);
+  --pi-sp-5: var(--vscode-spacing-size120, 12px);
+  --pi-sp-7: var(--vscode-spacing-size160, 16px);
+  --pi-sp-8: var(--vscode-spacing-size200, 20px);
+  --pi-sp-9: var(--vscode-spacing-size240, 24px);
+  --pi-sp-10: var(--vscode-spacing-size320, 32px);
 }
 
 /* ── control heights ─────────────────────────────────────────────────────── */
 
+/* Ours, not the host's: VS Code builds its own chrome around a 22px row, but
+ * these sizes are the panel's layout skeleton (toolbar, rows, inputs) and
+ * moving them is a redesign, not a token swap. The chat input's own controls do
+ * follow VS Code — `--pi-h-chat-control` is its `--chat-input-control-height`. */
 :root {
   --pi-h-toolbar: 48px;
   --pi-h-control: 32px;
   --pi-h-control-lg: 36px;
   --pi-h-control-sm: 28px;
   --pi-h-row: 40px;
+  --pi-h-chat-control: 22px;
 }
 
 /* ── elevation ───────────────────────────────────────────────────────────── */

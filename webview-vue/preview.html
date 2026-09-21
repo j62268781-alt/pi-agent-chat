@@ -29,7 +29,8 @@
         lang: params.get("lang") || "zh-cn",
         mermaidTheme: "default",
         display: JSON.stringify({
-          fontSize: num("fs", 14),
+          // The shipped default; `?fs=` drives the rest of the scale.
+          fontSize: num("fs", 13),
           backgroundImage: "",
           backgroundOpacity: 1,
           sendShortcut: "enter",

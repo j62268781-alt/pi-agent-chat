@@ -4,6 +4,10 @@
 // the theme's kind, then the theme's own declarations on top. The preview
 // applies one of these sets as `--vscode-*` custom properties on the preview
 // root, which is what the real webview receives from the host.
+//
+// `DESIGN_TOKENS` are the size tokens from the same host payload — VS Code's
+// own geometry (corner radii, spacing steps, font sizes, stroke width). They do
+// not vary by theme, so the preview applies them to every theme alike.
 
 export interface PreviewTheme {
   id: string;
@@ -2310,3 +2314,54 @@ export const THEMES: PreviewTheme[] = [
     },
   },
 ];
+
+/** Size-token defaults (variable name -> CSS value), straight from the host. */
+export const DESIGN_TOKENS: Record<string, string> = {
+  "--vscode-agents-fontSize-body1": "13px",
+  "--vscode-agents-fontSize-body2": "11px",
+  "--vscode-agents-fontSize-heading1": "26px",
+  "--vscode-agents-fontSize-heading2": "18px",
+  "--vscode-agents-fontSize-heading3": "13px",
+  "--vscode-agents-fontSize-label1": "12px",
+  "--vscode-agents-fontSize-label2": "11px",
+  "--vscode-agents-fontSize-label3": "10px",
+  "--vscode-agents-fontWeight-regular": "400",
+  "--vscode-agents-fontWeight-semiBold": "600",
+  "--vscode-agents-layout-floatingPanelGap": "4px",
+  "--vscode-bodyFontSize": "13px",
+  "--vscode-bodyFontSize-small": "12px",
+  "--vscode-bodyFontSize-xSmall": "11px",
+  "--vscode-codiconFontSize": "16px",
+  "--vscode-codiconFontSize-compact": "12px",
+  "--vscode-cornerRadius-circle": "9999px",
+  "--vscode-cornerRadius-large": "8px",
+  "--vscode-cornerRadius-medium": "6px",
+  "--vscode-cornerRadius-small": "4px",
+  "--vscode-cornerRadius-xLarge": "12px",
+  "--vscode-cornerRadius-xSmall": "2px",
+  "--vscode-fontSize-body1": "13px",
+  "--vscode-fontSize-body2": "11px",
+  "--vscode-fontSize-heading1": "26px",
+  "--vscode-fontSize-heading2": "18px",
+  "--vscode-fontSize-heading3": "13px",
+  "--vscode-fontSize-label1": "12px",
+  "--vscode-fontSize-label2": "11px",
+  "--vscode-fontSize-label3": "10px",
+  "--vscode-fontWeight-regular": "400",
+  "--vscode-fontWeight-semiBold": "600",
+  "--vscode-spacing-size100": "10px",
+  "--vscode-spacing-size120": "12px",
+  "--vscode-spacing-size160": "16px",
+  "--vscode-spacing-size20": "2px",
+  "--vscode-spacing-size200": "20px",
+  "--vscode-spacing-size240": "24px",
+  "--vscode-spacing-size280": "28px",
+  "--vscode-spacing-size320": "32px",
+  "--vscode-spacing-size360": "36px",
+  "--vscode-spacing-size40": "4px",
+  "--vscode-spacing-size400": "40px",
+  "--vscode-spacing-size60": "6px",
+  "--vscode-spacing-size80": "8px",
+  "--vscode-spacing-sizeNone": "0px",
+  "--vscode-strokeThickness": "1px",
+};

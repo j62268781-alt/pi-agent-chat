@@ -370,7 +370,7 @@
         },
         "pi-agent-chat.chatFontSize": {
           "type": "number",
-          "default": 14,
+          "default": 13,
           "minimum": 8,
           "maximum": 32,
           "description": "%pi.config.chatFontSize.desc%"

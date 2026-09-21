@@ -35,9 +35,7 @@
 .codicon-debug-stop::before {
   content: "\ead7";
 }
-.codicon-info::before {
-  content: "\ea74";
-}
+
 .codicon-refresh::before {
   content: "\eb37";
 }
@@ -79,9 +77,7 @@
 .codicon-unlock::before {
   content: "\eb74";
 }
-.codicon-clear-all::before {
-  content: "\eabf";
-}
+
 .codicon-star-full::before {
   content: "\eb59";
 }
@@ -108,8 +104,9 @@
 }
 :root {
   /* Fallback for a host that never pushes display settings; `tokens.css` derives
-   * the whole five-step scale from this. */
-  --chat-fs: 14px;
+   * the whole five-step scale from this. 13 is VS Code's own UI size and the
+   * default the setting ships with. */
+  --chat-fs: 13px;
 }
 * {
   box-sizing: border-box;
@@ -174,7 +171,7 @@ body {
   gap: 6px;
   padding: 6px 8px;
   flex-shrink: 0;
-  border-bottom: 1px solid var(--pi-border);
+  border-bottom: var(--pi-stroke) solid var(--pi-border);
   background: color-mix(
     in srgb,
     var(--pi-bg-page) calc(100% - 40% * var(--pi-bg-on, 0)),
@@ -183,8 +180,8 @@ body {
   backdrop-filter: var(--pi-bg-blur, none);
 }
 .composer-box {
-  border: 1px solid var(--pi-border-input);
-  border-radius: 8px;
+  border: var(--pi-stroke) solid var(--pi-border-input);
+  border-radius: var(--pi-r-lg);
   background: color-mix(
     in srgb,
     var(--pi-bg-raised) calc(100% - 35% * var(--pi-bg-on, 0)),
@@ -203,9 +200,9 @@ body {
   position: relative;
   width: 56px;
   height: 56px;
-  border-radius: 4px;
+  border-radius: var(--pi-r-sm);
   overflow: hidden;
-  border: 1px solid var(--pi-border);
+  border: var(--pi-stroke) solid var(--pi-border);
   background: var(--pi-bg-subtle);
 }
 .attach-thumb img {
@@ -229,7 +226,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: var(--chat-fs-12);
+  font-size: var(--pi-fs-meta);
   line-height: 1;
 }
 .attach-remove:hover {
@@ -259,7 +256,7 @@ body {
  * its label ellipsises smoothly on the way down instead of snapping. */
 .composer-controls-bar > .permission-wrap {
   flex-shrink: 4;
-  min-width: 30px;
+  min-width: var(--pi-h-chat-control);
 }
 
 /* The model pill keeps showing the current model name: an 86px floor buys
@@ -271,7 +268,7 @@ body {
 }
 
 .permission-trigger {
-  min-width: 30px;
+  min-width: var(--pi-h-chat-control);
 }
 .composer-controls-bar > .icon-btn {
   flex-shrink: 0;
@@ -320,9 +317,9 @@ body {
   padding: 3px 8px;
   background: var(--pi-bg-raised);
   color: var(--pi-text);
-  border: 1px solid var(--pi-border);
-  border-radius: 4px;
-  font-size: var(--chat-fs-11);
+  border: var(--pi-stroke) solid var(--pi-border);
+  border-radius: var(--pi-r-sm);
+  font-size: var(--pi-fs-meta);
   font-family: var(--pi-font);
   white-space: pre;
   pointer-events: none;
@@ -333,7 +330,7 @@ body {
   display: inline-flex;
   align-items: center;
   border: none;
-  border-radius: 999px;
+  border-radius: var(--pi-r-full);
   background: transparent;
   transition: background 0.12s;
 }
@@ -343,20 +340,7 @@ body {
 .select-wrap:focus-within {
   background: var(--pi-bg-hover);
 }
-.select-borderless {
-  min-width: 0;
-  background: transparent;
-  color: var(--pi-text);
-  border: none;
-  border-radius: 999px;
-  font-size: var(--chat-fs-12);
-  font-family: inherit;
-  padding: 3px 10px;
-  outline: none;
-  cursor: pointer;
-  -webkit-appearance: none;
-  appearance: none;
-}
+
 .model-wrap {
   position: relative;
 }
@@ -372,8 +356,8 @@ body {
   background: transparent;
   color: var(--pi-text);
   border: none;
-  border-radius: 999px;
-  font-size: var(--chat-fs-12);
+  border-radius: var(--pi-r-full);
+  font-size: var(--pi-fs-meta);
   font-family: inherit;
   padding: 3px 8px;
   outline: none;
@@ -399,7 +383,7 @@ body {
   /* Inline expand/collapse area under the thinking row — no second-level
    * popup: the list opens inside the model popup and grows it in place. */
   display: none;
-  border-top: 1px solid var(--pi-border-divider);
+  border-top: var(--pi-stroke) solid var(--pi-border-divider);
   margin: 2px 0 0;
   padding: 4px 0 0;
 }
@@ -425,7 +409,7 @@ body {
   border: none;
   background: transparent;
   color: inherit;
-  border-radius: 4px;
+  border-radius: var(--pi-r-sm);
   cursor: pointer;
   font-family: inherit;
 }
@@ -443,17 +427,17 @@ body {
   min-width: 0;
 }
 .thinking-item-title {
-  font-size: var(--chat-fs-12);
+  font-size: var(--pi-fs-meta);
   color: var(--pi-text);
 }
 .thinking-item-desc {
-  font-size: var(--chat-fs-11);
+  font-size: var(--pi-fs-meta);
   color: var(--pi-text-secondary);
   line-height: 1.35;
 }
 .model-group-title {
   padding: 6px 8px 2px;
-  font-size: var(--chat-fs-11);
+  font-size: var(--pi-fs-meta);
   font-weight: 500;
   color: var(--pi-text-secondary);
   text-transform: uppercase;
@@ -468,8 +452,8 @@ body {
   background: transparent;
   color: var(--pi-text);
   border: none;
-  border-radius: 999px;
-  font-size: var(--chat-fs-12);
+  border-radius: var(--pi-r-full);
+  font-size: var(--pi-fs-meta);
   font-family: inherit;
   padding: 3px 8px;
   outline: none;
@@ -492,8 +476,8 @@ body {
   max-width: 330px;
   background: var(--pi-bg-raised);
   color: var(--pi-text);
-  border: 1px solid var(--pi-border);
-  border-radius: 8px;
+  border: var(--pi-stroke) solid var(--pi-border);
+  border-radius: var(--pi-r-lg);
   box-shadow: var(--pi-shadow-menu);
   padding: 8px;
   display: flex;
@@ -518,7 +502,7 @@ body {
   border: none;
   background: transparent;
   color: inherit;
-  border-radius: 6px;
+  border-radius: var(--pi-r-md);
   cursor: pointer;
   font-family: inherit;
 }
@@ -547,12 +531,12 @@ body {
   min-width: 0;
 }
 .permission-item-title {
-  font-size: var(--chat-fs-12);
+  font-size: var(--pi-fs-meta);
   font-weight: 500;
   color: var(--pi-text);
 }
 .permission-item-desc {
-  font-size: var(--chat-fs-11);
+  font-size: var(--pi-fs-meta);
   color: var(--pi-text-secondary);
   line-height: 1.35;
 }
@@ -576,8 +560,8 @@ body {
   max-width: 460px;
   background: var(--pi-bg-raised);
   color: var(--pi-text);
-  border: 1px solid var(--pi-border);
-  border-radius: 8px;
+  border: var(--pi-stroke) solid var(--pi-border);
+  border-radius: var(--pi-r-lg);
   box-shadow: var(--pi-shadow-menu);
   padding: 10px 8px 8px;
   display: flex;
@@ -611,7 +595,7 @@ body {
   border: none;
   background: transparent;
   color: inherit;
-  border-radius: 6px;
+  border-radius: var(--pi-r-md);
   cursor: pointer;
   font-family: inherit;
 }
@@ -629,7 +613,7 @@ body {
   min-width: 0;
 }
 .session-item-title {
-  font-size: var(--chat-fs-12);
+  font-size: var(--pi-fs-meta);
   font-weight: 500;
   color: var(--pi-text);
   white-space: nowrap;
@@ -640,7 +624,7 @@ body {
   font-weight: 600;
 }
 .session-item-preview {
-  font-size: var(--chat-fs-11);
+  font-size: var(--pi-fs-meta);
   color: var(--pi-text-secondary);
   opacity: 0.85;
   white-space: nowrap;
@@ -648,7 +632,7 @@ body {
   text-overflow: ellipsis;
 }
 .session-item-meta {
-  font-size: var(--chat-fs-11);
+  font-size: var(--pi-fs-meta);
   color: var(--pi-text-secondary);
   opacity: 0.75;
 }
@@ -661,17 +645,11 @@ body {
 }
 .sessions-empty {
   padding: 16px 10px;
-  font-size: var(--chat-fs-12);
+  font-size: var(--pi-fs-meta);
   color: var(--pi-text-secondary);
   text-align: center;
 }
-.permission-select.select-borderless {
-  width: auto;
-  max-width: none;
-}
-.model-wrap .model-select {
-  padding-left: 4px;
-}
+
 .model-trigger {
   display: inline-flex;
   align-items: center;
@@ -681,8 +659,8 @@ body {
   background: transparent;
   color: var(--pi-text);
   border: none;
-  border-radius: 999px;
-  font-size: var(--chat-fs-12);
+  border-radius: var(--pi-r-full);
+  font-size: var(--pi-fs-meta);
   font-family: inherit;
   padding: 3px 6px 3px 4px;
   outline: none;
@@ -705,8 +683,8 @@ body {
   max-width: 360px;
   background: var(--pi-bg-raised);
   color: var(--pi-text);
-  border: 1px solid var(--pi-border);
-  border-radius: 6px;
+  border: var(--pi-stroke) solid var(--pi-border);
+  border-radius: var(--pi-r-md);
   box-shadow: var(--pi-shadow-menu);
   padding: 6px;
   display: flex;
@@ -718,10 +696,10 @@ body {
   box-sizing: border-box;
   background: var(--pi-bg-raised);
   color: var(--pi-text);
-  border: 1px solid var(--pi-border-input);
-  border-radius: 4px;
+  border: var(--pi-stroke) solid var(--pi-border-input);
+  border-radius: var(--pi-r-sm);
   padding: 4px 8px;
-  font-size: var(--chat-fs-12);
+  font-size: var(--pi-fs-meta);
   font-family: inherit;
   outline: none;
 }
@@ -741,9 +719,9 @@ body {
   align-items: center;
   gap: 8px;
   padding: 5px 8px;
-  border-radius: 4px;
+  border-radius: var(--pi-r-sm);
   cursor: pointer;
-  font-size: var(--chat-fs-12);
+  font-size: var(--pi-fs-meta);
 }
 .model-item:hover {
   background: var(--pi-bg-hover);
@@ -776,7 +754,7 @@ body {
   background: transparent;
   color: var(--pi-text-secondary);
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: var(--pi-r-sm);
   font-size: var(--pi-fs-body);
   line-height: 1;
 }
@@ -796,7 +774,7 @@ body {
   padding: 10px 8px;
   text-align: center;
   color: var(--pi-text-secondary);
-  font-size: var(--chat-fs-12);
+  font-size: var(--pi-fs-meta);
 }
 .model-icon-slot {
   display: none;
@@ -825,12 +803,7 @@ body {
   height: 0.75em;
   flex-shrink: 0;
 }
-.permission-select.permission-danger {
-  color: var(--pi-danger);
-}
-.permission-wrap .permission-select {
-  padding-left: 4px;
-}
+
 .permission-icon {
   font-size: var(--pi-fs-meta);
   line-height: 1;
@@ -852,7 +825,7 @@ body {
   background: transparent;
   color: var(--pi-text);
   border: none;
-  border-radius: 5px;
+  border-radius: var(--pi-r-sm);
   outline: none;
   flex-shrink: 0;
 }
@@ -877,9 +850,9 @@ body {
   cursor: pointer;
   background: var(--pi-bg-subtle);
   color: var(--pi-text);
-  border: 1px solid var(--pi-border);
-  border-radius: 3px;
-  font-size: var(--chat-fs-12);
+  border: var(--pi-stroke) solid var(--pi-border);
+  border-radius: var(--pi-r-xs);
+  font-size: var(--pi-fs-meta);
   font-family: inherit;
   white-space: nowrap;
 }
@@ -915,7 +888,7 @@ body {
   opacity: 0.35;
 }
 .toolbar .session-info {
-  font-size: var(--chat-fs-12);
+  font-size: var(--pi-fs-meta);
   opacity: 0.85;
   white-space: nowrap;
   overflow: hidden;
@@ -926,12 +899,12 @@ body {
 .name-input {
   flex: 1 1 auto;
   min-width: 0;
-  font-size: var(--chat-fs-12);
+  font-size: var(--pi-fs-meta);
   font-family: inherit;
   color: var(--pi-text);
   background: var(--pi-bg-raised);
-  border: 1px solid var(--pi-border-input);
-  border-radius: 3px;
+  border: var(--pi-stroke) solid var(--pi-border-input);
+  border-radius: var(--pi-r-xs);
   padding: 1px 6px;
   height: 22px;
   outline: none;
@@ -940,7 +913,7 @@ body {
   border-color: var(--pi-brand);
 }
 .toolbar .status {
-  font-size: var(--chat-fs-11);
+  font-size: var(--pi-fs-meta);
   opacity: 0.7;
   margin-left: auto;
   white-space: nowrap;
@@ -967,7 +940,7 @@ body {
   justify-content: center;
   background: var(--pi-bg-raised);
   color: var(--pi-text);
-  border: 1px solid var(--pi-border);
+  border: var(--pi-stroke) solid var(--pi-border);
   border-radius: 50%;
   cursor: pointer;
   box-shadow: var(--pi-shadow-menu);
@@ -1083,7 +1056,7 @@ body {
   align-items: stretch;
 }
 .msg-time {
-  font-size: var(--chat-fs-11);
+  font-size: var(--pi-fs-meta);
   opacity: 0.5;
   white-space: nowrap;
   flex-shrink: 0;
@@ -1096,7 +1069,7 @@ body {
 .bubble {
   max-width: 85%;
   padding: 8px 12px;
-  border-radius: 8px;
+  border-radius: var(--pi-r-lg);
   white-space: pre-wrap;
   word-break: break-word;
   line-height: 1.5;
@@ -1114,7 +1087,7 @@ body {
   max-height: 160px;
   width: auto;
   max-width: 100%;
-  border-radius: 4px;
+  border-radius: var(--pi-r-sm);
   display: block;
 }
 .assistant .text-block {
@@ -1177,25 +1150,25 @@ body {
   font-size: var(--pi-fs-code);
   background: var(--pi-bg-code-inline);
   padding: 1px 4px;
-  border-radius: 3px;
+  border-radius: var(--pi-r-xs);
 }
 .text-block pre {
   margin: 0 0 8px;
   padding: 8px 10px;
   background: var(--pi-bg-subtle);
-  border-radius: 4px;
+  border-radius: var(--pi-r-sm);
   overflow-x: auto;
 }
 .text-block pre code {
   background: none;
   padding: 0;
-  font-size: var(--chat-fs-12);
+  font-size: var(--pi-fs-meta);
   line-height: 1.5;
   white-space: pre;
 }
 .text-block .pi-mermaid {
   margin: 0 0 8px;
-  border-radius: 4px;
+  border-radius: var(--pi-r-sm);
   overflow-x: auto;
   /* A token now: mermaid draws with its `dark` theme on a dark VS Code theme
    * (see `resolveMermaidTheme`), so the canvas no longer has to be pinned white
@@ -1216,7 +1189,7 @@ body {
   white-space: pre;
 }
 .text-block .pi-mermaid.pi-mermaid-error {
-  outline: 1px solid var(--pi-danger);
+  outline: var(--pi-stroke) solid var(--pi-danger);
   color: var(--pi-danger);
 }
 .text-block .pi-math-block {
@@ -1239,7 +1212,7 @@ body {
 }
 .text-block th,
 .text-block td {
-  border: 1px solid var(--pi-border);
+  border: var(--pi-stroke) solid var(--pi-border);
   padding: 4px 8px;
 }
 .text-block th {
@@ -1248,7 +1221,7 @@ body {
 }
 .text-block hr {
   border: none;
-  border-top: 1px solid var(--pi-border);
+  border-top: var(--pi-stroke) solid var(--pi-border);
   margin: 10px 0;
 }
 .text-block img {
@@ -1257,7 +1230,7 @@ body {
 .thinking-block {
   display: flex;
   flex-direction: column;
-  font-size: var(--chat-fs-12);
+  font-size: var(--pi-fs-meta);
   border-left: 2px solid var(--pi-border);
   padding: 1px 0 1px 10px;
   margin: 2px 0;
@@ -1298,11 +1271,11 @@ body {
 .thinking-block > summary:before {
   content: "\ec1f";
   font-family: codicon;
-  font-size: var(--chat-fs-12);
+  font-size: var(--pi-fs-meta);
   margin-right: 6px;
 }
 .thinking-label {
-  font-size: var(--chat-fs-11);
+  font-size: var(--pi-fs-meta);
 }
 .thinking-body {
   margin-top: 6px;
@@ -1319,16 +1292,6 @@ body {
   margin-left: 3px;
   padding-left: 12px;
   border-left: 2px solid var(--pi-border);
-}
-.compaction-block {
-  display: flex;
-  flex-direction: column;
-  border: 1px solid var(--pi-border);
-  border-left: 3px solid var(--pi-brand);
-  border-radius: 6px;
-  background: transparent;
-  padding: 4px 8px;
-  font-size: var(--chat-fs-12);
 }
 
 /* ── compaction divider (彬哥: 分割线样式，完成后显示「已完成压缩」) ──────────
@@ -1347,7 +1310,7 @@ body {
  * panel leaves, and keeps the box spacing symmetric. */
 .compaction-divider {
   margin: var(--pi-sp-8) 0;
-  font-size: var(--chat-fs-11);
+  font-size: var(--pi-fs-meta);
   color: var(--pi-text-secondary);
 }
 
@@ -1396,50 +1359,15 @@ body {
 .compaction-summary-body {
   margin: 6px 0 0;
   padding: 8px 10px;
-  border: 1px solid var(--pi-border-divider);
-  border-radius: var(--pi-r-md, 6px);
+  border: var(--pi-stroke) solid var(--pi-border-divider);
+  border-radius: var(--pi-r-md);
   background: var(--pi-bg-subtle);
   white-space: pre-wrap;
   word-break: break-word;
   max-height: 220px;
   overflow-y: auto;
 }
-.compaction-block > summary {
-  cursor: pointer;
-  opacity: 0.85;
-  list-style: none;
-  user-select: none;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.compaction-block > summary::-webkit-details-marker {
-  display: none;
-}
-.compaction-block > summary:before {
-  content: "\25b6";
-  font-size: var(--chat-fs-9);
-  opacity: 0.6;
-}
-.compaction-block[open] > summary:before {
-  content: "\25bc";
-}
-.compaction-label {
-  font-weight: 600;
-  opacity: 0.8;
-}
-.compaction-body {
-  margin-top: 6px;
-  line-height: 1.55;
-  padding: 2px 0;
-  font-size: var(--chat-fs);
-  max-height: 340px;
-  overflow-y: auto;
-}
-.compaction-body > :last-child {
-  margin-bottom: 0;
-}
+
 .history-block {
   background: transparent;
   overflow: hidden;
@@ -1449,7 +1377,7 @@ body {
   cursor: pointer;
   list-style: none;
   user-select: none;
-  font-size: var(--chat-fs-12);
+  font-size: var(--pi-fs-meta);
   opacity: 0.75;
   display: flex;
   align-items: center;
@@ -1461,7 +1389,7 @@ body {
 }
 .history-block > summary:before {
   content: "\25b6";
-  font-size: var(--chat-fs-9);
+  font-size: var(--pi-fs-micro);
   opacity: 0.6;
 }
 .history-block[open] > summary:before {
@@ -1472,15 +1400,10 @@ body {
   max-height: 60vh;
   overflow-y: auto;
 }
-.history-content {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.history-loading,
-.history-empty {
+
+.history-loading {
   opacity: 0.6;
-  font-size: var(--chat-fs-12);
+  font-size: var(--pi-fs-meta);
   padding: 4px 0;
 }
 .work-block {
@@ -1492,7 +1415,7 @@ body {
   cursor: pointer;
   list-style: none;
   user-select: none;
-  font-size: var(--chat-fs-12);
+  font-size: var(--pi-fs-meta);
   opacity: 0.75;
   display: flex;
   align-items: center;
@@ -1504,7 +1427,7 @@ body {
 }
 .work-head:before {
   content: "\25b6";
-  font-size: var(--chat-fs-9);
+  font-size: var(--pi-fs-micro);
   opacity: 0.6;
 }
 .work-block[open] > .work-head:before {
@@ -1520,7 +1443,7 @@ body {
 .tool-block {
   border: none;
   border-left: 3px solid var(--pi-info);
-  border-radius: 4px;
+  border-radius: var(--pi-r-sm);
   overflow: hidden;
 }
 .tool-block.is-error {
@@ -1531,7 +1454,7 @@ body {
   align-items: center;
   gap: 8px;
   padding: 4px 8px;
-  font-size: var(--chat-fs-12);
+  font-size: var(--pi-fs-meta);
   cursor: pointer;
   list-style: none;
   user-select: none;
@@ -1539,9 +1462,7 @@ body {
 .tool-head::-webkit-details-marker {
   display: none;
 }
-body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
-  text-decoration: underline;
-}
+
 .tool-name {
   font-weight: 600;
   font-family: var(--pi-mono);
@@ -1555,12 +1476,12 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   text-overflow: ellipsis;
   white-space: nowrap;
   padding: 1px 6px;
-  border: 1px solid var(--pi-border);
+  border: var(--pi-stroke) solid var(--pi-border);
   border-radius: var(--pi-r-sm);
   background: var(--pi-bg-subtle);
   color: var(--pi-text-secondary);
   font-family: var(--pi-mono);
-  font-size: var(--chat-fs-11);
+  font-size: var(--pi-fs-meta);
 }
 
 /* 参数与 JSON 结果的卡片样式在文件末尾（那里才盖得住历史上那几条 .tool-args）。 */
@@ -1575,20 +1496,10 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   gap: 6px;
   overflow: hidden;
 }
-.tool-summary-path {
-  flex: 0 1 auto;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.tool-summary .tool-metrics {
-  flex: none;
-  white-space: nowrap;
-}
+
 .tool-status {
   opacity: 0.6;
-  font-size: var(--chat-fs-11);
+  font-size: var(--pi-fs-meta);
   margin-left: auto;
 }
 .tool-status.is-running {
@@ -1617,7 +1528,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   margin: 0;
   padding: 6px 8px;
   font-family: var(--pi-mono);
-  font-size: var(--chat-fs-12);
+  font-size: var(--pi-fs-meta);
   white-space: pre-wrap;
   word-break: break-word;
   overflow-x: auto;
@@ -1625,11 +1536,11 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   overflow-y: auto;
 }
 .tool-args {
-  border-top: 1px solid var(--pi-border);
+  border-top: var(--pi-stroke) solid var(--pi-border);
   color: var(--pi-text);
 }
 .tool-result {
-  border-top: 1px solid var(--pi-border);
+  border-top: var(--pi-stroke) solid var(--pi-border);
   color: var(--pi-success);
 }
 .tool-result img {
@@ -1638,8 +1549,8 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   width: auto;
   max-width: 100%;
   margin-top: 6px;
-  border-radius: 4px;
-  border: 1px solid var(--pi-border);
+  border-radius: var(--pi-r-sm);
+  border: var(--pi-stroke) solid var(--pi-border);
 }
 .tool-block.is-error .tool-result {
   color: var(--pi-danger);
@@ -1652,7 +1563,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   margin: 0;
   padding: 2px 0;
   font-family: var(--pi-mono);
-  font-size: var(--chat-fs-12);
+  font-size: var(--pi-fs-meta);
   line-height: 1.5;
   color: var(--pi-text);
 }
@@ -1704,156 +1615,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 .diff-line.hunk .diff-content {
   font-style: italic;
 }
-.tool-block.is-diff .tool-args {
-  display: none;
-}
-.tool-block.is-subagent .tool-args {
-  display: none;
-}
-.subagent-wrap {
-  color: var(--pi-text);
-  white-space: normal;
-}
-.subagent-body {
-  padding: 2px 0;
-  font-size: var(--chat-fs-12);
-  line-height: 1.5;
-}
-.sub-task {
-  border: 1px solid var(--pi-border);
-  border-left: 2px solid var(--pi-info);
-  border-radius: 3px;
-  margin: 4px 0;
-  overflow: hidden;
-}
-.sub-task.is-failed {
-  border-left-color: var(--pi-danger);
-}
-.sub-task-head {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 3px 8px;
-  font-size: var(--chat-fs-12);
-  font-weight: 500;
-  background: var(--pi-bg-hover);
-  cursor: pointer;
-  list-style: none;
-  user-select: none;
-}
-.sub-task-head::-webkit-details-marker {
-  display: none;
-}
-.sub-task-head:before {
-  content: "\25bc";
-  font-size: var(--chat-fs-8);
-  opacity: 0.5;
-}
-.sub-task:not([open]) > .sub-task-head:before {
-  content: "\25b6";
-}
-.sub-task-icon {
-  flex: 0 0 auto;
-}
-.sub-task-agent {
-  color: var(--pi-success);
-  flex: 0 0 auto;
-}
-.sub-task-title {
-  color: var(--pi-text);
-  opacity: 0.9;
-  flex: 1 1 auto;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.sub-task-status {
-  opacity: 0.6;
-  font-size: var(--chat-fs-11);
-  margin-left: auto;
-  flex: 0 0 auto;
-}
-.sub-task-body {
-  padding: 6px 8px;
-  font-size: var(--chat-fs-12);
-  line-height: 1.5;
-}
-.sub-section-label {
-  color: var(--pi-text-secondary);
-  opacity: 0.7;
-  font-size: var(--chat-fs-11);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin: 6px 0 2px;
-}
-.sub-task-text {
-  color: var(--pi-text);
-  opacity: 0.85;
-  margin-bottom: 8px;
-}
-.sub-toolcall {
-  color: var(--pi-text-secondary);
-  opacity: 0.8;
-  white-space: pre-wrap;
-  word-break: break-word;
-  font-family: var(--pi-mono);
-}
-.sub-toolcall-name {
-  font-weight: 600;
-  opacity: 1;
-  color: var(--pi-text);
-}
-.sub-final {
-  margin-top: 6px;
-}
-.sub-md.text-block {
-  font-size: var(--chat-fs-12);
-  padding: 0;
-  line-height: 1.5;
-}
-.sub-md.text-block p,
-.sub-md.text-block pre,
-.sub-md.text-block ul,
-.sub-md.text-block ol,
-.sub-md.text-block blockquote,
-.sub-md.text-block table {
-  margin: 0 0 8px;
-}
-.sub-md.text-block li {
-  margin: 2px 0;
-}
-.sub-md.text-block > :last-child {
-  margin-bottom: 0;
-}
-.sub-error {
-  color: var(--pi-danger);
-  margin-top: 4px;
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-.sub-empty {
-  opacity: 0.6;
-  font-style: italic;
-}
-.sub-usage {
-  opacity: 0.75;
-  font-size: var(--chat-fs-11);
-  margin-bottom: 6px;
-  padding-bottom: 4px;
-  border-bottom: 1px solid var(--pi-border);
-}
-.sub-usage-model {
-  color: var(--pi-success);
-  font-weight: 500;
-}
-.sub-total {
-  opacity: 0.6;
-  font-size: var(--chat-fs-11);
-  margin-top: 6px;
-  padding-top: 4px;
-  border-top: 1px solid var(--pi-border);
-}
+
 /* 读取块：浅底卡片 + 弱化等宽正文（参考图：白底、灰字、行号很淡）。
  * 只有「读到的这一段」（offset..offset+limit）会进来，行号从 offset 起。 */
 .code-block {
@@ -1865,7 +1627,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   background: var(--pi-bg-surface);
   color: var(--pi-text-muted);
   font-family: var(--pi-mono);
-  font-size: var(--chat-fs-12);
+  font-size: var(--pi-fs-meta);
   line-height: 1.5;
 }
 .code-line {
@@ -1895,15 +1657,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   padding: 6px 10px;
   background: var(--pi-danger-soft);
   color: var(--pi-danger);
-  font-size: var(--chat-fs-12);
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-.msg-error {
-  margin-top: 6px;
-  padding: 2px 0;
-  color: var(--pi-danger);
-  font-size: var(--chat-fs);
+  font-size: var(--pi-fs-meta);
   white-space: pre-wrap;
   word-break: break-word;
 }
@@ -1925,8 +1679,8 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   max-height: 240px;
   overflow-y: auto;
   background: var(--pi-bg-raised);
-  border: 1px solid var(--pi-border-input);
-  border-radius: 4px;
+  border: var(--pi-stroke) solid var(--pi-border-input);
+  border-radius: var(--pi-r-sm);
   box-shadow: var(--pi-shadow-menu);
   z-index: 10;
 }
@@ -1936,7 +1690,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   display: flex;
   flex-direction: column;
   gap: 1px;
-  border-bottom: 1px solid var(--pi-border);
+  border-bottom: var(--pi-stroke) solid var(--pi-border);
 }
 .autocomplete-item:last-child {
   border-bottom: none;
@@ -1948,17 +1702,17 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 .autocomplete-item .ac-name {
   font-weight: 500;
   font-family: var(--pi-mono);
-  font-size: var(--chat-fs-12);
+  font-size: var(--pi-fs-meta);
 }
 .autocomplete-item .ac-desc {
-  font-size: var(--chat-fs-11);
+  font-size: var(--pi-fs-meta);
   opacity: 0.7;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .autocomplete-item .ac-source {
-  font-size: var(--chat-fs-10);
+  font-size: var(--pi-fs-micro);
   opacity: 0.5;
 }
 .autocomplete-item .ac-name mark.ac-hl {
@@ -1978,7 +1732,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   background: transparent;
   color: var(--pi-text);
   border: none;
-  border-radius: 8px 8px 0 0;
+  border-radius: var(--pi-r-lg) var(--pi-r-lg) 0 0;
   font-family: var(--pi-font);
   font-size: var(--chat-fs);
   line-height: 1.5;
@@ -1994,7 +1748,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   color: var(--pi-text-muted);
 }
 #input .token {
-  border-radius: 4px;
+  border-radius: var(--pi-r-sm);
   padding: 0 2px;
   user-select: none;
   white-space: nowrap;
@@ -2035,8 +1789,8 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   max-height: 80vh;
   overflow-y: auto;
   background: var(--pi-bg-raised);
-  border: 1px solid var(--pi-border);
-  border-radius: 8px;
+  border: var(--pi-stroke) solid var(--pi-border);
+  border-radius: var(--pi-r-lg);
   padding: 14px 16px;
   box-shadow: var(--pi-shadow-modal);
   display: flex;
@@ -2045,7 +1799,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 }
 .dialog h3 {
   margin: 0;
-  font-size: var(--chat-fs-14);
+  font-size: var(--pi-fs-body);
   white-space: pre-wrap;
   word-break: break-word;
 }
@@ -2061,13 +1815,13 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   bottom: 12px;
   max-width: 360px;
   padding: 8px 12px;
-  border-radius: 6px;
+  border-radius: var(--pi-r-md);
   background: var(--pi-bg-raised);
   color: var(--pi-text);
-  border: 1px solid var(--pi-border);
+  border: var(--pi-stroke) solid var(--pi-border);
   box-shadow: var(--pi-shadow-menu);
   z-index: 120;
-  font-size: var(--chat-fs-12);
+  font-size: var(--pi-fs-meta);
   white-space: pre-wrap;
   word-break: break-word;
   opacity: 0;
@@ -2106,8 +1860,8 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   width: min(720px, 92vw);
   max-height: 82vh;
   background: var(--pi-bg-raised);
-  border: 1px solid var(--pi-border);
-  border-radius: 8px;
+  border: var(--pi-stroke) solid var(--pi-border);
+  border-radius: var(--pi-r-lg);
   padding: 14px 16px;
   box-shadow: var(--pi-shadow-modal);
   display: flex;
@@ -2116,7 +1870,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 }
 .info-panel h3 {
   margin: 0;
-  font-size: var(--chat-fs-14);
+  font-size: var(--pi-fs-body);
 }
 .info-panel-body {
   overflow-y: auto;
@@ -2124,23 +1878,19 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 }
 .info-panel-body table {
   border-collapse: collapse;
-  font-size: var(--chat-fs-12);
+  font-size: var(--pi-fs-meta);
 }
 .info-panel-body th,
 .info-panel-body td {
-  border: 1px solid var(--pi-border);
+  border: var(--pi-stroke) solid var(--pi-border);
   padding: 2px 8px;
 }
-.info-panel-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 6px;
-}
+
 .info-panel .btn {
   padding: 5px 14px;
   cursor: pointer;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--pi-r-sm);
   font-size: var(--chat-fs);
   font-family: inherit;
 }
@@ -2161,8 +1911,8 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   padding: 6px 8px;
   background: var(--pi-bg-raised);
   color: var(--pi-text);
-  border: 1px solid var(--pi-border-input);
-  border-radius: 4px;
+  border: var(--pi-stroke) solid var(--pi-border-input);
+  border-radius: var(--pi-r-sm);
   font-family: var(--pi-font);
   font-size: var(--chat-fs);
   outline: none;
@@ -2171,31 +1921,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   min-height: 100px;
   resize: vertical;
 }
-.dialog .opt-list {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.dialog .opt-btn {
-  text-align: left;
-  padding: 8px 10px;
-  cursor: pointer;
-  background: var(--pi-bg-subtle);
-  color: var(--pi-text);
-  border: 1px solid var(--pi-border);
-  border-radius: 4px;
-  font-size: var(--chat-fs);
-  font-family: inherit;
-}
-.dialog .opt-btn:hover {
-  background: var(--pi-bg-hover);
-}
-.dialog .opt-btn.opt-allow {
-  color: var(--pi-danger);
-}
-.dialog .opt-btn.opt-block {
-  color: var(--pi-success);
-}
+
 .dialog .dialog-actions {
   display: flex;
   gap: 6px;
@@ -2206,7 +1932,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   padding: 5px 14px;
   cursor: pointer;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--pi-r-sm);
   font-size: var(--chat-fs);
   font-family: inherit;
 }
@@ -2221,66 +1947,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   background: var(--pi-bg-subtle);
   color: var(--pi-text);
 }
-.dialog .q-block {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 8px 0;
-  border-bottom: 1px solid var(--pi-border);
-}
-.dialog .q-block:last-of-type {
-  border-bottom: none;
-}
-.dialog .q-header {
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
-}
-.dialog .q-num {
-  font-weight: 600;
-  font-size: var(--chat-fs);
-}
-.dialog .q-label {
-  font-weight: 600;
-  font-size: var(--chat-fs);
-}
-.dialog .q-prompt {
-  color: var(--pi-text-secondary);
-  font-size: var(--chat-fs-12);
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-.dialog .q-options {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.dialog .opt-btn .opt-label {
-  display: block;
-}
-.dialog .opt-btn .opt-desc {
-  display: block;
-  font-size: var(--chat-fs-11);
-  opacity: 0.7;
-  margin-top: 2px;
-}
-.dialog .opt-btn.selected {
-  border-color: var(--pi-brand);
-  background: var(--pi-bg-selected);
-}
-.dialog .q-textarea {
-  width: 100%;
-  min-height: 60px;
-  resize: vertical;
-  background: var(--pi-bg-raised);
-  color: var(--pi-text);
-  border: 1px solid var(--pi-border-input);
-  border-radius: 4px;
-  padding: 6px;
-  font-family: inherit;
-  font-size: var(--chat-fs);
-  box-sizing: border-box;
-}
+
 .dialog .btn-primary:disabled {
   opacity: 0.5;
   cursor: not-allowed;
@@ -2306,7 +1973,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   display: block;
 }
 .empty-line {
-  font-size: var(--chat-fs-15);
+  font-size: var(--pi-fs-title);
   font-weight: 600;
   color: var(--pi-text);
 }
@@ -2323,7 +1990,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: var(--chat-fs-11);
+  font-size: var(--pi-fs-meta);
   opacity: 0.72;
   white-space: nowrap;
   justify-self: start;
@@ -2336,17 +2003,17 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   height: 19px;
   padding: 0 6px;
   font-family: var(--pi-font);
-  font-size: var(--chat-fs-11);
+  font-size: var(--pi-fs-meta);
   line-height: 1;
   color: var(--pi-text);
   background: var(--pi-bg-subtle);
-  border: 1px solid var(--pi-border);
+  border: var(--pi-stroke) solid var(--pi-border);
   border-bottom-width: 2px;
-  border-radius: 4px;
+  border-radius: var(--pi-r-sm);
 }
 .widget-card {
-  border: 1px solid var(--pi-border);
-  border-radius: 6px;
+  border: var(--pi-stroke) solid var(--pi-border);
+  border-radius: var(--pi-r-md);
   padding: 8px 10px;
   background: color-mix(
     in srgb,
@@ -2387,7 +2054,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
     var(--pi-bg-raised) calc(100% - 35% * var(--pi-bg-on, 0)),
     transparent
   );
-  border: 1px solid var(--pi-border-input);
+  border: var(--pi-stroke) solid var(--pi-border-input);
   border-bottom: none;
   border-radius: var(--pi-r-lg) var(--pi-r-lg) 0 0;
 }
@@ -2400,11 +2067,11 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   gap: 8px;
   min-height: 32px;
   padding: 4px 12px;
-  font-size: var(--chat-fs-12);
+  font-size: var(--pi-fs-meta);
 }
 
 .queue-item + .queue-item {
-  border-top: 1px solid var(--pi-border-divider);
+  border-top: var(--pi-stroke) solid var(--pi-border-divider);
 }
 
 .queue-text {
@@ -2429,7 +2096,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   border-radius: var(--pi-r-xs);
   background: var(--pi-bg-subtle);
   color: var(--pi-text-muted);
-  font-size: var(--chat-fs-10);
+  font-size: var(--pi-fs-micro);
   font-variant-numeric: tabular-nums;
 }
 
@@ -2452,7 +2119,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   border-radius: var(--pi-r-sm);
   background: transparent;
   color: var(--pi-text-muted);
-  font-size: var(--chat-fs-12);
+  font-size: var(--pi-fs-meta);
   cursor: pointer;
 }
 
@@ -2472,7 +2139,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   border-radius: var(--pi-r-xs);
   background: var(--pi-bg-subtle);
   color: var(--pi-text-secondary);
-  font-size: var(--chat-fs-10);
+  font-size: var(--pi-fs-micro);
 }
 
 .queue-item.is-host .queue-text {
@@ -2490,7 +2157,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: var(--chat-fs-12);
+  font-size: var(--pi-fs-meta);
 }
 .rewind-chevron {
   display: inline-flex;
@@ -2525,7 +2192,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   white-space: nowrap;
 }
 .rewind-totals {
-  font-size: var(--chat-fs-11);
+  font-size: var(--pi-fs-meta);
   font-variant-numeric: tabular-nums;
   flex: 0 0 auto;
   display: inline-flex;
@@ -2542,12 +2209,12 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   align-items: center;
   gap: 3px;
   padding: 1px 6px;
-  font-size: var(--chat-fs-11);
+  font-size: var(--pi-fs-meta);
   font-family: inherit;
   background: transparent;
   color: var(--pi-text);
-  border: 1px solid var(--pi-border);
-  border-radius: 4px;
+  border: var(--pi-stroke) solid var(--pi-border);
+  border-radius: var(--pi-r-sm);
   cursor: pointer;
   white-space: nowrap;
 }
@@ -2580,8 +2247,8 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   align-items: center;
   gap: 8px;
   padding: 3px 4px;
-  border-radius: 4px;
-  font-size: var(--chat-fs-12);
+  border-radius: var(--pi-r-sm);
+  font-size: var(--pi-fs-meta);
   line-height: 1.45;
 }
 .rewind-row:hover {
@@ -2603,7 +2270,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 .rewind-counts {
   flex: 0 0 auto;
   font-variant-numeric: tabular-nums;
-  font-size: var(--chat-fs-11);
+  font-size: var(--pi-fs-meta);
   white-space: nowrap;
   display: inline-flex;
   gap: 4px;
@@ -2620,13 +2287,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   gap: 2px;
   flex: 0 0 auto;
 }
-.bubble-meta {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  align-self: flex-end;
-  min-height: 22px;
-}
+
 .msg.user .bubble-actions {
   display: inline-flex;
   gap: 2px;
@@ -2640,106 +2301,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 .msg.user .bubble-actions .icon-btn:hover {
   opacity: 1;
 }
-.rewind-dialog .dialog-actions {
-  flex-direction: column;
-  align-items: stretch;
-  gap: 8px;
-}
-.rewind-dialog .dialog-actions .btn {
-  width: 100%;
-}
 
-/* ---- MCP drawer (toolbar dropdown) ---- */
-.mcp-popover {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.25);
-  z-index: 90;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-}
-.mcp-drawer {
-  max-height: 55vh;
-  display: flex;
-  flex-direction: column;
-  background: var(--pi-bg-raised);
-  border: 1px solid var(--pi-border);
-  border-top: none;
-  border-radius: 0 0 10px 10px;
-  box-shadow: var(--pi-shadow-modal);
-  overflow: hidden;
-}
-.mcp-drawer-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 14px;
-  border-bottom: 1px solid var(--pi-border);
-}
-.mcp-drawer-title {
-  font-weight: 600;
-  font-size: var(--pi-fs-body);
-}
-.mcp-drawer-body {
-  overflow-y: auto;
-  padding: 6px 8px;
-}
-.mcp-empty {
-  padding: 24px 14px;
-  text-align: center;
-  color: var(--pi-text-secondary);
-  opacity: 0.8;
-  font-size: var(--pi-fs-meta);
-}
-.mcp-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 8px;
-  border-radius: 6px;
-}
-.mcp-row:hover {
-  background: var(--pi-bg-hover);
-}
-.mcp-row-main {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.mcp-name-line {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-}
-.mcp-name {
-  font-size: var(--pi-fs-body);
-  font-weight: 500;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.mcp-tag {
-  flex-shrink: 0;
-  font-size: var(--pi-fs-micro);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-  padding: 1px 5px;
-  border-radius: 3px;
-  border: 1px solid var(--pi-border);
-  color: var(--pi-text);
-  background: rgba(0, 120, 212, 0.25);
-  opacity: 0.85;
-}
-.mcp-tag-project {
-  background: rgba(0, 150, 80, 0.18);
-}
 .mcp-state {
   flex-shrink: 0;
   font-size: var(--pi-fs-micro);
@@ -2747,97 +2309,12 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   letter-spacing: 0.3px;
   opacity: 0.7;
 }
-.mcp-state-connected {
-  color: var(--pi-success);
-  opacity: 1;
-}
-.mcp-state-connecting {
-  color: var(--pi-info);
-  opacity: 1;
-}
-.mcp-state-error,
-.mcp-state-stopped {
-  color: var(--pi-danger);
-  opacity: 1;
-}
-.mcp-state-disabled {
-  color: var(--pi-text-secondary);
-  opacity: 0.9;
-}
-.mcp-meta {
-  font-size: var(--pi-fs-meta);
-  color: var(--pi-text-secondary);
-  opacity: 0.75;
-}
-.mcp-err {
-  font-size: var(--pi-fs-meta);
-  color: var(--pi-danger);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
+
 .mcp-dot {
   width: 9px;
   height: 9px;
   border-radius: 50%;
   flex-shrink: 0;
-}
-.mcp-dot-ok {
-  background: var(--pi-success);
-}
-.mcp-dot-busy {
-  background: var(--pi-info);
-}
-.mcp-dot-off {
-  background: var(--pi-text-secondary);
-}
-.mcp-dot-err {
-  background: var(--pi-danger);
-}
-.mcp-icon-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 26px;
-  height: 26px;
-  padding: 0;
-  border: none;
-  border-radius: 5px;
-  background: transparent;
-  color: var(--pi-text);
-  cursor: pointer;
-  flex-shrink: 0;
-}
-.mcp-icon-btn:hover {
-  background: var(--pi-bg-hover);
-}
-.mcp-switch {
-  position: relative;
-  width: 32px;
-  height: 18px;
-  padding: 0;
-  border: none;
-  border-radius: 9px;
-  background: var(--pi-bg-raised);
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: background 0.15s ease;
-}
-.mcp-switch.mcp-switch-on {
-  background: var(--pi-brand);
-}
-.mcp-switch-knob {
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: var(--pi-text-on-solid);
-  transition: transform 0.15s ease;
-}
-.mcp-switch.mcp-switch-on .mcp-switch-knob {
-  transform: translateX(14px);
 }
 
 /* ── design pass ──────────────────────────────────────────────────────────
@@ -2853,9 +2330,9 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
  * through. Overriding it here would silently kill that setting. */
 .toolbar {
   height: var(--pi-h-toolbar);
-  padding: 0 var(--pi-sp-5) 0 var(--pi-sp-6);
+  padding: 0 var(--pi-sp-5);
   gap: var(--pi-sp-5);
-  border-bottom: 1px solid var(--pi-border);
+  border-bottom: var(--pi-stroke) solid var(--pi-border);
 }
 
 .icon-btn,
@@ -2893,13 +2370,6 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   color: var(--pi-text);
 }
 
-/* "active" is the board's third state — the toggle that is currently on. */
-.icon-btn.is-active,
-.toolbar .icon-btn.is-active {
-  background: var(--pi-bg-selected);
-  color: var(--pi-icon-brand);
-}
-
 .icon-btn:disabled,
 .toolbar > button:disabled,
 .toolbar .icon-btn:disabled {
@@ -2909,12 +2379,12 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 }
 
 .toolbar .session-info {
-  font-size: var(--fs-13);
+  font-size: var(--pi-fs-body);
   color: var(--pi-text);
 }
 
 .toolbar .status {
-  font-size: var(--fs-11);
+  font-size: var(--pi-fs-micro);
   color: var(--pi-text-muted);
 }
 
@@ -2923,12 +2393,12 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   width: 260px;
   height: var(--pi-h-control-sm);
   padding: 0 var(--pi-sp-3);
-  border: 1px solid var(--pi-brand);
+  border: var(--pi-stroke) solid var(--pi-brand);
   border-radius: var(--pi-r-sm);
   background: var(--pi-bg-raised);
   color: var(--pi-text);
   font-family: var(--pi-font);
-  font-size: var(--fs-13);
+  font-size: var(--pi-fs-body);
   outline: none;
 }
 
@@ -2940,7 +2410,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   border-radius: var(--pi-r-sm);
   background: var(--pi-bg-raised);
   color: var(--pi-text);
-  font-size: var(--fs-11);
+  font-size: var(--pi-fs-micro);
   box-shadow: var(--pi-shadow-menu);
 }
 
@@ -2949,7 +2419,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 .sessions-popup {
   width: 360px;
   padding: var(--pi-sp-3);
-  border: 1px solid var(--pi-border);
+  border: var(--pi-stroke) solid var(--pi-border);
   border-radius: var(--pi-r-lg);
   background: var(--pi-bg-raised);
   box-shadow: var(--pi-shadow-popup);
@@ -2979,7 +2449,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 }
 
 .session-item-title {
-  font-size: var(--fs-13);
+  font-size: var(--pi-fs-body);
   color: var(--pi-text);
 }
 
@@ -2988,12 +2458,12 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 }
 
 .session-item-preview {
-  font-size: var(--fs-11);
+  font-size: var(--pi-fs-micro);
   color: var(--pi-text-secondary);
 }
 
 .session-item-meta {
-  font-size: var(--fs-11);
+  font-size: var(--pi-fs-micro);
   color: var(--pi-text-muted);
 }
 
@@ -3004,7 +2474,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 .sessions-empty {
   padding: var(--pi-sp-9);
   color: var(--pi-text-secondary);
-  font-size: var(--fs-13);
+  font-size: var(--pi-fs-body);
   text-align: center;
 }
 
@@ -3014,7 +2484,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 .model-popup,
 .autocomplete {
   padding: var(--pi-sp-3);
-  border: 1px solid var(--pi-border);
+  border: var(--pi-stroke) solid var(--pi-border);
   border-radius: var(--pi-r-lg);
   background: var(--pi-bg-raised);
   box-shadow: var(--pi-shadow-popup);
@@ -3037,7 +2507,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 
 .picker-title {
   padding: var(--pi-sp-1) var(--pi-sp-1) var(--pi-sp-3);
-  font-size: var(--fs-13);
+  font-size: var(--pi-fs-body);
   font-weight: 500;
   color: var(--pi-text);
 }
@@ -3086,7 +2556,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 .model-item-label,
 .thinking-item-title,
 .permission-item-title {
-  font-size: var(--fs-13);
+  font-size: var(--pi-fs-body);
   color: var(--pi-text);
 }
 
@@ -3096,31 +2566,22 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 
 .thinking-item-desc,
 .permission-item-desc {
-  font-size: var(--fs-11);
+  font-size: var(--pi-fs-micro);
   color: var(--pi-text-muted);
 }
 
 .autocomplete-item .ac-name {
   font-family: var(--pi-mono);
-  font-size: var(--fs-13);
+  font-size: var(--pi-fs-body);
 }
 
 .autocomplete-item .ac-desc,
 .autocomplete-item .ac-source {
-  font-size: var(--fs-11);
+  font-size: var(--pi-fs-micro);
   color: var(--pi-text-muted);
 }
 
 /* ── E · context menu ────────────────────────────────────────────────────── */
-
-.ctx-menu {
-  min-width: 200px;
-  padding: var(--pi-sp-2);
-  border: 1px solid var(--pi-border);
-  border-radius: var(--pi-r-lg);
-  background: var(--pi-bg-raised);
-  box-shadow: var(--pi-shadow-popup);
-}
 
 /* ── E · overlay dialogs ─────────────────────────────────────────────────── */
 
@@ -3132,7 +2593,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   width: 400px;
   max-width: calc(100% - var(--pi-sp-10));
   padding: var(--pi-sp-8);
-  border: 1px solid var(--pi-border);
+  border: var(--pi-stroke) solid var(--pi-border);
   border-radius: var(--pi-r-lg);
   background: var(--pi-bg-raised);
   box-shadow: var(--pi-shadow-modal);
@@ -3140,53 +2601,26 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 
 .dialog h3 {
   margin: 0 0 var(--pi-sp-5);
-  font-size: var(--fs-14);
+  font-size: var(--pi-fs-body);
   font-weight: 500;
   color: var(--pi-text);
 }
 
 .dialog p {
   margin: 0 0 var(--pi-sp-5);
-  font-size: var(--fs-13);
+  font-size: var(--pi-fs-body);
   color: var(--pi-text-secondary);
 }
 
 /* The board paints the command preview on the fixed dark code surface. */
-.dialog pre,
-.dialog .dialog-code {
+.dialog pre {
   padding: var(--pi-sp-4);
   border-radius: var(--pi-r-sm);
   background: var(--pi-code-bg);
   color: var(--pi-code-fg);
   font-family: var(--pi-mono);
-  font-size: var(--fs-12);
+  font-size: var(--pi-fs-meta);
   overflow-x: auto;
-}
-
-.opt-btn {
-  padding: 7px var(--pi-sp-6);
-  border: 1px solid var(--pi-border-input);
-  border-radius: var(--pi-r-sm);
-  background: var(--pi-bg-raised);
-  color: var(--pi-text);
-  font-size: var(--fs-12);
-  cursor: pointer;
-}
-
-.opt-btn:hover {
-  background: var(--pi-bg-hover);
-}
-
-.opt-allow {
-  border-color: transparent;
-  background: var(--pi-brand);
-  color: var(--pi-text-on-solid);
-}
-
-.opt-block {
-  border-color: var(--pi-danger);
-  color: var(--pi-text-danger);
-  background: transparent;
 }
 
 .dialog textarea,
@@ -3194,12 +2628,12 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 .dialog-input {
   width: 100%;
   padding: var(--pi-sp-4);
-  border: 1px solid var(--pi-border-input);
+  border: var(--pi-stroke) solid var(--pi-border-input);
   border-radius: var(--pi-r-sm);
   background: var(--pi-bg-raised);
   color: var(--pi-text);
   font-family: var(--pi-mono);
-  font-size: var(--fs-12);
+  font-size: var(--pi-fs-meta);
   outline: none;
 }
 
@@ -3215,7 +2649,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   width: 380px;
   max-width: calc(100% - var(--pi-sp-10));
   padding: var(--pi-sp-7);
-  border: 1px solid var(--pi-border);
+  border: var(--pi-stroke) solid var(--pi-border);
   border-radius: var(--pi-r-lg);
   background: var(--pi-bg-raised);
   box-shadow: var(--pi-shadow-modal);
@@ -3223,14 +2657,14 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 
 .info-panel h3 {
   margin: 0 0 var(--pi-sp-4);
-  font-size: var(--fs-14);
+  font-size: var(--pi-fs-body);
   font-weight: 500;
   color: var(--pi-text);
 }
 
 .info-panel-body {
   font-family: var(--pi-mono);
-  font-size: var(--fs-12);
+  font-size: var(--pi-fs-meta);
   color: var(--pi-text-secondary);
 }
 
@@ -3243,7 +2677,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 .attach-thumb {
   width: 64px;
   height: 64px;
-  border: 1px solid var(--pi-border);
+  border: var(--pi-stroke) solid var(--pi-border);
   border-radius: var(--pi-r-md);
   background: var(--pi-bg-subtle);
   overflow: visible;
@@ -3257,7 +2691,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   border-radius: var(--pi-r-full);
   background: var(--pi-bg-raised);
   color: var(--pi-text-secondary);
-  box-shadow: 0 0 0 1px var(--pi-border);
+  box-shadow: 0 0 0 var(--pi-stroke) var(--pi-border);
 }
 
 .attach-remove:hover {
@@ -3268,12 +2702,12 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 /* ── F · toast ───────────────────────────────────────────────────────────── */
 
 .toast {
-  padding: var(--pi-sp-4) var(--pi-sp-6);
+  padding: var(--pi-sp-4) var(--pi-sp-5);
   border: none;
   border-radius: var(--pi-r-md);
   background: var(--pi-toast-bg);
   color: var(--pi-toast-fg);
-  font-size: var(--fs-13);
+  font-size: var(--pi-fs-body);
   box-shadow: var(--pi-shadow-modal);
   max-width: 420px;
 }
@@ -3295,15 +2729,13 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 }
 
 /* ── F · banners ─────────────────────────────────────────────────────────── */
-
-.error-banner,
-.msg-error {
+.error-banner {
   padding: var(--pi-sp-4) var(--pi-sp-5);
-  border: 1px solid var(--pi-danger);
+  border: var(--pi-stroke) solid var(--pi-danger);
   border-radius: var(--pi-r-md);
   background: var(--pi-danger-soft);
   color: var(--pi-text-danger);
-  font-size: var(--fs-12);
+  font-size: var(--pi-fs-meta);
 }
 
 /* ── F · empty state ─────────────────────────────────────────────────────── */
@@ -3314,7 +2746,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 }
 
 .empty-line {
-  font-size: var(--fs-12);
+  font-size: var(--pi-fs-meta);
   color: var(--pi-text-muted);
 }
 
@@ -3324,17 +2756,17 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 
 .empty-hint,
 .empty-hints {
-  font-size: var(--fs-11);
+  font-size: var(--pi-fs-micro);
   color: var(--pi-text-muted);
 }
 
 .empty-hints kbd {
-  border: 1px solid var(--pi-border-input);
+  border: var(--pi-stroke) solid var(--pi-border-input);
   border-radius: var(--pi-r-xs);
   background: var(--pi-bg-subtle);
   color: var(--pi-text-secondary);
   font-family: var(--pi-mono);
-  font-size: var(--fs-11);
+  font-size: var(--pi-fs-micro);
 }
 
 /* ── F · context usage ring ──────────────────────────────────────────────── */
@@ -3364,8 +2796,8 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 
 .widget-card,
 .rewind-widget {
-  padding: var(--pi-sp-6);
-  border: 1px solid var(--pi-border);
+  padding: var(--pi-sp-5);
+  border: var(--pi-stroke) solid var(--pi-border);
   border-radius: var(--pi-r-lg);
 }
 
@@ -3392,7 +2824,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 }
 
 .history-label {
-  font-size: var(--fs-11);
+  font-size: var(--pi-fs-micro);
   color: var(--pi-text-muted);
 }
 
@@ -3469,7 +2901,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   padding: 0;
   margin: 0;
   overflow: visible;
-  font-size: var(--chat-fs-13);
+  font-size: var(--pi-fs-body);
 }
 
 /* 思考行与「已处理」「工具」行同一节奏：一行、约 25px 高。原先 12/9 的上下内边距
@@ -3489,7 +2921,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 }
 
 .thinking-label {
-  font-size: var(--chat-fs-13);
+  font-size: var(--pi-fs-body);
   /* 与工具标题同权重：一行里标题总是最显眼的那一段（彬哥）。 */
   font-weight: 500;
   /* 颜色也得跟「终端命令」「工具调用」一致：这些行是同一层级的步骤，只有
@@ -3507,7 +2939,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   padding: 0 12px 12px 14px;
   max-height: 340px;
   color: var(--pi-text-think);
-  font-size: var(--chat-fs-13);
+  font-size: var(--pi-fs-body);
   opacity: 1;
 }
 
@@ -3523,7 +2955,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 .work-head {
   padding: 4px 0;
   gap: 8px;
-  font-size: var(--chat-fs-13);
+  font-size: var(--pi-fs-body);
   font-weight: 500;
   color: var(--pi-text-flow);
   opacity: 1;
@@ -3562,7 +2994,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   padding: 4px 0;
   gap: 6px;
   min-height: 27px;
-  font-size: var(--chat-fs-13);
+  font-size: var(--pi-fs-body);
 }
 
 /* 一行就是一行：标签和摘要都不换行，超宽由各自的 overflow 裁掉。不锁的话
@@ -3585,7 +3017,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 .tool-summary {
   color: var(--pi-text-tool);
   opacity: 1;
-  font-size: var(--chat-fs-12);
+  font-size: var(--pi-fs-meta);
 }
 
 /* 文件 tag：只有文件名 + 后缀，点击在编辑器里打开（彬哥）。 */
@@ -3597,12 +3029,12 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   text-overflow: ellipsis;
   white-space: nowrap;
   padding: 1px 6px;
-  border: 1px solid var(--pi-border);
+  border: var(--pi-stroke) solid var(--pi-border);
   border-radius: var(--pi-r-sm);
   background: var(--pi-bg-subtle);
   color: var(--pi-text-secondary);
   font-family: var(--pi-mono);
-  font-size: var(--chat-fs-11);
+  font-size: var(--pi-fs-meta);
   cursor: pointer;
 }
 
@@ -3610,10 +3042,8 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   border-color: var(--pi-border-brand);
   color: var(--pi-text-brand);
 }
-
-.tool-summary .tool-metrics,
 .tool-status {
-  font-size: var(--chat-fs-12);
+  font-size: var(--pi-fs-meta);
 }
 
 .tool-status {
@@ -3624,7 +3054,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 .tool-args,
 .tool-result {
   padding: 8px 10px;
-  border-top: 1px solid var(--pi-border-divider);
+  border-top: var(--pi-stroke) solid var(--pi-border-divider);
 }
 
 /* Tool output sits inside the light Flow Card, so it reads as body copy — the
@@ -3637,7 +3067,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 /* ── code and diff surfaces: dark cards with 26px lines ──────────────────── */
 
 .text-block pre {
-  border: 1px solid var(--pi-code-border);
+  border: var(--pi-stroke) solid var(--pi-code-border);
   border-radius: var(--pi-r-lg);
   background: var(--pi-code-bg);
   color: var(--pi-code-fg);
@@ -3702,10 +3132,14 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 
 /* ── composer ────────────────────────────────────────────────────────────── */
 
+/* The chat input is the one surface VS Code spells out for itself: the input
+ * container is `cornerRadius-large`, its controls sit on a 22px row
+ * (`--chat-input-control-height`), the send button is a filled circle and the
+ * glyphs inside the bar carry the compact 12px icon size. All four follow. */
 .composer-box {
   padding: 8px 10px 10px;
   border-color: var(--pi-border);
-  border-radius: var(--pi-r-xl);
+  border-radius: var(--pi-r-lg);
 }
 
 /* The board splits the card with a hairline between the input and the bar. */
@@ -3713,7 +3147,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   gap: var(--pi-sp-3);
   margin-top: 8px;
   padding: 10px 0 0;
-  border-top: 1px solid var(--pi-border-divider);
+  border-top: var(--pi-stroke) solid var(--pi-border-divider);
 }
 
 /* Pills — one fill and one hairline with the bar's icon chips: the pickers and
@@ -3721,12 +3155,11 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 .model-trigger,
 .thinking-trigger,
 .permission-trigger {
-  padding: 6px 10px 6px 12px;
-  border: 1px solid var(--pi-border);
+  border: var(--pi-stroke) solid var(--pi-border);
   border-radius: var(--pi-r-md);
   background: var(--pi-bg-control);
   color: var(--pi-text-tool);
-  font-size: var(--chat-fs-13);
+  font-size: var(--pi-fs-body);
 }
 
 .model-trigger:hover,
@@ -3744,7 +3177,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   color: var(--pi-text-danger);
 }
 
-/* Send — the bar's 30x30 chip, filled with the theme's button colour. Resting
+/* Send — the bar's own control, filled with the theme's button colour. Resting
  * (nothing typed) it has to read as a button just as loudly: `.icon-btn:disabled`
  * fades the control to 40% opacity and Dark Modern defines
  * `button-secondaryBackground` as *fully transparent*, so the two combined left
@@ -3765,12 +3198,13 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 }
 
 /* One hairline with the pills and the `+`, so the bar's controls read as the
- * same kind of object in every state. */
+ * same kind of object in every state. Shape is where VS Code is opinionated:
+ * an icon-only control in its chat input is a circle, not a rounded square. */
 .composer-controls-bar > .send-btn {
-  width: 30px;
-  height: 30px;
-  border: 1px solid var(--pi-border);
-  border-radius: var(--pi-r-md);
+  width: var(--pi-h-chat-control);
+  height: var(--pi-h-chat-control);
+  border: var(--pi-stroke) solid var(--pi-border);
+  border-radius: var(--pi-r-full);
 }
 
 /* ── composer polish ──────────────────────────────────────────────────────
@@ -3786,17 +3220,25 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 
 /* ── one icon size for everything in the bar ─────────────────────────────── */
 
-/* The board's Plus is a 30x30 chip. .icon-btn is 32px globally (set for the
- * toolbar), so this is scoped to the control bar — and it carries the pills'
- * fill and hairline, which is what makes the `+` and the model picker look
- * like the two halves of one row rather than two different widgets. */
+/* The Plus is the same size and shape as the send button — VS Code renders
+ * attach and submit as two circles of one size. .icon-btn is 32px globally (set
+ * for the toolbar), so this is scoped to the control bar; it keeps the pills'
+ * fill and hairline, which is what makes the `+` and the model picker look like
+ * the two halves of one row rather than two different widgets. */
 .composer-controls-bar > .icon-btn:not(.send-btn) {
-  width: 30px;
-  height: 30px;
-  border: 1px solid var(--pi-border);
-  border-radius: var(--pi-r-md);
+  width: var(--pi-h-chat-control);
+  height: var(--pi-h-chat-control);
+  border: var(--pi-stroke) solid var(--pi-border);
+  border-radius: var(--pi-r-full);
   background: var(--pi-bg-control);
   color: var(--pi-icon);
+}
+
+/* Inside the bar the glyphs are the compact size: 12px in a 22px control is
+ * what VS Code's own chat input uses; 16px is the chrome size the rest of the
+ * panel keeps. */
+.composer-controls-bar .codicon {
+  font-size: var(--pi-icon-sm);
 }
 
 .composer-controls-bar > .icon-btn:not(.send-btn):hover {
@@ -3838,13 +3280,13 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   height: 16px;
 }
 
-/* ── pills: one height, one inner rhythm ─────────────────────────────────── */
-
+/* One height, one inner rhythm — and the height is VS Code's chat-input row,
+ * so the pills sit on the same 22px line as the `+` and the send button. */
 .model-trigger,
 .thinking-trigger,
 .permission-trigger {
   gap: var(--pi-sp-2);
-  height: 30px;
+  height: var(--pi-h-chat-control);
   padding: 0 var(--pi-sp-4) 0 var(--pi-sp-5);
 }
 
@@ -3865,10 +3307,16 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 
 /* ── context ring ────────────────────────────────────────────────────────── */
 
-/* The board draws the ring at 28px. */
+/* The board draws the ring at 28px; VS Code puts its own usage widget on the
+ * chat input's 22px row, and the rest of the bar is on that row now, so the box
+ * follows and the gauge inside fills it. */
 .ctx-ring {
-  width: 28px;
-  height: 28px;
+  width: var(--pi-h-chat-control);
+  height: var(--pi-h-chat-control);
+}
+.ctx-ring svg {
+  width: 20px;
+  height: 20px;
 }
 
 /* This is why the unconsumed arc looked almost invisible on a white panel: the
@@ -4013,11 +3461,11 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   height: 34px;
   padding: 0 var(--pi-sp-4);
   border: none;
-  border-top: 1px solid var(--pi-border-divider);
+  border-top: var(--pi-stroke) solid var(--pi-border-divider);
   border-radius: var(--pi-r-sm);
   background: transparent;
   color: var(--pi-text);
-  font-size: var(--chat-fs-13);
+  font-size: var(--pi-fs-body);
   text-align: left;
   cursor: pointer;
 }
@@ -4100,7 +3548,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 
 .boot-error-msg {
   color: var(--pi-text-danger);
-  font-size: var(--chat-fs-13);
+  font-size: var(--pi-fs-body);
   line-height: 1.5;
 }
 
@@ -4111,7 +3559,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   background: var(--pi-brand);
   color: var(--pi-text-on-solid);
   font-family: inherit;
-  font-size: var(--chat-fs-13);
+  font-size: var(--pi-fs-body);
   cursor: pointer;
 }
 
@@ -4171,7 +3619,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
  * button is out of the hit-test while hidden (`pointer-events: none`) so a click
  * where nothing is drawn cannot delete anything. */
 .session-item:focus-visible {
-  outline: 1px solid var(--pi-brand);
+  outline: var(--pi-stroke) solid var(--pi-brand);
   outline-offset: -1px;
 }
 
@@ -4184,7 +3632,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   height: 24px;
   padding: 0;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--pi-r-sm);
   background: transparent;
   /* Danger red at rest, not only on hover: delete is the one destructive
    * control in the list and should read as one before the pointer lands. */
@@ -4216,7 +3664,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  font-size: var(--chat-fs-11);
+  font-size: var(--pi-fs-meta);
   color: var(--pi-text-brand);
 }
 
@@ -4303,8 +3751,8 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   margin: auto;
   max-width: 92vw;
   max-height: 92vh;
-  border: 1px solid var(--pi-border-divider);
-  border-radius: var(--pi-r-lg, 8px);
+  border: var(--pi-stroke) solid var(--pi-border-divider);
+  border-radius: var(--pi-r-lg);
   box-shadow:
     0 2px 8px rgba(0, 0, 0, 0.12),
     0 24px 64px rgba(0, 0, 0, 0.28);
@@ -4324,8 +3772,8 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   width: 32px;
   height: 32px;
   padding: 0;
-  border: 1px solid var(--pi-border-divider);
-  border-radius: var(--pi-r-full, 999px);
+  border: var(--pi-stroke) solid var(--pi-border-divider);
+  border-radius: var(--pi-r-full);
   background: var(--pi-bg-raised);
   color: var(--pi-text);
   cursor: pointer;
@@ -4360,7 +3808,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   align-items: center;
   gap: 2px;
   padding: 3px;
-  border-radius: var(--pi-r-full, 999px);
+  border-radius: var(--pi-r-full);
   background: var(--pi-bg-raised);
   color: var(--pi-text);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
@@ -4374,7 +3822,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   height: 26px;
   padding: 0;
   border: none;
-  border-radius: var(--pi-r-full, 999px);
+  border-radius: var(--pi-r-full);
   background: transparent;
   color: var(--pi-text);
   cursor: pointer;
@@ -4396,7 +3844,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 .lightbox-zoom-value {
   min-width: 44px;
   text-align: center;
-  font-size: var(--chat-fs-12);
+  font-size: var(--pi-fs-meta);
   font-variant-numeric: tabular-nums;
 }
 
@@ -4448,17 +3896,17 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 }
 
 .session-item-title {
-  font-size: var(--chat-fs-12);
+  font-size: var(--pi-fs-meta);
 }
 
 .session-item-preview,
 .session-item-meta {
-  font-size: var(--chat-fs-10);
+  font-size: var(--pi-fs-micro);
   color: var(--pi-text-muted);
 }
 
 .session-item-status {
-  font-size: var(--chat-fs-10);
+  font-size: var(--pi-fs-micro);
 }
 
 /* The row is now 4px tall-padded; a 24px control would inflate it again. */
@@ -4478,8 +3926,8 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   width: 36px;
   height: 36px;
   padding: 0;
-  border: 1px solid var(--pi-border-divider);
-  border-radius: var(--pi-r-full, 999px);
+  border: var(--pi-stroke) solid var(--pi-border-divider);
+  border-radius: var(--pi-r-full);
   background: var(--pi-bg-raised);
   color: var(--pi-text);
   cursor: pointer;
@@ -4516,10 +3964,10 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   display: inline-flex;
   align-items: center;
   padding: 5px 12px;
-  border-radius: var(--pi-r-full, 999px);
+  border-radius: var(--pi-r-full);
   background: var(--pi-bg-raised);
   color: var(--pi-text);
-  font-size: var(--chat-fs-12);
+  font-size: var(--pi-fs-meta);
   font-variant-numeric: tabular-nums;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
 }
@@ -4565,7 +4013,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 .tool-args::-webkit-scrollbar-thumb,
 .tool-json::-webkit-scrollbar-thumb {
   background: var(--pi-scrollbar, rgba(127, 127, 127, 0.4));
-  border-radius: 3px;
+  border-radius: var(--pi-r-xs);
 }
 
 .messages::-webkit-scrollbar-track,
@@ -4597,10 +4045,10 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   gap: 5px;
   max-width: 100%;
   padding: 3px 4px 3px 8px;
-  border: 1px solid var(--pi-border);
-  border-radius: var(--pi-r-full, 999px);
+  border: var(--pi-stroke) solid var(--pi-border);
+  border-radius: var(--pi-r-full);
   background: var(--pi-bg-subtle);
-  font-size: var(--chat-fs-12);
+  font-size: var(--pi-fs-meta);
   cursor: pointer;
   user-select: none;
 }
@@ -4629,7 +4077,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   height: 16px;
   padding: 0;
   border: none;
-  border-radius: var(--pi-r-full, 999px);
+  border-radius: var(--pi-r-full);
   background: transparent;
   color: var(--pi-text-secondary);
   cursor: pointer;
@@ -4659,7 +4107,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 
 .dialog-warn-icon {
   flex-shrink: 0;
-  font-size: var(--chat-fs-16);
+  font-size: var(--pi-fs-title);
   color: var(--pi-danger);
   margin-top: 1px;
 }
@@ -4677,11 +4125,11 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   width: 100%;
   justify-content: center;
   padding: 8px 12px;
-  font-size: var(--chat-fs-13);
+  font-size: var(--pi-fs-body);
 }
 
 .choice-btn.choice-allow {
-  border: 1px solid color-mix(in srgb, var(--pi-success) 55%, var(--pi-border));
+  border: var(--pi-stroke) solid color-mix(in srgb, var(--pi-success) 55%, var(--pi-border));
   color: var(--pi-success);
 }
 
@@ -4690,7 +4138,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 }
 
 .choice-btn.choice-block {
-  border: 1px solid color-mix(in srgb, var(--pi-danger) 55%, var(--pi-border));
+  border: var(--pi-stroke) solid color-mix(in srgb, var(--pi-danger) 55%, var(--pi-border));
   color: var(--pi-danger);
 }
 
@@ -4701,10 +4149,10 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 /* 权限弹窗的命令正文：等宽 + 代码块底色（宿主把多行 title 拆出的 message） */
 .dialog-danger .dialog-message {
   font-family: Menlo, Consolas, monospace;
-  font-size: var(--chat-fs-12);
+  font-size: var(--pi-fs-meta);
   background: var(--pi-bg-subtle);
-  border: 1px solid var(--pi-border-divider);
-  border-radius: 6px;
+  border: var(--pi-stroke) solid var(--pi-border-divider);
+  border-radius: var(--pi-r-md);
   padding: 8px 10px;
   white-space: pre-wrap;
   word-break: break-all;
@@ -4781,7 +4229,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   background: var(--pi-code-bg);
   color: var(--pi-code-fg);
   font-family: var(--pi-mono);
-  font-size: var(--chat-fs-12);
+  font-size: var(--pi-fs-meta);
   overflow: hidden;
 }
 
@@ -4847,7 +4295,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   align-items: center;
   gap: 8px;
   color: var(--pi-text-muted);
-  font-size: var(--chat-fs-12);
+  font-size: var(--pi-fs-meta);
 }
 
 .qa-step {
@@ -4883,7 +4331,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 .qa-card-prompt {
   margin: 0;
   color: var(--pi-text);
-  font-size: var(--chat-fs-13);
+  font-size: var(--pi-fs-body);
 }
 
 .qa-options,
@@ -4902,7 +4350,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   gap: 8px;
   width: 100%;
   padding: 5px 8px;
-  border: 1px solid transparent;
+  border: var(--pi-stroke) solid transparent;
   border-radius: var(--pi-r-sm);
   background: transparent;
   color: var(--pi-text);
@@ -4941,7 +4389,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 .qa-desc {
   margin: 0 0 2px 32px;
   color: var(--pi-text-muted);
-  font-size: var(--chat-fs-12);
+  font-size: var(--pi-fs-meta);
 }
 
 .qa-input {
@@ -4958,7 +4406,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 /* 会话流里的问答卡：选项全列出来（"4 选 1" 才是可读的决策），选中的那行加重。 */
 .qa-card {
   padding: 10px 12px;
-  border: 1px solid var(--pi-border);
+  border: var(--pi-stroke) solid var(--pi-border);
   border-radius: var(--pi-r-lg);
   background: var(--pi-bg-subtle);
 }
@@ -4975,7 +4423,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   display: flex;
   gap: 8px;
   color: var(--pi-text-muted);
-  font-size: var(--chat-fs-12);
+  font-size: var(--pi-fs-meta);
 }
 
 .qa-card-option.is-picked {
@@ -4986,30 +4434,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 .qa-card-cancelled {
   margin: 0;
   color: var(--pi-text-muted);
-  font-size: var(--chat-fs-12);
-}
-
-/* read：输入与响应各自带一个小标签，响应沿用 .code-block 的带行号排版。 */
-.tool-io {
-  border-top: 1px solid var(--pi-border);
-}
-
-.tool-io-label {
-  padding: 6px 8px 0;
-  font-size: var(--chat-fs-10);
-  font-weight: 600;
-  letter-spacing: 0.3px;
-  color: var(--pi-text-muted);
-}
-
-.tool-io .tool-args {
-  border-top: none;
-}
-
-.tool-io .code-block {
-  padding: 2px 8px 6px;
-  max-height: 320px;
-  overflow-y: auto;
+  font-size: var(--pi-fs-meta);
 }
 
 /* ── 运行中发送方式切换 ──────────────────────────────────────────────────────
@@ -5018,7 +4443,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 /* 空状态：一行引导 + 三个必要的键位提示。 */
 .empty-guide {
   margin-top: 4px;
-  font-size: var(--chat-fs-12);
+  font-size: var(--pi-fs-meta);
   color: var(--pi-text-muted);
 }
 
@@ -5064,7 +4489,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   align-items: center;
   justify-content: center;
   width: 14px;
-  font-size: var(--chat-fs-11);
+  font-size: var(--pi-fs-meta);
   line-height: 1;
 }
 
@@ -5095,7 +4520,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: var(--chat-fs-12);
+  font-size: var(--pi-fs-meta);
   font-weight: 400;
   color: var(--pi-text-muted);
 }
@@ -5120,7 +4545,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   max-height: 220px;
   overflow-y: auto;
   background: var(--pi-bg-subtle);
-  border: 1px solid var(--pi-border);
+  border: var(--pi-stroke) solid var(--pi-border);
   border-radius: var(--pi-r-lg);
   padding: 8px 10px;
 }
@@ -5138,7 +4563,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 .work-body {
   margin-left: 7px;
   padding-left: 12px;
-  border-left: 1px solid var(--pi-border);
+  border-left: var(--pi-stroke) solid var(--pi-border);
 }
 
 /* 底部实时状态行（「深度思考中 / 正在回复中」）：3×3 点阵图标 + 弱化文案，
@@ -5149,7 +4574,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   gap: 8px;
   padding: 2px 2px 0;
   color: var(--pi-text-muted);
-  font-size: var(--chat-fs-12);
+  font-size: var(--pi-fs-meta);
 }
 
 .status-dots {
@@ -5190,7 +4615,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   margin: 0;
   max-width: 420px;
   color: var(--pi-text-danger);
-  font-size: var(--chat-fs-13);
+  font-size: var(--pi-fs-body);
   line-height: 1.6;
   text-align: center;
   text-wrap: pretty;
@@ -5199,11 +4624,11 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
 #boot-retry {
   padding: 8px 22px;
   border: none;
-  border-radius: var(--pi-r-full, 999px);
+  border-radius: var(--pi-r-full);
   background: var(--pi-brand);
   color: var(--pi-text-on-solid);
   font-family: inherit;
-  font-size: var(--chat-fs-13);
+  font-size: var(--pi-fs-body);
   cursor: pointer;
 }
 
@@ -5234,7 +4659,7 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
   background: var(--pi-bg-surface);
   color: var(--pi-text-muted);
   font-family: var(--pi-mono);
-  font-size: var(--chat-fs-12);
+  font-size: var(--pi-fs-meta);
   line-height: 1.5;
   white-space: pre-wrap;
   word-break: break-word;
@@ -5302,6 +4727,6 @@ body.ctrl-key .tool-block[data-has-file] > .tool-head:hover {
  * is also why the text gains contrast here (7.4 → 10.3 in Dark Modern, 9.0 →
  * 11.2 in Light). Geometry stays with the block above — only the surface moves. */
 .user-bubble {
-  border: 1px solid var(--pi-border-bubble);
+  border: var(--pi-stroke) solid var(--pi-border-bubble);
   background: var(--pi-bg-bubble);
 }

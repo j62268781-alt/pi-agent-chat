@@ -39,9 +39,7 @@
 .codicon-circle-slash::before {
   content: "\eabd";
 }
-.codicon-clear-all::before {
-  content: "\eabf";
-}
+
 .codicon-close::before {
   content: "\ea76";
 }
@@ -60,48 +58,22 @@
 .codicon-file-text::before {
   content: "\ec5e";
 }
-.codicon-gear::before {
-  content: "\eaf8";
-}
+
 .codicon-git-commit::before {
   content: "\eafc";
 }
-.codicon-globe::before {
-  content: "\eb01";
-}
+
 .codicon-go-to-file::before {
   content: "\ea94";
 }
 .codicon-hubot::before {
   content: "\eb08";
 }
-.codicon-info::before {
-  content: "\ea74";
-}
+
 .codicon-key::before {
   content: "\eb11";
 }
-.codicon-lightbulb::before {
-  content: "\ea61";
-}
-.codicon-link::before {
-  content: "\eb15";
-}
-.codicon-lock::before {
-  content: "\ea75";
-}
-.codicon-organization::before {
-  content: "\ea7e";
-}
-.codicon-package::before {
-  content: "\eb29";
-}
-.codicon-person::before {
-  content: "\ea67";
-}
-.codicon-plus::before {
-  content: "\ea60";
-}
+
 .codicon-quote::before {
   content: "\eb33";
 }
@@ -114,9 +86,7 @@
 .codicon-save::before {
   content: "\eb4b";
 }
-.codicon-search::before {
-  content: "\ea6d";
-}
+
 .codicon-server::before {
   content: "\eb50";
 }
@@ -138,15 +108,7 @@
 .codicon-star::before {
   content: "\ea6a";
 }
-.codicon-sync::before {
-  content: "\ea77";
-}
-.codicon-tag::before {
-  content: "\ea66";
-}
-.codicon-terminal::before {
-  content: "\ea85";
-}
+
 .codicon-tools::before {
   content: "\eb6d";
 }
@@ -161,16 +123,6 @@
 }
 .codicon-warning::before {
   content: "\ea6c";
-}
-.codicon-zap::before {
-  content: "\ea86";
-}
-
-:root {
-  /* Base falls back to VS Code's own UI font size; the host overrides `--fs`
-   * from `pi-agent-chat.chatFontSize`. The five-step scale lives in
-   * `tokens.css`, shared with the chat panel. */
-  --fs: var(--vscode-font-size, 13px);
 }
 
 * {
@@ -259,7 +211,7 @@ body {
   flex-direction: column;
   gap: var(--pi-sp-1);
   padding: var(--pi-sp-3);
-  border-right: 1px solid var(--pi-border);
+  border-right: var(--pi-stroke) solid var(--pi-border);
   background: var(--pi-bg-page);
   overflow-y: auto;
   overflow-x: hidden;
@@ -275,8 +227,24 @@ body {
   flex-shrink: 0;
 }
 
+/* Sidebar section headings — quiet, and not clickable, the way VS Code paints a
+ * pane title: the row underneath is the thing you press. */
+.nav-group {
+  padding: var(--pi-sp-5) var(--pi-sp-5) 0;
+  color: var(--pi-text-faint);
+  font-size: var(--pi-fs-meta);
+  font-weight: 600;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+/* The head already leaves a row of air, so the first section needs no more. */
+.nav-head + .nav-group {
+  padding-top: var(--pi-sp-1);
+}
+
 .nav-title {
-  font-size: var(--fs-14);
+  font-size: var(--pi-fs-body);
   font-weight: 500;
   color: var(--pi-text);
   white-space: nowrap;
@@ -297,7 +265,7 @@ body {
   background: transparent;
   color: var(--pi-text);
   font-family: var(--pi-font);
-  font-size: var(--fs-13);
+  font-size: var(--pi-fs-body);
   cursor: pointer;
   text-align: left;
   flex-shrink: 0;
@@ -349,7 +317,7 @@ body {
   top: 50%;
   width: 3px;
   height: 24px;
-  border-radius: 2px;
+  border-radius: var(--pi-r-xs);
   background: var(--pi-brand);
   transform: translateY(-50%);
   opacity: 0;
@@ -414,7 +382,7 @@ body {
   justify-content: center;
   height: 100%;
   color: var(--pi-text-muted);
-  font-size: var(--fs-14);
+  font-size: var(--pi-fs-body);
 }
 
 /* ── components ───────────────────────────────────────────────────────────
@@ -440,12 +408,12 @@ body {
   gap: var(--pi-sp-2);
   height: var(--pi-h-control);
   padding: 0 var(--pi-sp-5);
-  border: 1px solid transparent;
+  border: var(--pi-stroke) solid transparent;
   border-radius: var(--pi-r-md);
   background: var(--pi-bg-subtle);
   color: var(--pi-text);
   font-family: inherit;
-  font-size: var(--fs-13);
+  font-size: var(--pi-fs-body);
   line-height: 1;
   cursor: pointer;
   white-space: nowrap;
@@ -512,7 +480,7 @@ body {
   height: var(--pi-h-control-sm);
   padding: 0 var(--pi-sp-4);
   border-radius: var(--pi-r-sm);
-  font-size: var(--fs-12);
+  font-size: var(--pi-fs-meta);
 }
 
 /* Destructive. Bare .btn-danger is a text tint; inside a confirm bar the
@@ -589,13 +557,6 @@ body {
   margin-bottom: var(--pi-sp-8);
 }
 
-.page-title {
-  margin: 0 0 var(--pi-sp-5);
-  font-size: var(--pi-fs-title);
-  font-weight: 500;
-  color: var(--pi-text);
-}
-
 .section-header {
   display: flex;
   align-items: center;
@@ -609,7 +570,7 @@ body {
 .section-header h3,
 .section-title {
   margin: 0;
-  font-size: var(--fs-14);
+  font-size: var(--pi-fs-body);
   font-weight: 500;
   color: var(--pi-text);
 }
@@ -651,7 +612,7 @@ body {
   align-items: flex-start;
   gap: var(--pi-sp-4);
   padding: var(--pi-sp-4) var(--pi-sp-5);
-  border: 1px solid var(--pi-border);
+  border: var(--pi-stroke) solid var(--pi-border);
   border-radius: var(--pi-r-md);
   background: var(--pi-bg-raised);
 }
@@ -692,7 +653,7 @@ body {
 }
 
 .item-name {
-  font-size: var(--fs-13);
+  font-size: var(--pi-fs-body);
   color: var(--pi-text);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -704,7 +665,7 @@ body {
 }
 
 .item-desc {
-  font-size: var(--fs-11);
+  font-size: var(--pi-fs-meta);
   color: var(--pi-text-muted);
   word-break: break-all;
   min-width: 0;
@@ -718,7 +679,7 @@ body {
 }
 
 .dim {
-  font-size: var(--fs-11);
+  font-size: var(--pi-fs-meta);
   color: var(--pi-text-secondary);
   word-break: break-all;
   min-width: 0;
@@ -734,7 +695,7 @@ body {
   border-radius: var(--pi-r-xs);
   background: var(--pi-bg-subtle);
   color: var(--pi-text-secondary);
-  font-size: var(--fs-10);
+  font-size: var(--pi-fs-micro);
   line-height: 1.5;
 }
 
@@ -775,14 +736,27 @@ body {
 
 .field-label {
   display: block;
-  margin: var(--pi-sp-4) 0 var(--pi-sp-2);
-  font-size: var(--fs-12);
+  /* The gap between two settings belongs to the field above it, not to the
+   * label below — with a margin here too a group's rows sat 28px apart and its
+   * first row floated 32px under the header. */
+  margin: 0 0 var(--pi-sp-2);
+  font-size: var(--pi-fs-body);
+  color: var(--pi-text);
+  font-weight: 600;
+}
+
+/* A heading over a run of fields inside one form (the model editor's cost
+ * block). Same ink as a field label, one step quieter than a group header. */
+.form-section-title {
+  margin: var(--pi-sp-3) 0 var(--pi-sp-1);
   color: var(--pi-text-secondary);
+  font-size: var(--pi-fs-body);
+  font-weight: 600;
 }
 
 .hint {
   margin: 2px 0 var(--pi-sp-3);
-  font-size: var(--fs-11);
+  font-size: var(--pi-fs-meta);
   color: var(--pi-text-muted);
   word-break: break-all;
 }
@@ -792,16 +766,17 @@ body {
   border-radius: var(--pi-r-xs);
   background: var(--pi-bg-subtle);
   font-family: var(--pi-mono);
-  font-size: var(--fs-11);
+  font-size: var(--pi-fs-meta);
 }
 
 .check-label {
   display: flex;
   align-items: center;
   gap: var(--pi-sp-3);
-  margin: var(--pi-sp-3) 0;
-  font-size: var(--fs-13);
+  margin: 0;
+  font-size: var(--pi-fs-body);
   color: var(--pi-text);
+  font-weight: 600;
   cursor: pointer;
 }
 
@@ -841,12 +816,12 @@ body {
   width: 100%;
   height: var(--pi-h-control);
   padding: 0 var(--pi-sp-5);
-  border: 1px solid var(--pi-border-input);
+  border: var(--pi-stroke) solid var(--pi-border-input);
   border-radius: var(--pi-r-sm);
   background: var(--pi-bg-raised);
   color: var(--pi-text);
   font-family: var(--pi-font);
-  font-size: var(--fs-13);
+  font-size: var(--pi-fs-body);
   outline: none;
 }
 
@@ -877,7 +852,7 @@ body {
   min-height: 84px;
   padding: var(--pi-sp-4);
   font-family: var(--pi-mono);
-  font-size: var(--fs-12);
+  font-size: var(--pi-fs-meta);
   line-height: 1.5;
   resize: vertical;
 }
@@ -887,14 +862,14 @@ body {
 .editor-card {
   margin: var(--pi-sp-3) 0;
   padding: var(--pi-sp-7);
-  border: 1px solid var(--pi-border);
+  border: var(--pi-stroke) solid var(--pi-border);
   border-radius: var(--pi-r-md);
   background: var(--pi-bg-surface);
 }
 
 .editor-card h3 {
   margin: 0 0 var(--pi-sp-3);
-  font-size: var(--fs-14);
+  font-size: var(--pi-fs-body);
   font-weight: 500;
   color: var(--pi-text);
 }
@@ -916,7 +891,7 @@ body {
   border-radius: var(--pi-r-md);
   background: var(--pi-bg-surface);
   color: var(--pi-text);
-  font-size: var(--fs-13);
+  font-size: var(--pi-fs-body);
 }
 
 /* ── status and messages ─────────────────────────────────────────────────── */
@@ -940,11 +915,11 @@ body {
 .error {
   margin: var(--pi-sp-3) 0;
   padding: var(--pi-sp-4) var(--pi-sp-5);
-  border: 1px solid var(--pi-danger);
+  border: var(--pi-stroke) solid var(--pi-danger);
   border-radius: var(--pi-r-md);
   background: var(--pi-danger-soft);
   color: var(--pi-text-danger);
-  font-size: var(--fs-12);
+  font-size: var(--pi-fs-body);
 }
 
 /* Board F board W2 "Banner Warning": #FEF3E6 fill, #E37318 label, no bar. */
@@ -954,7 +929,7 @@ body {
   border-radius: var(--pi-r-md);
   background: var(--pi-warning-soft);
   color: var(--pi-text-warning);
-  font-size: var(--fs-12);
+  font-size: var(--pi-fs-body);
   line-height: 1.5;
 }
 
@@ -965,7 +940,7 @@ body {
   gap: var(--pi-sp-9);
   height: 36px;
   margin-bottom: var(--pi-sp-7);
-  border-bottom: 1px solid var(--pi-border);
+  border-bottom: var(--pi-stroke) solid var(--pi-border);
 }
 
 .models-tab {
@@ -977,7 +952,7 @@ body {
   border-bottom: 2px solid transparent;
   background: transparent;
   color: var(--pi-text-secondary);
-  font-size: var(--fs-13);
+  font-size: var(--pi-fs-body);
   cursor: pointer;
 }
 
@@ -998,7 +973,7 @@ body {
   max-width: 380px;
   margin: var(--pi-sp-3) 0;
   padding: var(--pi-sp-7);
-  border: 1px solid var(--pi-border);
+  border: var(--pi-stroke) solid var(--pi-border);
   border-radius: var(--pi-r-md);
   background: var(--pi-bg-raised);
 }
@@ -1007,8 +982,18 @@ body {
   margin: var(--pi-sp-1) 0;
   color: var(--pi-text-brand);
   font-family: var(--pi-mono);
-  font-size: var(--fs-11);
+  font-size: var(--pi-fs-meta);
   word-break: break-all;
+}
+
+/* OAuth outcome lines. These used to be inline `#4caf50` / `#d32f2f`, a second
+ * palette that only matched the theme it was written in. */
+.oauth-ok {
+  color: var(--pi-text-success);
+}
+
+.oauth-fail {
+  color: var(--pi-text-danger);
 }
 
 .oauth-progress a {
@@ -1027,7 +1012,7 @@ body {
 .compat-hint {
   margin: 0 0 var(--pi-sp-1);
   color: var(--pi-text-muted);
-  font-size: var(--fs-11);
+  font-size: var(--pi-fs-meta);
   line-height: 1.5;
 }
 
@@ -1050,7 +1035,7 @@ body {
   min-width: 0;
   overflow: hidden;
   color: var(--pi-text-secondary);
-  font-size: var(--fs-11);
+  font-size: var(--pi-fs-meta);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -1078,7 +1063,7 @@ body {
 
 .cfg-group {
   margin-bottom: var(--pi-sp-2);
-  border: 1px solid var(--pi-border);
+  border: var(--pi-stroke) solid var(--pi-border);
   border-radius: var(--pi-r-sm);
   overflow: hidden;
   background: var(--pi-bg-raised);
@@ -1094,8 +1079,8 @@ body {
   gap: var(--pi-sp-3);
   padding: var(--pi-sp-4) var(--pi-sp-5);
   color: var(--pi-text);
-  font-size: var(--fs-13);
-  font-weight: 500;
+  font-size: var(--pi-fs-title);
+  font-weight: 600;
   cursor: pointer;
   user-select: none;
 }
@@ -1117,7 +1102,7 @@ body {
 .cfg-group-body {
   display: none;
   padding: var(--pi-sp-7);
-  border-top: 1px solid var(--pi-border);
+  border-top: var(--pi-stroke) solid var(--pi-border);
 }
 
 .cfg-group.open .cfg-group-body {
@@ -1162,10 +1147,16 @@ body {
   margin-bottom: var(--pi-sp-5);
 }
 
+/* The body's own padding is the group's bottom air; a trailing field margin
+ * would double it. */
+.cfg-group-body > .cfg-field:last-child {
+  margin-bottom: 0;
+}
+
 .cfg-desc {
   margin: 2px 0 var(--pi-sp-2);
   color: var(--pi-text-muted);
-  font-size: var(--fs-11);
+  font-size: var(--pi-fs-meta);
   line-height: 1.5;
 }
 
@@ -1180,11 +1171,11 @@ body {
   align-items: center;
   gap: var(--pi-sp-3);
   max-width: 360px;
-  padding: var(--pi-sp-4) var(--pi-sp-6);
+  padding: var(--pi-sp-4) var(--pi-sp-5);
   border-radius: var(--pi-r-md);
   background: var(--pi-toast-bg);
   color: var(--pi-toast-fg);
-  font-size: var(--fs-13);
+  font-size: var(--pi-fs-body);
   white-space: pre-wrap;
   word-break: break-word;
   opacity: 0;
@@ -1217,17 +1208,6 @@ body {
 }
 
 /* ── spinner ─────────────────────────────────────────────────────────────── */
-
-.spinner {
-  display: inline-block;
-  width: 12px;
-  height: 12px;
-  border: 2px solid var(--pi-info);
-  border-top-color: transparent;
-  border-radius: var(--pi-r-full);
-  animation: spin 0.7s linear infinite;
-  vertical-align: middle;
-}
 
 @keyframes spin {
   to {
@@ -1297,11 +1277,11 @@ body {
   gap: 8px;
   margin-bottom: var(--pi-sp-5);
   padding: 8px 10px;
-  border-radius: 6px;
+  border-radius: var(--pi-r-md);
   background: color-mix(in srgb, var(--pi-success) 14%, transparent);
-  border: 1px solid color-mix(in srgb, var(--pi-success) 40%, transparent);
+  border: var(--pi-stroke) solid color-mix(in srgb, var(--pi-success) 40%, transparent);
   color: color-mix(in srgb, var(--pi-success) 78%, var(--pi-text) 22%);
-  font-size: var(--chat-fs-12);
+  font-size: var(--pi-fs-meta);
 }
 
 .eco-package.missing {
@@ -1327,7 +1307,7 @@ body {
 .eco-cmd {
   font-family: Menlo, Consolas, monospace;
   padding: 1px 5px;
-  border-radius: 4px;
+  border-radius: var(--pi-r-sm);
   background: color-mix(in srgb, currentColor 14%, transparent);
   color: inherit;
 }

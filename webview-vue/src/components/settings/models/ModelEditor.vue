@@ -178,9 +178,7 @@ function save(): void {
       </div>
     </div>
 
-    <h4 style="margin: 6px 0 2px; font-size: var(--fs-11); opacity: 0.7">
-      {{ t("Cost (per million tokens)") }}
-    </h4>
+    <h4 class="form-section-title">{{ t("Cost (per million tokens)") }}</h4>
     <div class="form-row">
       <div class="form-group">
         <label class="field-label">{{ t("Input") }}</label>
