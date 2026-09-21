@@ -60,4 +60,12 @@ describe("compaction divider", () => {
 
     expect(margin).toMatch(/^var\(--pi-sp-\d+\)\s+0$/);
   });
+
+  it("keeps the rules off the words", () => {
+    // Both rules are flex items of the label, so losing the gap puts them flush
+    // against the text — which is what dropping the leading glyph did.
+    const gap = /gap:\s*([^;]+);/.exec(declarations(".compaction-divider-label"))?.[1]?.trim();
+
+    expect(gap).toMatch(/^var\(--pi-sp-\d+\)$/);
+  });
 });

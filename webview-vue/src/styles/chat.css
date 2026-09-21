@@ -1354,6 +1354,10 @@ body {
 .compaction-divider-label {
   display: flex;
   align-items: center;
+  /* The rules are flex items, so the gap is the only thing between them and the
+   * words: without one they touch the label. 10px is what the reference panel
+   * leaves (measured 9-10px from a rule to the nearest glyph). */
+  gap: var(--pi-sp-4);
   list-style: none;
   user-select: none;
   min-width: 0;
