@@ -3179,7 +3179,13 @@ body {
 /* Inside the bar the glyphs follow the bar's own row: 14px in a 26px control
  * keeps the ratio VS Code's chat input has at 12px in 22px.
  *
- * Scoped to the bar's own four controls, and that scope is the point: both
+ * The box is set with the font, and that is the point: `.icon-btn .codicon`
+ * sizes the box at `--pi-icon-lg` (16px, the toolbar's glyph), so overriding
+ * only the font left a 14px line box at the top of a 16px box — measured, the
+ * `+` and the send arrow sat 1.5-2px above their control's centre while the
+ * permission pill's lock (whose box is never restated) sat on it.
+ *
+ * Scoped to the bar's own four controls, and that scope is the point too: both
  * pickers render *inside* the bar's DOM (`#model-popup` lives in `.model-wrap`,
  * `#permission-popup` in `.permission-wrap`), so a bare descendant selector
  * reached every glyph in them as well. The permission list's shield/unlock and
@@ -3189,6 +3195,31 @@ body {
 .composer-controls-bar > .icon-btn .codicon,
 .composer-controls-bar > .select-wrap > button .codicon {
   font-size: var(--pi-icon-md);
+  width: var(--pi-icon-md);
+  height: var(--pi-icon-md);
+}
+
+/* Labels are centred on their cap band, not on their line box.
+ *
+ * A flex-centred line box leaves the visible ink low: Segoe UI reserves 1.079em
+ * above the baseline and 0.251em below it, so centring the box puts the caps
+ * ~2px under the centre of the icon beside them (measured on the 26px row:
+ * control centre 752, cap band centre 754). `text-box` trims the box to
+ * cap → baseline, which centres the band instead — 彬哥's "文字和 icon 没有对
+ * 齐". The padding is what the descenders need: the trimmed box ends on the
+ * baseline, and `overflow: hidden` on an ellipsising label would cut the g/p
+ * tails off. Padding is symmetric, so it does not move the band.
+ *
+ * A `translateY(-1px)` nudge would need no feature test but only half-fixes it,
+ * and a CJK label — whose ink is already centred — would end up a pixel high.
+ * `text-box` is Chromium 133+; an older host keeps today's alignment. */
+.model-trigger-label,
+.permission-trigger-label,
+.thinking-row-label,
+.thinking-trigger-label {
+  text-box: trim-both cap alphabetic;
+  padding-top: var(--pi-sp-1);
+  padding-bottom: var(--pi-sp-1);
 }
 
 .composer-controls-bar > .icon-btn:not(.send-btn):hover {

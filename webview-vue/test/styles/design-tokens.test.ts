@@ -120,6 +120,39 @@ describe("the chat input's control row", () => {
     );
   });
 
+  it("gives the bar's glyph boxes the bar's glyph size", () => {
+    // `.icon-btn .codicon` sets the box to the toolbar's `--pi-icon-lg`, so
+    // overriding only the font left a 14px line box at the top of a 16px box:
+    // the `+` and the send arrow measured 1.5-2px above the row's centre while
+    // the permission pill's lock, whose box is never restated, sat on it.
+    const body =
+      /\.composer-controls-bar > \.select-wrap > button \.codicon\s*\{([^}]*)\}/.exec(chat)?.[1] ??
+      "";
+    expect(body).toContain("width: var(--pi-icon-md)");
+    expect(body).toContain("height: var(--pi-icon-md)");
+  });
+
+  it("centres the bar's labels on their cap band, not on their line box", () => {
+    // A flex-centred line box leaves the visible ink ~2px low — Segoe UI
+    // reserves 1.079em above the baseline and 0.251em below it — so the caps sat
+    // under the centre of the icon beside them. Trimming to cap → baseline
+    // centres the band; the padding is what the g/p descenders need, because the
+    // trimmed box ends on the baseline and the labels clip at their own box.
+    const flat = chat.replace(/\/\*[\s\S]*?\*\//g, "");
+    const trimmed = [...flat.matchAll(/([^{}]+)\{([^}]*)\}/g)].filter((match) =>
+      match[2]?.includes("text-box: trim-both cap alphabetic"),
+    );
+    expect(trimmed).toHaveLength(1);
+    const [selectors, body] = [trimmed[0]?.[1] ?? "", trimmed[0]?.[2] ?? ""];
+    expect(selectors.split(",").map((part) => part.trim())).toEqual([
+      ".model-trigger-label",
+      ".permission-trigger-label",
+      ".thinking-row-label",
+      ".thinking-trigger-label",
+    ]);
+    expect(body).toContain("padding-bottom: var(--pi-sp-1)");
+  });
+
   it("draws the context ring's outer edge on that same control size", () => {
     // The ring's box is taller than the row so a 10px reading fits in its
     // hole, but the stroke lands on 26px — `2 × (r + stroke/2)` in the viewBox —
