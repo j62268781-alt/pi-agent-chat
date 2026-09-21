@@ -94,6 +94,12 @@ export type WebviewToExt =
       message: string;
       images?: Array<{ type: "image"; data: string; mimeType: string }>;
       streamingBehavior?: StreamingBehavior;
+      /**
+       * Set when the prompt came out of the webview's pending queue. pi can
+       * refuse a prompt outright; the id is what lets that refusal be routed
+       * back to the row it came from so the message is not lost.
+       */
+      ackId?: string;
     }
   | { type: "abort" }
   | { type: "copy"; text: string }
@@ -178,6 +184,12 @@ export type ExtToWebview =
   | { type: "toast"; text: string; kind?: ToastKind }
   | { type: "infoPanel"; title: string; markdown: string }
   | { type: "error"; message: string }
+  /**
+   * A queued prompt pi refused. Carries the `ackId` back so the webview can put
+   * the message where it came from; the generic `error` channel cannot do that,
+   * and answers with "the session stopped", which it usually has not.
+   */
+  | { type: "promptRejected"; ackId: string; message: string }
   | { type: "prefillInput"; text: string }
   | { type: "appendInput"; text: string }
   | { type: "addContextChips"; chips: ContextChip[] }

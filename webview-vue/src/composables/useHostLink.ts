@@ -178,6 +178,13 @@ export function useHostLink() {
         overlays.infoPanel = { title: message.title, markdown: message.markdown };
         break;
 
+      case "promptRejected":
+        // pi would not take it, so the queue does. Nothing about the run changed,
+        // which is why this is not the `error` case below.
+        pending.reject(message.ackId);
+        overlays.toast(message.message || t("The queued message was not sent"), "error");
+        break;
+
       case "error":
         session.applyState({ isStreaming: false });
         transcript.statusText = "";

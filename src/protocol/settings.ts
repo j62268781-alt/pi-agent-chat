@@ -23,7 +23,7 @@
 /** Scope selector shared by agents, prompts, skills and MCP servers. */
 export type SettingsScope = "user" | "project";
 
-/** The eight tabs the host advertises in `init.tabs`, in display order. */
+/** The nine tabs the host advertises in `init.tabs`, in display order. */
 export const SETTINGS_TAB_IDS = [
   "models",
   "agents",
@@ -32,6 +32,7 @@ export const SETTINGS_TAB_IDS = [
   "mcp",
   "commit",
   "sysprompt",
+  "general",
   "settings",
 ] as const;
 
@@ -240,6 +241,15 @@ export interface GeneralTabData {
   values: Record<string, unknown>;
 }
 
+/**
+ * The 常规 tab: our own `pi-agent-chat.*` VS Code settings. Same shape as
+ * `GeneralTabData` on purpose — one component renders both — but a different
+ * store, and pi never sees it.
+ */
+export interface ChatSettingsTabData {
+  values: Record<string, unknown>;
+}
+
 /** Tab id -> the payload `buildTabData` produces for it. */
 export interface SettingsTabDataMap {
   models: ModelsTabData;
@@ -249,6 +259,7 @@ export interface SettingsTabDataMap {
   mcp: McpTabData;
   commit: CommitTabData;
   sysprompt: SysPromptTabData;
+  general: ChatSettingsTabData;
   settings: GeneralTabData;
 }
 
@@ -383,6 +394,11 @@ export type WebviewToSettings =
   | { type: "toggleDisabled"; name: string; scope: string }
   // ---- settings.json ----
   | { type: "saveSettings"; patch: Record<string, unknown> }
+  /**
+   * The 常规 tab's save. Same patch shape as `saveSettings`, but it lands in
+   * VS Code's config rather than pi's settings.json — pi never reads these keys.
+   */
+  | { type: "saveChatSettings"; patch: Record<string, unknown> }
   | { type: "openSettingsFile" }
   // ---- system prompt ----
   | { type: "saveSystemPrompt"; content: string }
@@ -402,7 +418,7 @@ export type WebviewToSettings =
 // ---------------------------------------------------------------------------
 
 /** Which save confirmation arrived; each maps to its own toast. */
-export type SavedWhat = "settings" | "system" | "append" | "commit";
+export type SavedWhat = "settings" | "chat" | "system" | "append" | "commit";
 
 export type SettingsToWebview =
   /** Answer to `ready`: the boot burst that enables the whole page. */

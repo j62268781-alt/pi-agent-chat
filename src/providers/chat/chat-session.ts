@@ -728,11 +728,26 @@ export async function createChatSession(
             await refreshAfterSwitch();
           }
           if (await handleBuiltin(String(msg.message ?? ""))) break;
-          await rpc.prompt(
-            String(msg.message ?? ""),
-            msg.streamingBehavior as "steer" | "followUp" | undefined,
-            msg.images as RpcImage[] | undefined,
-          );
+          const ackId = typeof msg.ackId === "string" ? msg.ackId : undefined;
+          try {
+            await rpc.prompt(
+              String(msg.message ?? ""),
+              msg.streamingBehavior as "steer" | "followUp" | undefined,
+              msg.images as RpcImage[] | undefined,
+            );
+          } catch (e) {
+            // A prompt that came out of the pending queue has a row to go back
+            // to; the generic error channel would only report "stopped".
+            if (ackId) {
+              host.postMessage({
+                type: "promptRejected",
+                ackId,
+                message: e instanceof Error ? e.message : String(e),
+              });
+            } else {
+              throw e;
+            }
+          }
         } catch (e) {
           host.postMessage({
             type: "error",

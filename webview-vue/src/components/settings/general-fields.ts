@@ -15,6 +15,12 @@ export interface SettingField {
   type: SettingFieldType;
   desc?: string;
   options?: string[];
+  /**
+   * Display text per `options` entry, same order. Without it a select shows the
+   * raw value, which reads wrong for an enum whose values are English idiom
+   * (`queue` / `steer`) inside a translated panel.
+   */
+  optionLabels?: string[];
   /** Value shown when settings.json has no entry for `key`. */
   def?: unknown;
   placeholder?: string;
@@ -266,21 +272,11 @@ export const SETTING_GROUPS: readonly SettingGroup[] = [
   },
   {
     title: t("Message Delivery"),
+    // `steeringMode` / `followUpMode` are deliberately absent: they only release
+    // messages pi already holds, so a panel that also owns our pending queue
+    // would be one knob for two different queues. pi reads them from
+    // settings.json still — `pi-agent-chat.openSettingsJson` is the way in.
     fields: [
-      {
-        key: "steeringMode",
-        label: t("Steering mode"),
-        type: "enum",
-        options: ["all", "one-at-a-time"],
-        def: "one-at-a-time",
-      },
-      {
-        key: "followUpMode",
-        label: t("Follow-up mode"),
-        type: "enum",
-        options: ["all", "one-at-a-time"],
-        def: "one-at-a-time",
-      },
       {
         key: "transport",
         label: t("Transport"),
@@ -413,6 +409,31 @@ export const SETTING_GROUPS: readonly SettingGroup[] = [
         type: "bool",
         def: true,
         desc: t("Register skills as /skill:name commands"),
+      },
+    ],
+  },
+];
+
+/**
+ * The 常规 tab: settings that live in VS Code's own config (`pi-agent-chat.*`)
+ * rather than `~/.pi/agent/settings.json`, because pi does not read them — they
+ * decide how *our* composer and transcript behave. Kept in their own array so a
+ * field here can never be mistaken for one pi will honour.
+ */
+export const CHAT_SETTING_GROUPS: readonly SettingGroup[] = [
+  {
+    // Not 「消息投递」 — pi's tab already owns that title for its release
+    // strategies, and two groups answering to one name read as a bug.
+    title: t("Chat Behaviour"),
+    fields: [
+      {
+        key: "chatRunningSendBehavior",
+        label: t("Running send mode"),
+        type: "enum",
+        options: ["queue", "steer"],
+        optionLabels: [t("Queue"), t("Steer")],
+        def: "queue",
+        desc: t("What a message sent while the agent is working does by default."),
       },
     ],
   },

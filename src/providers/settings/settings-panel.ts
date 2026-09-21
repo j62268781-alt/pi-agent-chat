@@ -4,7 +4,7 @@ import { findPiColumn, findUnusedColumn } from "../../utils/webview-columns.ts";
 import { homedir } from "node:os";
 import { join, resolve, sep } from "node:path";
 import { DefaultResourceLoader, getAgentDir } from "@earendil-works/pi-coding-agent";
-import type { EcosystemPackage } from "../../protocol/settings.ts";
+import { SETTINGS_TAB_IDS, type EcosystemPackage } from "../../protocol/settings.ts";
 import { getSettingsWebviewHtml } from "./webview-html.ts";
 import { getLocale, t } from "../../utils/i18n.ts";
 import {
@@ -184,16 +184,9 @@ export async function openSettingsPanel(
             lang: getLocale(),
             hasWorkspace: hasWorkspace(),
             initialTab: initialTab ?? null,
-            tabs: [
-              "models",
-              "agents",
-              "prompts",
-              "skills",
-              "mcp",
-              "commit",
-              "sysprompt",
-              "settings",
-            ],
+            // The one list both sides agree on; a literal here silently hides a
+            // tab from the nav when a new id is added to the protocol.
+            tabs: [...SETTINGS_TAB_IDS],
           });
           break;
 
@@ -402,6 +395,17 @@ export async function openSettingsPanel(
           break;
 
         // ---- Settings params ----
+        case "saveChatSettings": {
+          // The patch keys come from the webview, so only the fields this tab
+          // actually owns may be written — not any `pi-agent-chat.*` setting.
+          const cfg = vscode.workspace.getConfiguration("pi-agent-chat");
+          for (const key of CHAT_SETTING_KEYS) {
+            if (!(key in (msg.patch ?? {}))) continue;
+            await cfg.update(key, msg.patch[key], vscode.ConfigurationTarget.Global);
+          }
+          panel.webview.postMessage({ type: "saved", what: "chat" });
+          break;
+        }
         case "saveSettings":
           saveSettingsPatch(msg.patch ?? {});
           panel.webview.postMessage({ type: "saved", what: "settings" });
@@ -463,6 +467,13 @@ export async function openSettingsPanel(
     }
   });
 }
+
+/**
+ * The `pi-agent-chat.*` settings the 常规 tab owns. Deliberately a list rather
+ * than "everything": pi does not read any of these, and the tab must not become
+ * a back door for writing unrelated VS Code settings.
+ */
+const CHAT_SETTING_KEYS = ["chatRunningSendBehavior"] as const;
 
 async function buildTabData(
   tab: string,
@@ -585,6 +596,12 @@ async function buildTabData(
         systemPrompt: { content: readTextFile(systemPath) },
         appendSystemPrompt: { content: readTextFile(appendPath) },
       };
+    }
+    case "general": {
+      const cfg = vscode.workspace.getConfiguration("pi-agent-chat");
+      const values: Record<string, unknown> = {};
+      for (const key of CHAT_SETTING_KEYS) values[key] = cfg.get<string>(key, "queue");
+      return { values };
     }
     case "settings": {
       return { values: readSettingsJson() };

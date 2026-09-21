@@ -17,10 +17,12 @@
 import { computed } from "vue";
 import { t } from "@/lib/i18n.ts";
 import { useComposerStore } from "@/stores/composer.ts";
+import { useOverlaysStore } from "@/stores/overlays.ts";
 import { usePendingStore } from "@/stores/pending.ts";
 import { useTranscriptStore } from "@/stores/transcript.ts";
 
 const pending = usePendingStore();
+const overlays = useOverlaysStore();
 const transcript = useTranscriptStore();
 
 const hostSteering = computed(() => transcript.queue.steering);
@@ -42,6 +44,11 @@ function edit(id: string): void {
   else composer.insert(item.text);
   if (item.images.length > 0) composer.addImages(item.images);
 }
+
+/** pi throws on a prompt while compaction runs, so the row stays where it is. */
+function steer(id: string): void {
+  if (!pending.steerNow(id)) overlays.toast(t("Context is being compacted"), "info");
+}
 </script>
 
 <template>
@@ -55,7 +62,7 @@ function edit(id: string): void {
           type="button"
           class="queue-action"
           :title="t('Send this now as a steering message')"
-          @click="pending.steerNow(item.id)"
+          @click="steer(item.id)"
         >
           <span class="codicon codicon-reply"></span>
           <span>{{ t("Steer") }}</span>

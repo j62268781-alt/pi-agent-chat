@@ -89,6 +89,35 @@ export function readSettingsJson(): Record<string, any> {
 }
 
 /**
+ * Parse settings.json for a write, refusing to read a broken file as empty.
+ *
+ * Every write here is read-merge-write, so a parser that swallows its error and
+ * returns `{}` turns a file we cannot read into a file we overwrite: the user
+ * keeps one key and loses the rest. pi accepts comments in this file, so the
+ * unparseable case is a real user's file, not a corrupt-disk edge case. Reads
+ * stay lenient — showing defaults beats throwing on every panel open.
+ */
+function parseSettingsForWrite(): Record<string, any> {
+  const text = readTextFile(getSettingsJsonPath());
+  if (!text.trim()) return {};
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch (e) {
+    throw new Error(
+      `settings.json could not be parsed (${e instanceof Error ? e.message : String(e)}), so nothing was written. ` +
+        "Fix the file and try again — saving now would drop the settings we cannot read.",
+    );
+  }
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw new Error(
+      "settings.json does not hold a JSON object, so nothing was written. Expected a top-level `{...}`.",
+    );
+  }
+  return parsed as Record<string, any>;
+}
+
+/**
  * Deep-merge a patch into settings. Nested plain objects are merged
  * recursively (preserving untouched sibling keys); arrays/scalars replace.
  */
@@ -117,7 +146,7 @@ export function mergeSettingsPatch(
 
 /** Merge patch into the persisted settings.json and write it back. */
 export function saveSettingsPatch(patch: Record<string, any>): void {
-  writeSettingsJson(mergeSettingsPatch(parseSettingsJson(), patch));
+  writeSettingsJson(mergeSettingsPatch(parseSettingsForWrite(), patch));
 }
 
 /** Lowercased exact "provider/id" keys from enabledModels (globs ignored). */
@@ -138,7 +167,7 @@ export function readEnabledModelKeys(): string[] {
  * Preserves glob entries and all other keys. Returns the new exact lowercased keys.
  */
 export function toggleFavoriteModel(provider: string, id: string): string[] {
-  const obj = parseSettingsJson();
+  const obj = parseSettingsForWrite();
   const arr = Array.isArray(obj.enabledModels) ? obj.enabledModels.slice() : [];
   const lower = modelKey(provider, id).toLowerCase();
   let removed = false;

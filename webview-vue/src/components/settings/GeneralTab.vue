@@ -1,21 +1,25 @@
 <!--
-  General tab: `~/.pi/agent/settings.json` as sixteen collapsible groups.
+  A collapsible group of labelled fields, shared by the two config tabs: the
+  「设置」 tab renders pi's `~/.pi/agent/settings.json`, 「常规」 renders our own
+  `pi-agent-chat.*` VS Code settings. Which fields, which tab id the result is
+  echoed into, and which save message to send all come from props.
 
   Dirty tracking is per field and compared against the value the tab opened with
-  (settings.json value, or the field's default), so a group's dot only appears
-  when the user actually changed something. Save sends one nested patch with just
-  the changed keys — `undefined` clears a key, which is how "reset to default"
-  reaches the file.
+  (that value, or the field's default), so a group's dot only appears when the
+  user actually changed something. Save sends one nested patch with just the
+  changed keys — `undefined` clears a key, which is how "reset to default"
+  reaches it.
 -->
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from "vue";
-import type { GeneralTabData } from "@protocol/settings";
+import type { GeneralTabData, SettingsTabId } from "@protocol/settings";
 import { t } from "@/lib/i18n.ts";
 import { useSettingsStore } from "@/stores/settings.ts";
 import SettingFieldEditor from "./SettingFieldEditor.vue";
 import {
   type EditorValue,
   type SettingField,
+  type SettingGroup,
   SETTING_GROUPS,
   initialValue,
   mergeValues,
@@ -24,19 +28,29 @@ import {
   toEditor,
 } from "./general-fields.ts";
 
-const props = defineProps<{ data: GeneralTabData }>();
+const props = withDefaults(
+  defineProps<{
+    data: GeneralTabData;
+    /** Which fields this tab edits — pi's settings.json, or our own config. */
+    groups?: readonly SettingGroup[];
+    /** Tab id the patch is echoed back into, and the save message to send. */
+    tab?: SettingsTabId;
+    saveType?: "saveSettings" | "saveChatSettings";
+  }>(),
+  { groups: () => SETTING_GROUPS, tab: "settings", saveType: "saveSettings" },
+);
 
 const store = useSettingsStore();
 
 /** Values the tab opened with; the baseline for every dirty comparison. */
 const baseline = reactive<Record<string, unknown>>({});
 const editors = reactive<Record<string, EditorValue>>({});
-const openGroups = reactive<boolean[]>(SETTING_GROUPS.map(() => false));
+const openGroups = reactive<boolean[]>(props.groups.map(() => false));
 const query = ref("");
 const error = ref("");
 
 function seed(): void {
-  for (const group of SETTING_GROUPS) {
+  for (const group of props.groups) {
     for (const field of group.fields) {
       const initial = initialValue(field, props.data.values ?? {});
       baseline[field.key] = initial;
@@ -61,13 +75,13 @@ function isDirty(field: SettingField): boolean {
 }
 
 function groupDirty(index: number): boolean {
-  return (SETTING_GROUPS[index]?.fields ?? []).some(isDirty);
+  return (props.groups[index]?.fields ?? []).some(isDirty);
 }
 
 /** A search opens every matching group, exactly like the legacy `filterGroups`. */
 const normalized = computed(() => query.value.trim().toLowerCase());
 
-function groupVisible(group: (typeof SETTING_GROUPS)[number]): boolean {
+function groupVisible(group: SettingGroup): boolean {
   const needle = normalized.value;
   if (!needle) return true;
   if (group.title.toLowerCase().includes(needle)) return true;
@@ -78,7 +92,7 @@ function groupVisible(group: (typeof SETTING_GROUPS)[number]): boolean {
 }
 
 function isOpen(index: number): boolean {
-  const group = SETTING_GROUPS[index];
+  const group = props.groups[index];
   if (!group) return false;
   return normalized.value ? groupVisible(group) : openGroups[index] === true;
 }
@@ -88,14 +102,14 @@ function toggle(index: number): void {
 }
 
 function resetGroup(index: number): void {
-  for (const field of SETTING_GROUPS[index]?.fields ?? []) {
+  for (const field of props.groups[index]?.fields ?? []) {
     editors[field.key] = toEditor(field, field.def);
   }
 }
 
 function save(): void {
   const patch: Record<string, unknown> = {};
-  for (const group of SETTING_GROUPS) {
+  for (const group of props.groups) {
     for (const field of group.fields) {
       const result = read(field);
       if (!result.dirty) continue;
@@ -112,9 +126,10 @@ function save(): void {
   // clears the dirty dots without re-fetching the whole tab. Replacing the cached
   // `values` re-seeds this tab through the watcher below, which is what updates
   // the per-field baselines.
-  store.patch("settings", { values: mergeValues({ ...props.data.values }, patch) });
+  store.patch(props.tab, { values: mergeValues({ ...props.data.values }, patch) });
   store.markSaving();
-  store.send({ type: "saveSettings", patch });
+  if (props.saveType === "saveChatSettings") store.send({ type: "saveChatSettings", patch });
+  else store.send({ type: "saveSettings", patch });
 }
 </script>
 
@@ -126,6 +141,7 @@ function save(): void {
         <span class="codicon codicon-save"></span> {{ t("Save") }}
       </button>
       <button
+        v-if="tab === 'settings'"
         class="btn-secondary"
         type="button"
         :title="t('Open settings.json')"
@@ -136,7 +152,7 @@ function save(): void {
     </div>
     <div v-if="error" class="error">{{ error }}</div>
     <div
-      v-for="(group, index) in SETTING_GROUPS"
+      v-for="(group, index) in groups"
       v-show="groupVisible(group)"
       :key="group.title"
       class="cfg-group"

@@ -36,8 +36,8 @@ function onCheck(event: Event): void {
       <label class="field-label">{{ field.label }}</label>
 
       <select v-if="field.type === 'enum'" :value="text" @change="onText">
-        <option v-for="option in field.options ?? []" :key="option" :value="option">
-          {{ option }}
+        <option v-for="(option, index) in field.options ?? []" :key="option" :value="option">
+          {{ field.optionLabels?.[index] ?? option }}
         </option>
       </select>
 

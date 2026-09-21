@@ -39,6 +39,16 @@ export interface PendingMessage {
 const STATE_KEY = "pendingMessages";
 
 let seq = 0;
+let ackSeq = 0;
+
+/**
+ * Deliveries waiting on pi to accept them, keyed by the id we put on the
+ * prompt. Taking an item out of the queue is not the same as sending it: pi
+ * rejects a prompt outright during compaction, and can also fail on a missing
+ * model or dead auth. Without this the rejected row was simply gone, its text
+ * left only in the composer's up-arrow history.
+ */
+const inFlight = new Map<string, { item: PendingMessage; index: number }>();
 
 export const usePendingStore = defineStore("pending", () => {
   const items = ref<PendingMessage[]>([]);
@@ -110,9 +120,16 @@ export const usePendingStore = defineStore("pending", () => {
     persist();
   }
 
-  function send(item: PendingMessage, streamingBehavior?: "steer" | "followUp"): void {
+  function send(
+    item: PendingMessage,
+    index: number,
+    streamingBehavior?: "steer" | "followUp",
+  ): string {
+    const ackId = `ack-${++ackSeq}`;
+    inFlight.set(ackId, { item, index });
     post({
       type: "prompt",
+      ackId,
       message: item.text,
       ...(streamingBehavior ? { streamingBehavior } : {}),
       ...(item.images.length > 0
@@ -126,18 +143,41 @@ export const usePendingStore = defineStore("pending", () => {
         : {}),
     });
     useComposerStore().remember(item.text);
+    return ackId;
   }
 
   /**
    * Deliver a queued item right now as a steering prompt.
    *
+   * Returns false when it declined to send, so the row can stay put and say why.
    * If the agent has gone idle in the meantime a plain prompt is equivalent —
    * `streamingBehavior` is only meaningful, and only accepted, mid-stream.
    */
-  function steerNow(id: string): void {
-    const item = take(id);
-    if (!item) return;
-    send(item, useSessionStore().isStreaming ? "steer" : undefined);
+  function steerNow(id: string): boolean {
+    const session = useSessionStore();
+    // Checked before the item leaves the list rather than after: pi throws on a
+    // prompt during compaction, and it throws before it ever looks at
+    // `streamingBehavior`, so the rejection is the general case here.
+    if (session.isCompacting) return false;
+    const index = items.value.findIndex((item) => item.id === id);
+    if (index < 0) return false;
+    const item = items.value[index]!;
+    items.value = items.value.filter((candidate) => candidate.id !== id);
+    persist();
+    send(item, index, session.isStreaming ? "steer" : undefined);
+    return true;
+  }
+
+  /** Put back what pi refused to accept, at the position it was taken from. */
+  function reject(ackId: string): boolean {
+    const held = inFlight.get(ackId);
+    if (!held) return false;
+    inFlight.delete(ackId);
+    const restored = items.value.slice();
+    restored.splice(Math.min(held.index, restored.length), 0, held.item);
+    items.value = restored;
+    persist();
+    return true;
   }
 
   /**
@@ -157,7 +197,7 @@ export const usePendingStore = defineStore("pending", () => {
     flushing.value = true;
     items.value = items.value.slice(1);
     persist();
-    send(next);
+    send(next, 0);
     flushing.value = false;
   }
 
@@ -172,6 +212,7 @@ export const usePendingStore = defineStore("pending", () => {
     take,
     clear,
     steerNow,
+    reject,
     flushNext,
   };
 });
