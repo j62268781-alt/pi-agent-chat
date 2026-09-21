@@ -303,6 +303,51 @@ export const CHAT_SETTING_GROUPS: readonly SettingGroup[] = [
       },
     ],
   },
+  {
+    // Same two switches VS Code's own settings editor shows for the transcript:
+    // whether tool cards open by themselves, and whether a finished turn keeps
+    // its process text. Both are applied live — the extension pushes
+    // `displaySettings` again on the config change, no reload.
+    title: t("Chat Display"),
+    fields: [
+      {
+        key: "chatCollapseWork",
+        label: t("Collapse the work behind a reply"),
+        type: "bool",
+        def: true,
+        desc: t(
+          "Once a turn finishes, fold its thinking, tool calls and narration into an expandable block. The final answer always stays open.",
+        ),
+      },
+      {
+        key: "chatExpandToolCalls",
+        label: t("Expand tool calls by default"),
+        type: "bool",
+        def: false,
+        desc: t(
+          "Show each tool call's input and response without opening the card first; off, the card shows its summary line only.",
+        ),
+      },
+      {
+        key: "chatExpandThinking",
+        label: t("Keep thinking blocks open"),
+        type: "bool",
+        def: false,
+        desc: t(
+          "Once the model stops thinking, keep its thinking block expanded; off, it folds away as soon as the answer starts.",
+        ),
+      },
+      {
+        key: "chatKeepReadingAnchor",
+        label: t("Pin a new turn to the top"),
+        type: "bool",
+        def: false,
+        desc: t(
+          "Anchor a new turn at the top of the viewport and only follow the bottom once the content fills it; off, sending jumps straight to the bottom.",
+        ),
+      },
+    ],
+  },
 ];
 
 // ---------------------------------------------------------------------------

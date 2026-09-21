@@ -170,6 +170,10 @@ export const SETTINGS_FIXTURES: SettingsTabDataMap = {
   general: {
     values: {
       chatRunningSendBehavior: "steer",
+      chatCollapseWork: true,
+      chatExpandToolCalls: false,
+      chatExpandThinking: false,
+      chatKeepReadingAnchor: true,
     },
   },
 

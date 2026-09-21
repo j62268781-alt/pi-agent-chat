@@ -161,7 +161,7 @@ export async function openSettingsPanel(
 
   const postTabData = async (tab: string) => {
     try {
-      const data = await buildTabData(tab, extensionUri);
+      const data = await buildTabData(tab);
       panel.webview.postMessage({ type: "tabData", tab, data });
     } catch (e) {
       panel.webview.postMessage({
@@ -454,16 +454,26 @@ export async function openSettingsPanel(
 }
 
 /**
- * The `pi-agent-chat.*` settings the 常规 tab owns. Deliberately a list rather
- * than "everything": pi does not read any of these, and the tab must not become
- * a back door for writing unrelated VS Code settings.
+ * The `pi-agent-chat.*` settings the 常规 tab owns, each with the value the tab
+ * shows when the user has never set one. Deliberately a list rather than
+ * "everything": pi does not read any of these, and the tab must not become a
+ * back door for writing unrelated VS Code settings. A key here has to exist as a
+ * field in `CHAT_SETTING_GROUPS` too — a key without a field is a setting the tab
+ * can write but never shows, which is how `chatRunningSendBehavior` ended up
+ * being the only thing it could save.
  */
-const CHAT_SETTING_KEYS = ["chatRunningSendBehavior"] as const;
+const CHAT_SETTINGS: ReadonlyArray<{ key: string; fallback: string | boolean }> = [
+  { key: "chatRunningSendBehavior", fallback: "queue" },
+  { key: "chatCollapseWork", fallback: true },
+  { key: "chatExpandToolCalls", fallback: false },
+  { key: "chatExpandThinking", fallback: false },
+  { key: "chatKeepReadingAnchor", fallback: false },
+];
 
-async function buildTabData(
-  tab: string,
-  extensionUri: vscode.Uri,
-): Promise<Record<string, unknown>> {
+/** The keys a save patch may carry; anything else in it is dropped. */
+const CHAT_SETTING_KEYS: readonly string[] = CHAT_SETTINGS.map((setting) => setting.key);
+
+async function buildTabData(tab: string): Promise<Record<string, unknown>> {
   const cwd = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
   switch (tab) {
     case "models": {
@@ -585,7 +595,9 @@ async function buildTabData(
     case "general": {
       const cfg = vscode.workspace.getConfiguration("pi-agent-chat");
       const values: Record<string, unknown> = {};
-      for (const key of CHAT_SETTING_KEYS) values[key] = cfg.get<string>(key, "queue");
+      for (const setting of CHAT_SETTINGS) {
+        values[setting.key] = cfg.get(setting.key, setting.fallback);
+      }
       return { values };
     }
     case "settings": {
