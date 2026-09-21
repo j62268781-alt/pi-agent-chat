@@ -180,6 +180,8 @@ VS Code 设置编辑器的做法是：**标签 = 界面字号 + 600 字重 + 实
 **常规 → 设置**（两个配置页在前）→ 模型 / Agents / 提示词模板 / Skills / MCP 服务器
 → 提交消息 / 系统提示词；组头 12px、`--pi-text-faint`、不可点（VS Code 的 pane 标题同理）。
 新增标签只要写 `group`，漏写会破坏 `test/stores/settings.test.ts` 的连续性断言。
+头部那枚刷新钮**贴着标题放**（`gap: --pi-sp-1`），不用 `space-between` 推到侧栏右缘
+——侧栏只有 240px，推过去就是 126px 的空档。
 
 ---
 
@@ -222,15 +224,23 @@ VS Code 设置编辑器的做法是：**标签 = 界面字号 + 600 字重 + 实
 
 ### 聊天输入区：跟 VS Code 的输入区一致
 
-VS Code 把它自己的 chat 输入区写死了规格，四项照做：
+VS Code 把它自己的 chat 输入区写死了规格。跟它的部分：
 
 | 项         | 值                                                                              |
 | ---------- | ------------------------------------------------------------------------------- |
-| 输入容器   | 圆角 `--pi-r-lg`（`cornerRadius-large`）、底色 `input.background`、1px 描边     |
-| 控件行     | 高 `--pi-h-chat-control` = 22px                                                 |
-| 纯图标控件 | `+` 与发送钮都是正圆（`--pi-r-full`），发送钮无额外装饰                         |
+| 输入容器   | 圆角 `--pi-r-lg`（`cornerRadius-large`）                                        |
+| 控件行     | 高 `--pi-h-chat-control` = 22px（= VS Code 的 `--chat-input-control-height`）   |
+| 纯图标控件 | `+` 与发送钮都是正圆（`--pi-r-full`）                                           |
 | 字形       | 控制条内的 codicon 取 compact 12px，不是 chrome 的 16px                         |
 | 占用环     | 同一条 22px 行（VS Code 的 usage widget 也在 `--chat-input-control-height` 上） |
+
+**故意不跟的三处**（都是本面板已有的契约，见 `test/styles/control-bar.test.ts`）：
+输入容器底色走 `--pi-bg-raised`（要给用户自定义背景图留透明度通道），不是 VS Code 的
+`input.background`；描边用 `--pi-stroke` + `--pi-border`；`+` 与发送钮都保留一圈细
+描边和填充——VS Code 的提交钮是无边框实心圆，但我们的空态发送钮一旦没描边就读不出
+是个按钮（Dark Modern 的 `button.secondaryBackground` 是全透明）。
+
+容器与输入框之间那条分隔细线也是本面板自己的决定，VS Code 没有。
 
 ---
 

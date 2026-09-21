@@ -217,11 +217,12 @@ body {
   overflow-x: hidden;
 }
 
+/* The reload button belongs to the title, not to the far edge of the sidebar:
+ * `space-between` parked it 126px away in a 240px-wide rail. */
 .nav-head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--pi-sp-2);
+  gap: var(--pi-sp-1);
   height: var(--pi-h-row);
   padding: 0 var(--pi-sp-5);
   flex-shrink: 0;

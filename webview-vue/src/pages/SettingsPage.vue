@@ -1,9 +1,10 @@
 <!--
-  Settings webview page: the sidebar shell plus the eight tabs.
+  Settings webview page: the sidebar shell plus the nine tabs.
 
-  `nav` mirrors the legacy `index.html` — a title and reload control in the head,
-  then one `.nav-tab` per tab, each with a codicon `settings.css` declares a
-  glyph for.
+  `nav` mirrors the legacy `index.html` — a title with its reload control beside
+  it, then the tabs grouped under a quiet `.nav-group` heading per section. The
+  grouping is read off `store.tabs`, so that list stays the one source of both
+  the order and the sections.
 
   Boot order: `connect()` posts `ready`, the host answers `init`, and `init`
   triggers the first `tabLoad`. Until that first dataset lands the placeholder
