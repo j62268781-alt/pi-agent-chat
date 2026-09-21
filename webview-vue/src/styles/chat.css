@@ -475,7 +475,11 @@ body {
 }
 .permission-item {
   display: flex;
-  align-items: flex-start;
+  /* Centre, like `.model-item`: the two pickers open from the same bar and a
+   * row here is two lines (title + description), so top-aligning put the icon
+   * and the chosen check 17px above the row's centre — 彬哥's "icon 和勾都没有
+   * 在中间". The 1px nudge that used to sit on the icon went with it. */
+  align-items: center;
   gap: 8px;
   width: 100%;
   text-align: left;
@@ -498,7 +502,6 @@ body {
   align-items: center;
   flex-shrink: 0;
   font-size: var(--pi-fs-title);
-  margin-top: 1px;
   color: var(--pi-text);
 }
 .permission-item.selected .permission-item-icon {
@@ -3194,28 +3197,15 @@ body {
   color: var(--pi-icon);
 }
 
-/* Inside the bar the glyphs follow the bar's own row: 14px in a 26px control
- * keeps the ratio VS Code's chat input has at 12px in 22px.
- *
- * The box is set with the font, and that is the point: `.icon-btn .codicon`
- * sizes the box at `--pi-icon-lg` (16px, the toolbar's glyph), so overriding
- * only the font left a 14px line box at the top of a 16px box — measured, the
- * `+` and the send arrow sat 1.5-2px above their control's centre while the
- * permission pill's lock (whose box is never restated) sat on it.
- *
- * Scoped to the bar's own four controls, and that scope is the point too: both
- * pickers render *inside* the bar's DOM (`#model-popup` lives in `.model-wrap`,
- * `#permission-popup` in `.permission-wrap`), so a bare descendant selector
- * reached every glyph in them as well. The permission list's shield/unlock and
- * the model list's rows dropped from their own sizes to the bar's — measured
- * 16px → 14px next to 13.3px row text — which is 彬哥's "弹窗出来的 icon 都小
- * 了很多". */
-.composer-controls-bar > .icon-btn .codicon,
-.composer-controls-bar > .select-wrap > button .codicon {
-  font-size: var(--pi-icon-md);
-  width: var(--pi-icon-md);
-  height: var(--pi-icon-md);
-}
+/* The bar's glyphs are the panel's own icon size: the base `.codicon` 16px, the
+ * same as the settings rows and both pickers' lists. There used to be a smaller
+ * rung here (`--pi-icon-md`, 14px) plus a rule that had to name the bar's four
+ * controls, because both pickers render *inside* the bar's DOM (`#model-popup`
+ * in `.model-wrap`, `#permission-popup` in `.permission-wrap`) and a bare
+ * descendant selector reached every glyph in them. 彬哥 put the two sizes side by
+ * side and took this one (2026-09-21), so the rule and the token are gone —
+ * `.icon-btn .codicon` already sizes the font *and* the box at `--pi-icon-lg`,
+ * which is what the 14px override used to break. */
 
 /* Labels are centred on their cap band, not on their line box.
  *

@@ -202,13 +202,10 @@
   );
 
   /* Fixed, like VS Code's own chrome: the chat font size setting is about
-   * reading prose, not about how big a gear glyph is. `lg` and `sm` are the
-   * host's two rungs — 16 for chrome, 12 for the compact controls. `md` is ours:
-   * the control bar's row is 26px rather than the host's 22px (see
-   * `--pi-h-chat-control`), and its glyph is one rung up to keep the same
-   * glyph-to-control ratio. */
+   * reading prose, not about how big a gear glyph is. Both rungs are the host's
+   * — 16 for chrome, 12 for the compact controls — and everything in this panel
+   * that draws a glyph uses the 16. */
   --pi-icon-lg: var(--vscode-codiconFontSize, 16px);
-  --pi-icon-md: 14px;
   --pi-icon-sm: var(--vscode-codiconFontSize-compact, 12px);
   /* VS Code computes its slider colour from a palette constant, so it may not
    * arrive as a variable; the previous hard-coded grey stays as the fallback. */

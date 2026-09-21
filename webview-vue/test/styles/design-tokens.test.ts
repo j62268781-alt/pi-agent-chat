@@ -101,35 +101,15 @@ describe("the chat input's control row", () => {
     expect(body).toContain("border-radius: var(--pi-r-lg)");
   });
 
-  it("keeps the glyph-to-control ratio the host's row has", () => {
-    // 12 in 22 is the host's ratio; the bar's own rung carries it to 14 in 26.
-    // Which controls read it is the next test's business.
-    expect(tokens).toMatch(/--pi-icon-md:\s*14px;/);
-  });
-
-  it("keeps the bar's glyph size out of the pickers' own popups", () => {
-    // Both pickers render *inside* the bar's DOM — `#model-popup` in
-    // `.model-wrap`, `#permission-popup` in `.permission-wrap` — so an unscoped
-    // descendant selector reached every glyph in them: the permission list's
-    // shield/unlock and the model rows fell from their own 16px to the bar's,
-    // which is 彬哥's "弹窗出来的 icon 都小了很多". The bar's rule names its four
-    // controls instead.
-    expect(chat).not.toMatch(/\.composer-controls-bar \.codicon\s*\{/);
-    expect(chat).toMatch(
-      /\.composer-controls-bar > \.select-wrap > button \.codicon\s*\{[^}]*var\(--pi-icon-md\)/,
-    );
-  });
-
-  it("gives the bar's glyph boxes the bar's glyph size", () => {
-    // `.icon-btn .codicon` sets the box to the toolbar's `--pi-icon-lg`, so
-    // overriding only the font left a 14px line box at the top of a 16px box:
-    // the `+` and the send arrow measured 1.5-2px above the row's centre while
-    // the permission pill's lock, whose box is never restated, sat on it.
-    const body =
-      /\.composer-controls-bar > \.select-wrap > button \.codicon\s*\{([^}]*)\}/.exec(chat)?.[1] ??
-      "";
-    expect(body).toContain("width: var(--pi-icon-md)");
-    expect(body).toContain("height: var(--pi-icon-md)");
+  it("draws the bar's glyphs at the panel's own icon size", () => {
+    // The bar carried a smaller rung of its own (`--pi-icon-md`, 14px) for a
+    // pass, which cost a scoped rule that had to name its four controls — both
+    // pickers render inside the bar's DOM, so a bare descendant selector shrank
+    // their glyphs too. The two sizes were put side by side and this one won
+    // (彬哥 2026-09-21): the bar uses the base size, like the settings rows and
+    // both pickers' lists, and the token is gone with the rule.
+    expect(tokens).not.toContain("--pi-icon-md");
+    expect(chat).not.toMatch(/\.composer-controls-bar[^{}]*\.codicon[^{}]*\{[^}]*font-size/);
   });
 
   it("centres the bar's labels on their cap band, not on their line box", () => {
