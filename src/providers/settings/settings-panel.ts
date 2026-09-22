@@ -468,6 +468,7 @@ const CHAT_SETTINGS: ReadonlyArray<{ key: string; fallback: string | boolean }> 
   { key: "chatExpandToolCalls", fallback: false },
   { key: "chatExpandThinking", fallback: false },
   { key: "chatKeepReadingAnchor", fallback: false },
+  { key: "chatCompletionSound", fallback: true },
 ];
 
 /** The keys a save patch may carry; anything else in it is dropped. */

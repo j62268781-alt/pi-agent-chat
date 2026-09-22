@@ -3718,10 +3718,11 @@ body {
 }
 
 /* ── session switcher: per-row delete ──────────────────────────────────────
- * Kept out of the way until the row is hovered or focused — the list is for
- * switching, and a row of delete buttons would read as the primary action. The
- * button is out of the hit-test while hidden (`pointer-events: none`) so a click
- * where nothing is drawn cannot delete anything. */
+ * Drawn on every row (彬哥 2026-09-22): it used to fade in on hover, which on a
+ * list of twenty rows is twenty hidden controls — the pointer has to find the
+ * spot before the button exists, and a click that lands where the trash was is
+ * a click on the row, i.e. a switch. It keeps the danger ink at rest so it
+ * still reads as the destructive control. */
 .session-item:focus-visible {
   outline: var(--pi-stroke) solid var(--pi-brand);
   outline-offset: -1px;
@@ -3738,22 +3739,11 @@ body {
   border: none;
   border-radius: var(--pi-r-sm);
   background: transparent;
-  /* Danger red at rest, not only on hover: delete is the one destructive
-   * control in the list and should read as one before the pointer lands. */
   color: var(--pi-danger);
   cursor: pointer;
-  opacity: 0;
-  pointer-events: none;
   transition:
-    opacity 0.12s,
     background 0.12s,
     color 0.12s;
-}
-
-.session-item:hover .session-item-del,
-.session-item:focus-within .session-item-del {
-  opacity: 1;
-  pointer-events: auto;
 }
 
 .session-item-del:hover {

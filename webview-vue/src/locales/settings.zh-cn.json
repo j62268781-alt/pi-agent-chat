@@ -264,6 +264,8 @@
   "Chat Display": "聊天显示",
   "General": "常规",
   "Chat settings saved": "聊天设置已保存",
+  "Chime when a run finishes": "结束时响一声",
+  "Ring a short chime in the panel when a run finishes; a run you stopped yourself stays silent.": "一轮结束时响一声短提示音；你自己按停止结束的那一轮不响。",
   "Collapse the work behind a reply": "折叠回复过程",
   "Expand tool calls by default": "默认展开工具调用",
   "Keep thinking blocks open": "思考块保持展开",

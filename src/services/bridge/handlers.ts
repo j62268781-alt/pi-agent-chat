@@ -15,6 +15,7 @@ import {
   serializeSymbol,
 } from "./serialize.ts";
 import type { BridgeDiagnosticSummary, BridgeEditorInfo, BridgeState } from "./types.ts";
+import { t } from "../../utils/i18n.ts";
 import {
   createRange,
   getFileUri,
@@ -494,25 +495,38 @@ async function showNotification(params: Record<string, unknown>) {
   const message = readRequiredString(params.message, "message");
   const type = readOptionalString(params.type) ?? "info";
   const modal = readOptionalBoolean(params.modal) ?? false;
+  const onlyWhenUnfocused = readOptionalBoolean(params.onlyWhenUnfocused) ?? false;
+
+  // The bridge's "a run finished" marker asks for this: the panel already says
+  // 「已处理 · 耗时2分25秒」 for the run the user is watching, so the toast is only
+  // worth anything in the case nobody was watching the window (彬哥, 2026-09-22).
+  if (onlyWhenUnfocused && vscode.window.state.focused) {
+    return { shown: false, reason: "window-focused", type, modal, message };
+  }
+
+  // The message is an English source string the way the rest of the host's copy
+  // is: the bundles translate it when they can, and a message nobody translated
+  // shows up exactly as sent.
+  const text = t(message);
 
   switch (type) {
     case "info":
-      if (modal) await vscode.window.showInformationMessage(message, { modal });
-      else void vscode.window.showInformationMessage(message, { modal });
+      if (modal) await vscode.window.showInformationMessage(text, { modal });
+      else void vscode.window.showInformationMessage(text, { modal });
       break;
     case "warning":
-      if (modal) await vscode.window.showWarningMessage(message, { modal });
-      else void vscode.window.showWarningMessage(message, { modal });
+      if (modal) await vscode.window.showWarningMessage(text, { modal });
+      else void vscode.window.showWarningMessage(text, { modal });
       break;
     case "error":
-      if (modal) await vscode.window.showErrorMessage(message, { modal });
-      else void vscode.window.showErrorMessage(message, { modal });
+      if (modal) await vscode.window.showErrorMessage(text, { modal });
+      else void vscode.window.showErrorMessage(text, { modal });
       break;
     default:
       throw new Error(`Invalid notification type: ${type}`);
   }
 
-  return { shown: true, type, modal, message };
+  return { shown: true, type, modal, message: text };
 }
 
 async function getFormattingOptions(uri: vscode.Uri) {

@@ -56,6 +56,7 @@ export function displaySettings(): ChatDisplaySettings {
     expandToolCalls: false,
     expandThinking: false,
     keepReadingAnchor: false,
+    completionSound: true,
   };
 
   const encoded = raw("display");

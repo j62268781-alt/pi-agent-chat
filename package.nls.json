@@ -51,6 +51,7 @@
   "pi.config.chatExpandToolCalls.desc": "Open tool call cards expanded, showing their input and result right away. When off, cards start collapsed and show only their summary line.",
   "pi.config.chatExpandThinking.desc": "Open thinking blocks expanded once the model stops reasoning. When off, thinking collapses as soon as the answer starts.",
   "pi.config.chatKeepReadingAnchor.desc": "Pin each new turn to the top of the viewport and follow the bottom only once it fills up. When off, sending always jumps straight to the bottom.",
+  "pi.config.chatCompletionSound.desc": "Play a short chime in the panel when a run finishes. A run you stopped yourself stays silent.",
   "pi.config.chatMermaidTheme.desc": "Mermaid diagram theme for the webview chat panel. Reopen the panel to apply changes.",
   "pi.config.chatMermaidTheme.default": "This is the default theme for all diagrams.",
   "pi.config.chatMermaidTheme.neutral": "This theme is great for black and white documents that will be printed.",

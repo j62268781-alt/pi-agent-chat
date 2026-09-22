@@ -180,7 +180,12 @@ onUnmounted(() => document.removeEventListener("mousedown", onDocumentMouseDown)
       <template v-else>
         <!-- A row is a div rather than a button so the delete button can live
              inside it — the marker `chat.css` styles (`.session-item`) cover the
-             UA button styles either way, and the model list uses the same shape. -->
+             UA button styles either way, and the model list uses the same shape.
+             The button swallows its own keydown: the row answers Enter/Space by
+             switching, and those keys reach it from the focused trash button —
+             where the row's `.prevent` also cancelled the button's own click, so
+             Enter on the trash switched the session and never opened the
+             confirmation (彬哥's "删除功能有逻辑bug"). -->
         <div
           v-for="item in session.sessionList"
           :key="item.file"
@@ -211,6 +216,7 @@ onUnmounted(() => document.removeEventListener("mousedown", onDocumentMouseDown)
             class="session-item-del"
             type="button"
             :title="t('Delete session')"
+            @keydown.stop
             @click.stop="remove(item)"
           >
             <span class="codicon codicon-trash"></span>

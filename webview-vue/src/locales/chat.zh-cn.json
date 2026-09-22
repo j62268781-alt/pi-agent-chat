@@ -203,6 +203,7 @@
   "Delete": "删除",
   "Delete session": "删除会话",
   "Delete session?": "删除这个会话？",
+  "Session deleted.": "已删除会话。",
   "{0} — this deletes the saved transcript on disk.": "{0} —— 会从磁盘删除已保存的会话记录。",
   "Already in a new session": "已经是新会话",
   "Stop the agent before starting a new session": "请先停止生成，再开始新会话",

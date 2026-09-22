@@ -64,4 +64,19 @@ describe("the vscode bridge contract", () => {
     expect(promised.length).toBeGreaterThan(5);
     for (const name of promised) expect(registered.has(name), name).toBe(true);
   });
+
+  it("keeps the finished-run toast behind the window-focus gate", () => {
+    // Two halves again: the extension asks for the gate on its `agent_settled`
+    // toast, the host honours it. Either side losing the flag turns the "finished
+    // while you were away" marker back into a toast on every single run (彬哥).
+    const extension = readFileSync(EXTENSION, "utf8");
+    const settle = extension.slice(extension.indexOf('pi.on("agent_settled"'));
+    expect(settle.slice(0, 600)).toContain("onlyWhenUnfocused: true");
+
+    const handler = readFileSync(HANDLERS, "utf8");
+    const fn = handler.slice(handler.indexOf("async function showNotification"));
+    expect(fn.slice(0, 900)).toMatch(
+      /onlyWhenUnfocused[\s\S]{0,400}vscode\.window\.state\.focused/,
+    );
+  });
 });

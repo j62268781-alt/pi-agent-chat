@@ -134,6 +134,20 @@ describe("control-bar rhythm contract", () => {
   });
 });
 
+describe("session list contract", () => {
+  it("draws every row's delete button without waiting for a hover", () => {
+    // It faded in on hover until 彬哥 asked for it to be there (2026-09-22). On a
+    // list of twenty rows that is twenty hidden controls, and the click that
+    // lands where the icon had just appeared hits the row instead — which
+    // switches the session. Only the ink changes now, from danger to danger-soft.
+    const body = declarations(chat, ".session-item-del");
+    expect(body).toContain("color: var(--pi-danger)");
+    expect(body, "the button hides itself at rest again").not.toContain("opacity: 0");
+    expect(body).not.toContain("pointer-events: none");
+    expect(chat).not.toContain(".session-item:hover .session-item-del");
+  });
+});
+
 describe("transcript surface contract", () => {
   /** Everything the transcript paints as a *card*. Each one used to pick its own
    * grey, which is how five surfaces, three ink colours and three paddings ended

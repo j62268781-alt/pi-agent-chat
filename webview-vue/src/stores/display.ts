@@ -23,6 +23,7 @@ export const useDisplayStore = defineStore("display", () => {
   const expandToolCalls = computed(() => settings.value.expandToolCalls);
   const expandThinking = computed(() => settings.value.expandThinking);
   const keepReadingAnchor = computed(() => settings.value.keepReadingAnchor);
+  const completionSound = computed(() => settings.value.completionSound);
   const sendShortcut = computed(() => settings.value.sendShortcut);
 
   /** Mirror the settings into CSS custom properties. */
@@ -64,6 +65,7 @@ export const useDisplayStore = defineStore("display", () => {
     expandToolCalls,
     expandThinking,
     keepReadingAnchor,
+    completionSound,
     sendShortcut,
     apply,
     applyCssVariables,

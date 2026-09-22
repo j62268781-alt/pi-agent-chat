@@ -174,6 +174,7 @@ export const SETTINGS_FIXTURES: SettingsTabDataMap = {
       chatExpandToolCalls: false,
       chatExpandThinking: false,
       chatKeepReadingAnchor: true,
+      chatCompletionSound: true,
     },
   },
 

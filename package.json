@@ -421,6 +421,11 @@
           "default": false,
           "description": "%pi.config.chatKeepReadingAnchor.desc%"
         },
+        "pi-agent-chat.chatCompletionSound": {
+          "type": "boolean",
+          "default": true,
+          "description": "%pi.config.chatCompletionSound.desc%"
+        },
         "pi-agent-chat.chatMermaidTheme": {
           "type": "string",
           "default": "default",

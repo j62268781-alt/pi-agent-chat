@@ -78,6 +78,8 @@ export interface ChatDisplaySettings {
   expandThinking: boolean;
   /** Pin a new turn to the top of the viewport instead of the bottom (`chatKeepReadingAnchor`). */
   keepReadingAnchor: boolean;
+  /** Ring the panel's own chime when a run settles (`chatCompletionSound`). */
+  completionSound: boolean;
 }
 
 // ---------------------------------------------------------------------------

@@ -346,6 +346,15 @@ export const CHAT_SETTING_GROUPS: readonly SettingGroup[] = [
           "Anchor a new turn at the top of the viewport and only follow the bottom once the content fills it; off, sending jumps straight to the bottom.",
         ),
       },
+      {
+        key: "chatCompletionSound",
+        label: t("Chime when a run finishes"),
+        type: "bool",
+        def: true,
+        desc: t(
+          "Ring a short chime in the panel when a run finishes; a run you stopped yourself stays silent.",
+        ),
+      },
     ],
   },
 ];

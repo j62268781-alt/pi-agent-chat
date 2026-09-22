@@ -8,6 +8,7 @@ import type { RpcCommand, RpcContextUsage, RpcModel, RpcState } from "@protocol/
 import { ref } from "vue";
 import { onHostMessage, post } from "@/lib/bridge";
 import { t } from "@/lib/i18n";
+import { playCompletionChime } from "@/lib/sound";
 import { useComposerStore } from "@/stores/composer";
 import { useDisplayStore } from "@/stores/display";
 import { useOverlaysStore } from "@/stores/overlays";
@@ -71,6 +72,18 @@ export function useHostLink() {
   const overlays = useOverlaysStore();
   const display = useDisplayStore();
   const pending = usePendingStore();
+
+  /**
+   * A run ended on its own — ring the panel's chime, unless the setting is off
+   * or the user is the one who ended it: a stop means they already left that
+   * answer behind, and a chime would call them back to it. `stopReason` is
+   * written by `message_end`, which lands before `agent_settled`.
+   */
+  function chime(): void {
+    if (!display.completionSound) return;
+    if (transcript.turns.at(-1)?.stopReason === "aborted") return;
+    playCompletionChime();
+  }
 
   function handle(message: ExtToWebview): void {
     switch (message.type) {
@@ -147,8 +160,11 @@ export function useHostLink() {
         // An event is just as much proof of life as a message burst.
         bootFailure.value = "";
         transcript.applyEvent(message.event);
-        // The turn just settled, so the head of the pending queue is deliverable.
-        if ((message.event as { type?: string }).type === "agent_settled") pending.flushNext();
+        if ((message.event as { type?: string }).type === "agent_settled") {
+          // The turn just settled, so the head of the pending queue is deliverable.
+          pending.flushNext();
+          chime();
+        }
         settleBoot();
         break;
       }

@@ -260,9 +260,14 @@ export default function (pi) {
 
   pi.on("agent_settled", async (_event, _ctx) => {
     reportStatus("idle");
-    void callBridge("showNotification", { message: "Pi: Task Completed!", type: "info" }).catch(
-      () => {},
-    );
+    // Only when the window is not focused: the panel reports the outcome for the
+    // run the user is watching, so this toast is the "it finished while you were
+    // away" marker and nothing else (彬哥, 2026-09-22).
+    void callBridge("showNotification", {
+      message: "Pi: Task Completed!",
+      type: "info",
+      onlyWhenUnfocused: true,
+    }).catch(() => {});
   });
 
   pi.on("session_shutdown", async (_event, ctx) => {

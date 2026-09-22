@@ -3,6 +3,7 @@
   "Commit message generation was cancelled": "提交消息生成已取消",
   "Commit model \"{0}\" not found in ~/.pi/agent/models.json.": "提交模型 \"{0}\" 未在 ~/.pi/agent/models.json 中找到。",
   "Commit model \"{0}\" has no configured auth (API key or OAuth).": "提交模型 \"{0}\" 未配置认证信息（API 密钥或 OAuth）。",
+  "Pi: Task Completed!": "Pi：任务已完成",
   "Copy": "复制",
   "Checking environment…": "正在检查环境…",
   "Pi exited{0}": "Pi 已退出{0}",

@@ -63,6 +63,7 @@ export function readChatDisplaySettings(): ChatDisplaySettings {
     expandToolCalls: config.get<boolean>("chatExpandToolCalls") ?? false,
     expandThinking: config.get<boolean>("chatExpandThinking") ?? false,
     keepReadingAnchor: config.get<boolean>("chatKeepReadingAnchor") ?? false,
+    completionSound: config.get<boolean>("chatCompletionSound") ?? true,
   };
 }
 
@@ -97,6 +98,7 @@ const LIVE_KEYS = [
   "chatExpandToolCalls",
   "chatExpandThinking",
   "chatKeepReadingAnchor",
+  "chatCompletionSound",
 ] as const;
 
 /** True when the change only needs a `displaySettings` push. */

@@ -1054,11 +1054,35 @@ export async function createChatSession(
             });
           });
         break;
-      case "setPermission":
-        void rpc
-          .prompt(`/permission ${String(msg.mode ?? "")}`, streaming ? "steer" : undefined)
-          .catch(() => {});
+      case "setPermission": {
+        // Two homes on purpose. The running pi process holds the mode in memory
+        // — our own `permission-gate` extension switches it via `/permission`
+        // (`pi-extensions/permission-gate.ts`, and pi executes extension
+        // commands even from a steered prompt) — while the *setting* is what the
+        // next pi process starts from (`createPiEnvironment`). Writing only the
+        // first looked like the switch had worked and then reverted on the next
+        // spawn; writing only the second did nothing to the live session.
+        const mode = msg.mode;
+        void (async () => {
+          try {
+            await rpc.prompt(`/permission ${mode}`, streaming ? "steer" : undefined);
+            await vscode.workspace
+              .getConfiguration("pi-agent-chat")
+              .update("permission.mode", mode, vscode.ConfigurationTarget.Global);
+            // Nothing else tells the webview: the picker's tick, the trigger
+            // pill's shield and its title all render from `permissionMode`, so
+            // without this the switch looked like it had not happened at all
+            // (彬哥: "权限目前没有办法切换").
+            host.postMessage({ type: "permissionMode", mode });
+          } catch (e) {
+            host.postMessage({
+              type: "error",
+              message: e instanceof Error ? e.message : String(e),
+            });
+          }
+        })();
         break;
+      }
       case "rewindAccept":
         if (streaming) {
           toast("Stop the agent before changing files.", "error");
