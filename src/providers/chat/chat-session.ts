@@ -224,6 +224,12 @@ export async function createChatSession(
    * creates the session (`case "prompt"`); switching or deleting clears it.
    */
   let pendingNewSession = false;
+  /**
+   * What the guide's first message said. The session list needs it while that
+   * session has no file on disk yet (see `postSessionsList`): the row it adds by
+   * hand would otherwise have a timestamp for a title and nothing under it.
+   */
+  let newSessionFirstMessage = "";
   let switchedSession = false;
   let historyLoaded = false;
   let historyLoading: Promise<void> | null = null;
@@ -416,6 +422,24 @@ export async function createChatSession(
             messageCount: s.messageCount ?? 0,
           };
         });
+        // pi writes a session's JSONL when its first turn ends, and this list is a
+        // disk scan — so a session the guide just created is on no scan at all, and
+        // the switcher showed every session except the one in use until the run
+        // finished (彬哥). The live session is a session of this workspace by
+        // construction, so it is added by hand until the scan catches up.
+        if (
+          currentSessionFile &&
+          newSessionFirstMessage &&
+          !items.some((item) => item.file === currentSessionFile)
+        ) {
+          items.unshift({
+            file: currentSessionFile,
+            name: sessionName ?? "",
+            firstMessage: newSessionFirstMessage,
+            modified: new Date().toISOString(),
+            messageCount: 0,
+          });
+        }
       } catch (e) {
         toast(
           t("Could not read the session list: {0}", e instanceof Error ? e.message : String(e)),
@@ -724,6 +748,7 @@ export async function createChatSession(
               return;
             }
             pendingNewSession = false;
+            newSessionFirstMessage = String(msg.message ?? "");
             await rpc.newSession();
             await refreshAfterSwitch();
           }
@@ -1165,6 +1190,8 @@ export async function createChatSession(
 
   async function switchTo(sessionFile: string): Promise<void> {
     pendingNewSession = false;
+    // Whatever the guide's message said belongs to the session being left.
+    newSessionFirstMessage = "";
     if (streaming) {
       toast(t("Stop the agent before switching sessions."), "error");
       return;
