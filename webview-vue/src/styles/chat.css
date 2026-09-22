@@ -3755,6 +3755,27 @@ body {
   color: var(--pi-text-danger);
 }
 
+/* 删除进行中：确认之后列表不关（宿主删完才回推列表），删除「当前会话」又要先换
+ * 会话 —— 在满配 MCP 下那是几秒。这一行明说在忙，并且暂时不吃点击（别的行也
+ * 别抢，宿主正在换会话）。 */
+.session-item.is-deleting {
+  pointer-events: none;
+}
+
+.session-item-del.is-busy {
+  cursor: default;
+  color: var(--pi-info);
+}
+
+.session-item-del-spin {
+  width: 9px;
+  height: 9px;
+  border: 1.5px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: tool-spin 0.7s linear infinite;
+}
+
 /* Live status on the row that is currently open: a small pulsing dot plus the
  * phase. It replaces the meta line for that row only — recorded sessions are
  * not running anywhere, so they keep their time/message meta. */

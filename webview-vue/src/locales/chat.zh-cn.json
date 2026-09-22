@@ -206,6 +206,7 @@
   "yours": "你的",
   "Delete": "删除",
   "Delete session": "删除会话",
+  "Deleting…": "删除中…",
   "Delete session?": "删除这个会话？",
   "Session deleted.": "已删除会话。",
   "{0} — this deletes the saved transcript on disk.": "{0} —— 会从磁盘删除已保存的会话记录。",

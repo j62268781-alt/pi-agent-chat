@@ -19,7 +19,7 @@ import { useOverlaysStore } from "@/stores/overlays";
 import { usePendingStore } from "@/stores/pending";
 import { useSessionStore } from "@/stores/session";
 import { useTranscriptStore } from "@/stores/transcript";
-import { ASK, PENDING, SESSION, TRANSCRIPT } from "./fixtures";
+import { ASK, PENDING, SESSION, SESSIONS, TRANSCRIPT } from "./fixtures";
 import { applyPreviewTheme, themeFromUrl } from "./theme-host";
 import { THEMES } from "./themes.generated";
 
@@ -66,6 +66,14 @@ transcript.statusText = SESSION.statusText;
 const ask = params.get("ask");
 if (ask === "permission" || ask === "questionnaire") {
   useOverlaysStore().dialog = ASK[ask];
+}
+// `?popup=sessions` opens the session switcher on a fixture list, the way the
+// header's button does.
+const firstSession = SESSIONS[0];
+if (params.get("popup") === "sessions" && firstSession) {
+  session.sessionList = SESSIONS;
+  session.sessionFile = firstSession.file;
+  composer.openPopup = "sessions";
 }
 // `display.surface` is what the host reports; the store turns it into the body
 // class the token layer reads, exactly as in production.

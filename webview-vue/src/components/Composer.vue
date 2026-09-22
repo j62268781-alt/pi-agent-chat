@@ -861,7 +861,13 @@ function onDocumentMouseDown(ev: MouseEvent): void {
   if (!open) return;
   const wrap =
     open === "model" ? modelWrapEl.value : open === "permission" ? permissionWrapEl.value : null;
-  if (wrap?.contains(target)) return;
+  // `sessions` is the chat header's popup, not this component's: it anchors on
+  // its own element and closes itself. Closing it here would fire on the
+  // switcher's own mousedown, unmounting the row before `mouseup` — the browser
+  // then never dispatches `click`, so neither the row's switch nor the trash's
+  // delete ever ran (彬哥's "删除没有反应").
+  if (!wrap) return;
+  if (wrap.contains(target)) return;
   composer.closePopups();
 }
 

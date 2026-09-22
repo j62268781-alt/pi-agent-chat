@@ -989,7 +989,13 @@ export async function createChatSession(
             const listed = list.some(function (s) {
               return s.path === file;
             });
-            if (!file || !listed) return;
+            if (!file || !listed) {
+              // A row the host no longer lists (deleted elsewhere, stale popup).
+              // Resync so the popup drops it — and so the row's busy state,
+              // which clears on the next push, cannot outlive the click.
+              if (file) await postSessionsList();
+              return;
+            }
             if (file === currentSessionFile) {
               if (streaming) await rpc.abort();
               const others = list
@@ -1015,6 +1021,9 @@ export async function createChatSession(
             await postSessionsList();
           } catch (e) {
             toast(e instanceof Error ? e.message : String(e), "error");
+            // The row's busy state clears on the next list push, so a failed
+            // delete has to push one too — otherwise it spins forever.
+            await postSessionsList();
           }
         })();
         break;

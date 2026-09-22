@@ -15,6 +15,7 @@
         ?streaming=0         idle agent, so the send button is the plain one
         ?lang=zh-cn|en
         ?ask=permission|questionnaire   put that question on the ask card
+        ?popup=sessions      open the session switcher on a fixture list
         ?bare=1              hide the control bar
     -->
     <script>
@@ -43,6 +44,15 @@
           completionSound: true,
         }),
       };
+      // Stands in for `acquireVsCodeApi()`: without it the bridge's `post` is a
+      // no-op, so "does the webview send X?" is unanswerable in the preview.
+      // Every outbound message lands on `window.__posted`.
+      window.__posted = [];
+      window.acquireVsCodeApi = () => ({
+        postMessage: (message) => window.__posted.push(message),
+        getState: () => undefined,
+        setState: () => {},
+      });
     </script>
     <style>
       /* The preview harness itself, kept out of the way of the design. Pinned to

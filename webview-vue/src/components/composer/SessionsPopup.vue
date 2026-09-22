@@ -25,6 +25,22 @@ const transcript = useTranscriptStore();
 
 const popupEl = ref<HTMLElement | null>(null);
 
+/**
+ * The row whose delete is in flight. Deleting the *open* session goes through a
+ * session replacement first (pi has to move off the file before it is unlinked),
+ * which on a full MCP config costs seconds — without this the row just sat there
+ * looking like nothing happened ("删除正在会话的内容，会卡住了"). The host
+ * re-pushes the list when it is done, one way or the other.
+ */
+const deleting = ref<string | null>(null);
+
+watch(
+  () => session.sessionList,
+  () => {
+    deleting.value = null;
+  },
+);
+
 const open = computed(() => composer.openPopup === "sessions");
 
 /** Relative time for the meta line, degrading to a date as it ages. */
@@ -154,11 +170,17 @@ async function remove(item: SessionListItem): Promise<void> {
     t("Delete"),
   );
   if (!confirmed) return;
+  deleting.value = item.file;
   post({ type: "deleteSession", file: item.file });
 }
 
 function onDocumentMouseDown(ev: MouseEvent): void {
   if (!open.value) return;
+  // A pending confirmation belongs to a row *in* this list, and the click that
+  // answers it lands outside the popup by construction (the dialog is its own
+  // overlay). Closing here made deleting several rows a re-open-each-time chore;
+  // the dialog is modal, so nothing else can be clicked meanwhile anyway.
+  if (overlays.confirmState) return;
   const target = ev.target as Node | null;
   if (!target) return;
   const anchor = (popupEl.value?.offsetParent as HTMLElement | null) ?? popupEl.value;
@@ -190,9 +212,13 @@ onUnmounted(() => document.removeEventListener("mousedown", onDocumentMouseDown)
           v-for="item in session.sessionList"
           :key="item.file"
           class="session-item"
-          :class="{ selected: item.file === session.sessionFile }"
+          :class="{
+            selected: item.file === session.sessionFile,
+            'is-deleting': item.file === deleting,
+          }"
           role="button"
           tabindex="0"
+          :aria-busy="item.file === deleting ? 'true' : undefined"
           @click="choose(item)"
           @keydown.enter.prevent="choose(item)"
           @keydown.space.prevent="choose(item)"
@@ -212,7 +238,21 @@ onUnmounted(() => document.removeEventListener("mousedown", onDocumentMouseDown)
           <span v-if="item.file === session.sessionFile" class="session-item-check">
             <span class="codicon codicon-check"></span>
           </span>
+          <!-- While the delete is in flight the trash becomes the spinner. The
+               list stays open through it, and deleting the *open* session takes
+               a session replacement first (seconds on a full MCP config) — the
+               row has to say so instead of looking inert (彬哥's "会卡住了"). -->
           <button
+            v-if="item.file === deleting"
+            class="session-item-del is-busy"
+            type="button"
+            :title="t('Deleting…')"
+            disabled
+          >
+            <span class="session-item-del-spin"></span>
+          </button>
+          <button
+            v-else
             class="session-item-del"
             type="button"
             :title="t('Delete session')"

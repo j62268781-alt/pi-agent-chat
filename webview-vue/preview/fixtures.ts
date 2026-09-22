@@ -354,3 +354,32 @@ export const ASK = {
     }),
   } as ExtensionUiRequest,
 };
+
+/**
+ * Sessions for the switcher popup — the list the host pushes back on
+ * `listSessions`, newest first, with the first one open. Times are relative to
+ * load so the popup's "N min ago" line stays meaningful in a screenshot run.
+ */
+export const SESSIONS = [
+  {
+    file: "/Users/joeson/.pi/agent/sessions/--preview--/2026-09-22T11-53-00.jsonl",
+    name: "",
+    firstMessage: "只回复 pong",
+    modified: new Date(Date.now() - 11 * 60000).toISOString(),
+    messageCount: 3,
+  },
+  {
+    file: "/Users/joeson/.pi/agent/sessions/--preview--/2026-09-22T11-52-00.jsonl",
+    name: "",
+    firstMessage: "只回复 pok",
+    modified: new Date(Date.now() - 12 * 60000).toISOString(),
+    messageCount: 5,
+  },
+  {
+    file: "/Users/joeson/.pi/agent/sessions/--preview--/2026-09-22T11-38-00.jsonl",
+    name: "字号与图标收口",
+    firstMessage: "",
+    modified: new Date(Date.now() - 25 * 60000).toISOString(),
+    messageCount: 42,
+  },
+];

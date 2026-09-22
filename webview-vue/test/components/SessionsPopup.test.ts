@@ -106,4 +106,56 @@ describe("SessionsPopup — the delete button", () => {
       vi.mocked(post).mock.calls.map((call) => (call[0] as { type: string }).type),
     ).not.toContain("deleteSession");
   });
+
+  it("keeps the list open while the confirmation is up", async () => {
+    const wrapper = mountPopup();
+    const overlays = useOverlaysStore();
+    const composer = useComposerStore();
+    await wrapper.findAll(".session-item-del")[1]?.trigger("click");
+
+    // Answering the dialog is a mousedown *outside* this popup (the dialog is its
+    // own overlay), and that is exactly the click that used to close the list:
+    // deleting several rows meant re-opening it for every one of them.
+    expect(overlays.confirmState).not.toBeNull();
+    document.body.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+    await flushPromises();
+
+    expect(composer.openPopup).toBe("sessions");
+  });
+
+  it("is still open once the deletion is under way", async () => {
+    const wrapper = mountPopup();
+    await wrapper.findAll(".session-item-del")[1]?.trigger("click");
+    document.body.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+    await useOverlaysStore().settleConfirmation(true);
+    await flushPromises();
+
+    expect(useComposerStore().openPopup).toBe("sessions");
+    expect(post).toHaveBeenCalledWith({ type: "deleteSession", file: LIST[1]?.file });
+  });
+
+  it("marks the row busy while its delete is in flight", async () => {
+    const wrapper = mountPopup();
+    await wrapper.findAll(".session-item-del")[1]?.trigger("click");
+    await useOverlaysStore().settleConfirmation(true);
+    await flushPromises();
+
+    const rows = wrapper.findAll(".session-item");
+    expect(rows[1]?.classes()).toContain("is-deleting");
+    expect(rows[1]?.find(".session-item-del-spin").exists()).toBe(true);
+    expect(rows[0]?.classes()).not.toContain("is-deleting");
+  });
+
+  it("drops the busy state when the host re-pushes the list", async () => {
+    const wrapper = mountPopup();
+    const session = useSessionStore();
+    await wrapper.findAll(".session-item-del")[1]?.trigger("click");
+    await useOverlaysStore().settleConfirmation(true);
+    await flushPromises();
+
+    session.sessionList = [...LIST];
+    await flushPromises();
+
+    expect(wrapper.findAll(".session-item")[1]?.classes()).not.toContain("is-deleting");
+  });
 });
