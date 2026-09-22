@@ -9,6 +9,7 @@
 -->
 <script setup lang="ts">
 import { onMounted, onUnmounted } from "vue";
+import AskCardHost from "@/components/AskCardHost.vue";
 import BootSplash from "@/components/BootSplash.vue";
 import ChatToolbar from "@/components/ChatToolbar.vue";
 import Composer from "@/components/Composer.vue";
@@ -61,10 +62,14 @@ onUnmounted(() => {
     <ChatToolbar />
     <TranscriptView />
     <RewindWidget />
-    <!-- Positioning context for the floating queue — see `.composer-dock`. -->
+    <!-- Positioning context for the floating queue and the ask card — both sit
+         on the composer's own inset, see `.composer-dock`. A question covers
+         the input, so the queue (which is about what is waiting to be sent)
+         steps aside until it is answered. -->
     <div class="composer-dock">
-      <QueuePanel />
+      <QueuePanel v-if="!overlays.dialog" />
       <Composer />
+      <AskCardHost />
     </div>
   </div>
 

@@ -15,10 +15,11 @@ import { installCodiconFont } from "@/lib/codicon-font";
 import { language } from "@/lib/injected";
 import { useComposerStore } from "@/stores/composer";
 import { useDisplayStore } from "@/stores/display";
+import { useOverlaysStore } from "@/stores/overlays";
 import { usePendingStore } from "@/stores/pending";
 import { useSessionStore } from "@/stores/session";
 import { useTranscriptStore } from "@/stores/transcript";
-import { PENDING, SESSION, TRANSCRIPT } from "./fixtures";
+import { ASK, PENDING, SESSION, TRANSCRIPT } from "./fixtures";
 import { applyPreviewTheme, themeFromUrl } from "./theme-host";
 import { THEMES } from "./themes.generated";
 
@@ -60,6 +61,12 @@ session.contextUsage = SESSION.contextUsage;
 session.sessionCost = SESSION.sessionCost;
 
 transcript.statusText = SESSION.statusText;
+// `?ask=permission|questionnaire` puts one of pi's two questions on the card
+// over the composer, the way the host pushes it.
+const ask = params.get("ask");
+if (ask === "permission" || ask === "questionnaire") {
+  useOverlaysStore().dialog = ASK[ask];
+}
 // `display.surface` is what the host reports; the store turns it into the body
 // class the token layer reads, exactly as in production.
 display.apply({

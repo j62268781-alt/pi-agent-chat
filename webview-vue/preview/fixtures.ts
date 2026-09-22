@@ -5,6 +5,7 @@
 // real components — only the data is invented. Content mirrors a session on
 // this repository, so the sample text has honest lengths and code in it.
 
+import type { ExtensionUiRequest } from "@protocol/rpc";
 import type { PendingMessage } from "@/stores/pending.ts";
 import type {
   AssistantMessage,
@@ -295,4 +296,61 @@ export const SESSION = {
   messageCount: 4,
   contextUsage: { tokens: 68_400, contextWindow: 200_000, percent: 34 },
   sessionCost: 0.42,
+};
+
+/**
+ * The two questions the ask card answers, exactly as the host pushes them: a
+ * `select` from the permission gate and an `editor` whose prefill is the
+ * questionnaire's form definition.
+ */
+export const ASK = {
+  permission: {
+    type: "extension_ui_request",
+    id: "preview-permission",
+    method: "select",
+    title: "Permission Required",
+    message:
+      'tool : bash\ninput : with input {"command":"git checkout pubspec.lock","description":"还原依赖锁变更"}',
+    options: ["Yes", 'Yes, allow tool "bash" for this session', "No", "No, provide reason"],
+  } as ExtensionUiRequest,
+  questionnaire: {
+    type: "extension_ui_request",
+    id: "preview-questionnaire",
+    method: "editor",
+    title: "Pi Questionnaire Form",
+    prefill: JSON.stringify({
+      questions: [
+        {
+          id: "stylesheet",
+          label: "Stylesheet",
+          prompt:
+            "工作区的 chat.css 有 200 多行与令牌层对不上，看起来像上一轮手工改过样式，并不是这次任务的产物。要怎么处理？",
+          options: [
+            {
+              label: "还原掉",
+              description:
+                "git checkout webview-vue/src/styles/chat.css，避免把无关的改动带进后续提交",
+            },
+            { label: "保留这些变动", description: "确定是有意的调整，需要一起提交" },
+            {
+              label: "先给我看差异",
+              description: "我先列出具体哪些规则变了、方向如何，再由你决定",
+            },
+          ],
+          allowOther: true,
+        },
+        {
+          id: "scope",
+          label: "收口",
+          prompt: "这一轮改动要落到哪些文件？",
+          options: [
+            { label: "只动样式", description: "chat.css 与令牌层" },
+            { label: "样式加组件" },
+            { label: "连测试一起", description: "顺带补上契约测试" },
+          ],
+          allowOther: true,
+        },
+      ],
+    }),
+  } as ExtensionUiRequest,
 };

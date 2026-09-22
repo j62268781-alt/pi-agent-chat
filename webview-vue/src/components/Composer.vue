@@ -834,6 +834,15 @@ watch([() => composer.openPopup, () => composer.modelSubview], async () => {
     positionPopup(permissionWrapEl.value, ".permission-popup", 250);
 });
 
+// A question covers the box: leave the caret in the composer and the keystrokes
+// meant for the card's rows would land in a box nobody can see.
+watch(
+  () => overlays.dialog,
+  (dialog) => {
+    if (dialog) inputEl.value?.blur();
+  },
+);
+
 /**
  * Clicking outside a trigger closes its popup. One popup is open at a time, so
  * the open one's wrapper decides — clicks inside the popup (including the
@@ -881,7 +890,10 @@ onUnmounted(() => {
       :selected="composer.autocomplete.selected"
       @select="onAutocompleteSelect"
     />
-    <div class="composer-box">
+    <!-- A question (permission gate, questionnaire) is drawn over this box, so
+         the box is taken out of the tab order and out of reach of the pointer
+         for as long as it is up. -->
+    <div class="composer-box" :inert="overlays.dialog ? true : undefined">
       <div v-if="composer.contextChips.length > 0" class="context-chips">
         <span
           v-for="chip in composer.contextChips"

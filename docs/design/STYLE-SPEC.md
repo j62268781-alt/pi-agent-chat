@@ -281,6 +281,23 @@ VS Code 把它自己的 chat 输入区写死了规格。跟它的部分：
 三枚图标同为 `.icon-btn.status-action`（20px 盒、16px 字形），明细那枚多一个 `.usage-action`
 用于选中与「点开着」态；用量卡（`.usage-popup`）是点开它的那张明细。
 
+**pi 的两个提问盖在输入框上，不压暗面板**（彬哥 2026-09-22）：权限门的 `ui.select` 与
+问卷扩展的 `editor`（`prefill` 是表单定义）都由 composer 上的 ask 卡回答，其余请求仍走居中
+模态。`.ask-dock` 钉在 `--pi-composer-pad` 上，所以卡的左右与下沿和 `.composer-box` 完全重合
+（420px 宽实测：两者同为 `x=8 / width=404 / 下沿 712`），比输入框高时向上长；卡起来时
+`.composer-box` 挂 `inert`（不吃焦点也不接鼠标），队列让位不画。**不压暗**是有意的：问的多半
+是"要不要放行这条命令"，答的时候上面的正文得看得见。
+
+皮照参考图：一行一个编号圆点 + 粗体选项 + 灰色说明 + 行尾 12px 箭头；选项与说明是**同一条
+文本流**（两个 flex 栏各让一半，会把「还原掉」挤成一行一个字）。允许/拒绝只染圆点（成功色 /
+危险色），行内正文保持中性——"放行"不该是看起来最默认的那一行。正文是 pi 自己的事实块
+（`tool : bash` / `input : {...}`），一律等宽块。末行是自填（铅笔圆点 + `自己写…`）加推进钮，
+推进钮与输入框那颗 send 同一组 token；末页它的 `title` 变「提交」。整卡 `max-height: 60vh`
+卡内滚动。两种卡都有标题行右侧的 ✕：问卷的 ✕（和 `Esc`）是取消，**权限的 ✕ 与 `Esc` 都是拒绝**
+（彬哥 2026-09-22）——回给 pi 的值取它自己那条拒绝项（`No`，`No, provide reason` 会再开一轮
+追问所以不取），措辞里找不到拒绝项时按位置取最后一条；权限提示没有"不作答"这个状态，
+所以不落成 `cancelled`。
+
 **环里为什么没有 `%`**：10px 下量过——`100%` 宽 24.4px，环孔只有 21px；`100` 是
 16.2px。所以孔里只放整数，单位交给 `aria-label`（`上下文用量 100%`）和悬停卡首行。
 
@@ -368,6 +385,7 @@ Alt+Enter 始终强制入队。
 pnpm --filter @pi-agent-chat/webview-vue dev
 # 聊天页：http://localhost:5173/preview.html?theme=dark_modern&lang=zh-cn
 #   `?surface=editor|sidebar` `?streaming=0` `?fs=20` `?bare=1` 可驱动整套矩阵
+#   `?ask=permission|questionnaire` 把 pi 的两种提问挂到 composer 的 ask 卡上
 # 设置页：http://localhost:5173/preview/settings.html?theme=dark_modern&lang=zh-cn&tab=settings
 #   假宿主在 preview/settings-host.ts，数据是 preview/settings-fixtures.ts
 ```

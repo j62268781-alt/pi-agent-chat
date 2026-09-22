@@ -1,9 +1,11 @@
-// What the questionnaire dialog hands back to the tool, and how it walks there.
+// What the questionnaire card hands back to the tool, and how it walks there.
 //
 // The extension parses our response as `{answers}`, so the shape matters: an
 // option has to carry its 1-based number (the tool echoes "user selected: 2."),
 // a typed answer has to be marked `wasCustom`, and a single question still
 // submits on the pick — the TUI does that on Enter.
+//
+// The card itself is `AskCard`; this suite is about the form state it drives.
 
 import { mount } from "@vue/test-utils";
 import { describe, expect, it } from "vitest";
@@ -15,7 +17,7 @@ const QUESTIONS: QuestionnaireQuestion[] = [
     id: "scope",
     label: "Scope",
     prompt: "改动范围？",
-    options: [{ label: "只改这一处" }, { label: "整个模块" }],
+    options: [{ label: "只改这一处" }, { label: "整个模块", description: "改动面更大" }],
     allowOther: true,
   },
   {
@@ -30,48 +32,64 @@ const QUESTIONS: QuestionnaireQuestion[] = [
 /** Indexed reads: the fixtures are fixed, but the compiler cannot know that. */
 const at = <T>(list: readonly T[], index: number): T => list[index] as T;
 
-/** The options of the page on screen — one question is mounted at a time. */
-const options = (wrapper: ReturnType<typeof mount>) =>
-  wrapper.get(".qa-question").findAll(".qa-option");
+type Wrapper = ReturnType<typeof mount>;
 
-const pick = async (wrapper: ReturnType<typeof mount>, index: number) =>
-  at(options(wrapper), index).trigger("click");
-
-const promptOf = (wrapper: ReturnType<typeof mount>) => wrapper.get(".qa-prompt").text();
+/** The option rows of the page on screen — one question is mounted at a time. */
+const rows = (wrapper: Wrapper) => wrapper.get(".ask-rows").findAll(".ask-row");
+const pick = async (wrapper: Wrapper, index: number) => at(rows(wrapper), index).trigger("click");
+const titleOf = (wrapper: Wrapper) => wrapper.get(".ask-title").text();
+const stepOf = (wrapper: Wrapper) => wrapper.get(".ask-step").text();
+const advance = (wrapper: Wrapper) => wrapper.get(".ask-advance");
+const advanceDisabled = (wrapper: Wrapper) => advance(wrapper).attributes("disabled") !== undefined;
 
 describe("QuestionnaireDialog — paging", () => {
   it("shows one question per page and walks forward as they are answered", async () => {
     const wrapper = mount(QuestionnaireDialog, { props: { questions: QUESTIONS } });
 
-    expect(wrapper.findAll(".qa-question")).toHaveLength(1);
-    expect(wrapper.get(".qa-step").text()).toBe("1 / 2");
-    expect(promptOf(wrapper)).toBe("改动范围？");
+    expect(titleOf(wrapper)).toBe("改动范围？");
+    expect(stepOf(wrapper)).toBe("1 / 2");
 
     await pick(wrapper, 1); // answering moves on
 
-    expect(wrapper.get(".qa-step").text()).toBe("2 / 2");
-    expect(promptOf(wrapper)).toBe("要补测试吗？");
+    expect(stepOf(wrapper)).toBe("2 / 2");
+    expect(titleOf(wrapper)).toBe("要补测试吗？");
+  });
+
+  it("walks both ways with the pager's arrows", async () => {
+    const wrapper = mount(QuestionnaireDialog, { props: { questions: QUESTIONS } });
+    const pages = () => wrapper.findAll(".ask-page");
+
+    await pick(wrapper, 0); // answers page one, which advances it
+    await at(pages(), 0).trigger("click"); // ‹ back
+
+    expect(stepOf(wrapper)).toBe("1 / 2");
+
+    await at(pages(), 1).trigger("click"); // › forward, without a second pick
+
+    expect(stepOf(wrapper)).toBe("2 / 2");
   });
 
   it("goes back to an earlier question with its answer still picked", async () => {
     const wrapper = mount(QuestionnaireDialog, { props: { questions: QUESTIONS } });
-    expect(wrapper.find(".qa-back").exists()).toBe(false); // nothing behind page one
+    // Nothing behind page one, so the pager's ‹ is drawn disabled.
+    expect((wrapper.get(".ask-page").element as HTMLButtonElement).disabled).toBe(true);
 
     await pick(wrapper, 1);
-    await wrapper.get(".qa-back").trigger("click");
+    await wrapper.get(".ask-page").trigger("click");
 
-    expect(promptOf(wrapper)).toBe("改动范围？");
-    expect(at(options(wrapper), 1).classes()).toContain("is-picked");
+    expect(titleOf(wrapper)).toBe("改动范围？");
+    expect(at(rows(wrapper), 1).classes()).toContain("is-picked");
   });
 
-  it("gates Next on the current question being answered", async () => {
+  it("gates the advance button on the current question being answered", async () => {
     const wrapper = mount(QuestionnaireDialog, { props: { questions: QUESTIONS } });
-    const next = wrapper.get(".qa-actions .btn-primary");
 
-    expect(next.text()).toBe("Next");
-    expect(next.attributes("disabled")).toBeDefined();
-    await pick(wrapper, 0);
-    expect(wrapper.get(".qa-step").text()).toBe("2 / 2"); // the pick advanced it
+    expect(advanceDisabled(wrapper)).toBe(true);
+
+    await pick(wrapper, 0); // the pick advanced the card by itself
+
+    expect(stepOf(wrapper)).toBe("2 / 2");
+    expect(advanceDisabled(wrapper)).toBe(true);
   });
 });
 
@@ -82,9 +100,9 @@ describe("QuestionnaireDialog — answers", () => {
     await pick(wrapper, 1); // scope → 整个模块
     await pick(wrapper, 0); // tests → 要 (last page, so the pick stays put)
 
-    const submit = wrapper.get(".qa-actions .btn-primary");
-    expect(submit.text()).toBe("Submit");
-    expect(submit.attributes("disabled")).toBeUndefined();
+    const submit = advance(wrapper);
+    expect(submit.attributes("title")).toBe("Submit");
+    expect(advanceDisabled(wrapper)).toBe(false);
     await submit.trigger("click");
 
     expect(wrapper.emitted("submit")?.[0]?.[0]).toEqual([
@@ -103,14 +121,19 @@ describe("QuestionnaireDialog — answers", () => {
     ]);
   });
 
-  it("records a typed answer as a custom one", async () => {
-    // `scope` allows a typed answer; that row sits after its two options.
+  it("shows an option's description as the row's grey hint", () => {
     const wrapper = mount(QuestionnaireDialog, { props: { questions: [at(QUESTIONS, 0)] } });
 
-    expect(wrapper.find(".qa-input").exists()).toBe(false);
-    await pick(wrapper, 2);
-    await wrapper.get(".qa-input").setValue(" 只跑 conversation 那几条 ");
-    await wrapper.get(".qa-input").trigger("keydown.enter");
+    expect(at(rows(wrapper), 1).get(".ask-hint").text()).toBe("改动面更大");
+  });
+
+  it("records a typed answer as a custom one", async () => {
+    const wrapper = mount(QuestionnaireDialog, { props: { questions: [at(QUESTIONS, 0)] } });
+
+    expect(wrapper.find(".ask-input").exists()).toBe(false);
+    await wrapper.get(".ask-other-open").trigger("click");
+    await wrapper.get(".ask-input").setValue(" 只跑 conversation 那几条 ");
+    await wrapper.get(".ask-input").trigger("keydown.enter");
 
     expect(wrapper.emitted("submit")?.[0]?.[0]).toEqual([
       {
@@ -125,37 +148,38 @@ describe("QuestionnaireDialog — answers", () => {
   it("keeps a typed answer that is still in the box when leaving the page", async () => {
     const wrapper = mount(QuestionnaireDialog, { props: { questions: QUESTIONS } });
 
-    await pick(wrapper, 2); // "Type something."
-    await wrapper.get(".qa-input").setValue("只改标题");
-    await wrapper.get(".qa-actions .btn-primary").trigger("click"); // Next, without Enter
-    await wrapper.get(".qa-back").trigger("click");
+    await wrapper.get(".ask-other-open").trigger("click"); // the free-form row
+    await wrapper.get(".ask-input").setValue("只改标题");
+    await advance(wrapper).trigger("click"); // Next, without Enter
+    await wrapper.get(".ask-page").trigger("click"); // ‹ back
 
-    expect(at(options(wrapper), 2).classes()).toContain("is-picked");
-    expect(wrapper.get(".qa-actions .btn-primary").attributes("disabled")).toBeUndefined();
+    expect(wrapper.get(".ask-other").classes()).toContain("is-picked");
+    expect(advanceDisabled(wrapper)).toBe(false);
   });
 
   it("offers no typed answer for a question that opted out", () => {
     const wrapper = mount(QuestionnaireDialog, { props: { questions: [at(QUESTIONS, 1)] } });
 
-    expect(wrapper.findAll(".qa-option")).toHaveLength(2);
+    expect(rows(wrapper)).toHaveLength(2);
+    expect(wrapper.find(".ask-other-open").exists()).toBe(false);
   });
 
   it("reports a cancel as its own event", async () => {
     const wrapper = mount(QuestionnaireDialog, { props: { questions: QUESTIONS } });
 
-    await wrapper.get(".qa-actions .btn").trigger("click");
+    await wrapper.get(".ask-close").trigger("click");
 
     expect(wrapper.emitted("cancel")).toHaveLength(1);
     expect(wrapper.emitted("submit")).toBeUndefined();
   });
 
-  it("focuses the first option so the dialog is keyboard-ready", async () => {
+  it("focuses the first row so the card is keyboard-ready", async () => {
     const wrapper = mount(QuestionnaireDialog, {
       props: { questions: QUESTIONS },
       attachTo: document.body,
     });
     await wrapper.vm.$nextTick();
-    expect(document.activeElement?.className).toContain("qa-option");
+    expect(document.activeElement?.className).toContain("ask-row");
     wrapper.unmount();
   });
 });

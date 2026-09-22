@@ -57,6 +57,10 @@
 .codicon-chevron-left::before {
   content: "\eab5";
 }
+/* ask 卡每行行尾的箭头（"选这个"） */
+.codicon-arrow-right::before {
+  content: "\ea9c";
+}
 .codicon-warning::before {
   content: "\ea6c";
 }
@@ -4186,9 +4190,9 @@ body {
   font-size: var(--pi-fs-meta);
 }
 
-/* ── 权限/选择 dialog（pi 的 ui.select 决策）─────────────────────────────────
- * 安全决策用按钮组而非原生 select：Allow 弱化、Block 红色强调——"允许"永远
- * 不该是误触的默认项。danger 场景标题带警示图标与警示色。 */
+/* ── danger dialog（模态里剩下的危险确认）──────────────────────────────────
+ * 权限选择本身已经搬去 composer 上的 ask 卡（见下面那节），这里只剩模态：
+ * danger 场景标题带警示图标与警示色。 */
 .dialog-danger {
   border-color: color-mix(in srgb, var(--pi-danger) 45%, var(--pi-border));
 }
@@ -4206,40 +4210,6 @@ body {
   margin-top: 1px;
 }
 
-/* One row per option: side by side, four labels of unequal length wrap into a
-   ragged block, and in the 300px sidebar the session-grant label alone takes
-   three lines. */
-.dialog-actions.choice-group {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.dialog-actions.choice-group .choice-btn {
-  width: 100%;
-  justify-content: center;
-  padding: 8px 12px;
-  font-size: var(--pi-fs-body);
-}
-
-.choice-btn.choice-allow {
-  border: var(--pi-stroke) solid color-mix(in srgb, var(--pi-success) 55%, var(--pi-border));
-  color: var(--pi-success);
-}
-
-.choice-btn.choice-allow:hover {
-  background: color-mix(in srgb, var(--pi-success) 14%, transparent);
-}
-
-.choice-btn.choice-block {
-  border: var(--pi-stroke) solid color-mix(in srgb, var(--pi-danger) 55%, var(--pi-border));
-  color: var(--pi-danger);
-}
-
-.choice-btn.choice-block:hover {
-  background: color-mix(in srgb, var(--pi-danger) 14%, transparent);
-}
-
 /* 权限弹窗的命令正文：等宽 + 代码块底色（宿主把多行 title 拆出的 message） */
 .dialog-danger .dialog-message {
   font-family: Menlo, Consolas, monospace;
@@ -4250,6 +4220,314 @@ body {
   padding: 8px 10px;
   white-space: pre-wrap;
   word-break: break-all;
+}
+
+/* ── ask 卡：权限询问与问卷，盖在输入框上回答 ────────────────────────────────
+ * 两张卡共用一套皮（彬哥给的参考图）：标题行（问题 + 页码 + 关闭）、一行一个
+ * 编号选项、末行是自填。位置在 `.ask-dock` —— 它钉在 composer 自己的内缩上，
+ * 所以卡片正好落在输入框那一格上（`bottom` 对齐 composer-box 的下沿，向上长）。
+ * 卡不做压暗背景：问的多半是"要不要放行这条命令"，答的时候正文得看得见。 */
+.ask-dock {
+  position: absolute;
+  left: var(--pi-composer-pad);
+  right: var(--pi-composer-pad);
+  bottom: var(--pi-composer-pad);
+  /* 盖住 composer（其内部无 z-index）与浮在上面的队列（5） */
+  z-index: 10;
+}
+
+.ask-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pi-sp-3);
+  /* 再高也得留出正文：超出在卡内滚动，而不是把会话顶上去 */
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: var(--pi-sp-3) var(--pi-sp-3) var(--pi-sp-2);
+  border: var(--pi-stroke) solid var(--pi-border-input);
+  border-radius: var(--pi-r-lg);
+  background: var(--pi-bg-raised);
+  box-shadow: var(--pi-shadow-modal);
+}
+
+/* 标题行：问题占满，页码与关闭跟在后面 */
+.ask-head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--pi-sp-2);
+  padding: 0 var(--pi-sp-1);
+}
+
+.ask-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  color: var(--pi-text);
+  font-size: var(--pi-fs-body);
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.ask-warn {
+  flex: none;
+  margin-top: 1px;
+  color: var(--pi-danger);
+  font-size: var(--pi-fs-title);
+}
+
+.ask-pager {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pi-sp-1);
+  flex: none;
+  color: var(--pi-text-muted);
+}
+
+.ask-step {
+  font-size: var(--pi-fs-meta);
+  font-variant-numeric: tabular-nums;
+}
+
+.ask-page,
+.ask-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  border-radius: var(--pi-r-xs);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.ask-close {
+  color: var(--pi-text-muted);
+}
+
+.ask-page:hover:not(:disabled),
+.ask-close:hover {
+  background: var(--pi-bg-hover);
+  color: var(--pi-text);
+}
+
+.ask-page:focus-visible,
+.ask-close:focus-visible,
+.ask-other-open:focus-visible,
+.ask-advance:focus-visible {
+  outline: var(--pi-stroke) solid var(--pi-brand);
+  outline-offset: 1px;
+}
+
+.ask-page:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.ask-card .ask-page .codicon,
+.ask-card .ask-close .codicon {
+  font-size: var(--pi-fs-title);
+}
+
+/* 正文：pi 的事实块（`tool : bash` / `input : {...}`）本身是机器文本，一律等宽 */
+.ask-pre {
+  margin: 0;
+  padding: var(--pi-sp-3) var(--pi-sp-4);
+  border: var(--pi-stroke) solid var(--pi-border-divider);
+  border-radius: var(--pi-r-md);
+  background: var(--pi-bg-subtle);
+  color: var(--pi-text);
+  font-family: Menlo, Consolas, monospace;
+  font-size: var(--pi-fs-meta);
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+/* 选项行：编号圆圈 + 粗体选项 + 行尾箭头（参考图的排法）。选项与它的说明是
+ * 同一段文字：说明跟在粗体后面按行流，两栏各让一半会把「还原掉」挤成一列一个字。 */
+.ask-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ask-row {
+  display: flex;
+  align-items: center;
+  gap: var(--pi-sp-3);
+  width: 100%;
+  min-height: var(--pi-h-row);
+  padding: var(--pi-sp-1) var(--pi-sp-3);
+  border: var(--pi-stroke) solid transparent;
+  border-radius: var(--pi-r-md);
+  background: transparent;
+  color: var(--pi-text);
+  font: inherit;
+  font-size: var(--pi-fs-body);
+  text-align: left;
+  cursor: pointer;
+}
+
+.ask-row:hover {
+  background: var(--pi-bg-hover);
+}
+
+.ask-row.is-picked {
+  border-color: var(--pi-border-brand);
+  background: var(--pi-bg-selected);
+}
+
+.ask-row:focus-visible {
+  outline: var(--pi-stroke) solid var(--pi-brand);
+  outline-offset: -1px;
+}
+
+.ask-num {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: var(--pi-stroke) solid var(--pi-border-input);
+  border-radius: 50%;
+  color: var(--pi-text-muted);
+  font-size: var(--pi-fs-meta);
+  font-variant-numeric: tabular-nums;
+}
+
+.ask-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  line-height: 1.5;
+}
+
+.ask-label {
+  font-weight: 600;
+}
+
+.ask-hint {
+  margin-left: var(--pi-sp-3);
+  color: var(--pi-text-muted);
+  font-weight: 400;
+}
+
+/* 行尾箭头：参考图里常驻（浅），指到行上才加深 */
+.ask-go {
+  flex: none;
+  margin-left: auto;
+  color: var(--pi-text-faint);
+  font-size: var(--pi-fs-meta);
+}
+
+.ask-row:hover .ask-go {
+  color: var(--pi-text);
+}
+
+/* 圆圈的着色只落在标记上：允许走成功色、拒绝走危险色，正文保持中性 ——
+ * "放行"永远不该是看起来最默认的那一行。 */
+.ask-row.is-allow .ask-num {
+  border-color: color-mix(in srgb, var(--pi-success) 55%, var(--pi-border));
+  color: var(--pi-success);
+}
+
+.ask-row.is-block .ask-num {
+  border-color: color-mix(in srgb, var(--pi-danger) 55%, var(--pi-border));
+  color: var(--pi-danger);
+}
+
+/* 末行：自填那一格（铅笔圆圈 + 占位/输入框），右边是推进按钮 */
+.ask-foot {
+  display: flex;
+  padding: 0 var(--pi-sp-1);
+}
+
+.ask-other {
+  display: flex;
+  align-items: center;
+  gap: var(--pi-sp-3);
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: var(--pi-h-row);
+  padding: var(--pi-sp-1) var(--pi-sp-3);
+  border-radius: var(--pi-r-md);
+}
+
+.ask-other.is-picked {
+  background: var(--pi-bg-selected);
+}
+
+.ask-other-open,
+.ask-other-gap {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.ask-other-open {
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--pi-text-muted);
+  font: inherit;
+  font-size: var(--pi-fs-body);
+  text-align: left;
+  cursor: text;
+}
+
+.ask-other-open:hover,
+.ask-other.is-picked .ask-other-open {
+  color: var(--pi-text);
+}
+
+.ask-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: var(--pi-sp-1) 0;
+  border: none;
+  background: transparent;
+  color: var(--pi-text);
+  font: inherit;
+  font-size: var(--pi-fs-body);
+  outline: none;
+}
+
+.ask-input::placeholder {
+  color: var(--pi-text-muted);
+}
+
+/* 推进键：与输入框那颗 send 同一套颜色与尺寸 */
+.ask-advance {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--pi-h-chat-control);
+  height: var(--pi-h-chat-control);
+  padding: 0;
+  border: none;
+  border-radius: var(--pi-r-md);
+  background: var(--pi-send-bg);
+  color: var(--pi-send-fg);
+  cursor: pointer;
+}
+
+.ask-advance:hover:not(:disabled) {
+  background: var(--pi-send-bg-hover);
+}
+
+.ask-advance:disabled {
+  background: var(--pi-bg-control);
+  color: var(--pi-text-disabled);
+  cursor: default;
+}
+
+.ask-advance .codicon {
+  font-size: var(--pi-fs-title);
 }
 
 /* ── Qoder 式折叠头：回合状态行 + 工具卡片专属正文 ────────────────────────────
@@ -4365,99 +4643,17 @@ body {
   color: var(--pi-code-removed-gutter);
 }
 
-/* ── 问卷：弹窗里可点、会话流里只读，共用同一套编号行 ──────────────────────
- * 编号是必须的 —— 工具回报答案时就带序号（"user selected: 2. <label>"）。 */
-.qa {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.qa-question {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-/* 一页一问：页码 + 已答圆点 + 当前问题的短标签（彬哥：像翻页那样）。 */
-.qa-head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--pi-text-muted);
-  font-size: var(--pi-fs-meta);
-}
-
-.qa-step {
-  font-variant-numeric: tabular-nums;
-}
-
-.qa-dots {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.qa-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--pi-border-input);
-}
-
-.qa-dot.is-answered {
-  background: var(--pi-text-brand);
-}
-
-.qa-dot.is-here {
-  box-shadow: 0 0 0 3px var(--pi-bg-selected);
-}
-
-.qa-label-head {
-  margin-left: auto;
-}
-
-.qa-prompt,
+/* ── 问卷卡（会话流里只读的那张）─────────────────────────────────────────────
+ * 可点的那份已经搬到 composer 上的 ask 卡（`.ask-*`），这里只剩回执：买过的
+ * 选项全列出来（"4 选 1" 才是可读的决策），选中的那行加重。编号是必须的 ——
+ * 工具回报答案时就带序号（"user selected: 2. <label>"）。 */
 .qa-card-prompt {
   margin: 0;
   color: var(--pi-text);
   font-size: var(--pi-fs-body);
 }
 
-.qa-options,
-.qa-card-options {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.qa-option {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  padding: 5px 8px;
-  border: var(--pi-stroke) solid transparent;
-  border-radius: var(--pi-r-sm);
-  background: transparent;
-  color: var(--pi-text);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-
-.qa-option:hover {
-  background: var(--pi-bg-hover);
-}
-
-.qa-option.is-picked {
-  border-color: var(--pi-border-brand);
-  background: var(--pi-bg-selected);
-}
-
+/* 编号：会话流卡片与 ask 卡共用的字面（ask 卡把它套进了圆圈） */
 .qa-num {
   flex: none;
   min-width: 16px;
@@ -4466,31 +4662,13 @@ body {
   text-align: right;
 }
 
-.qa-label {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-.qa-tick {
-  flex: none;
-  color: var(--pi-text-brand);
-}
-
-.qa-desc {
-  margin: 0 0 2px 32px;
-  color: var(--pi-text-muted);
-  font-size: var(--pi-fs-meta);
-}
-
-.qa-input {
-  margin: 4px 0 2px 32px;
-  width: calc(100% - 32px);
-}
-
-.qa-actions {
+.qa-card-options {
   display: flex;
-  justify-content: flex-end;
-  gap: 8px;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
 /* 会话流里的问答卡：选项全列出来（"4 选 1" 才是可读的决策），选中的那行加重。 */
