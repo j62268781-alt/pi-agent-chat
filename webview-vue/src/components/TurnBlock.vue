@@ -6,7 +6,7 @@
   derived structure, so it re-folds correctly while streaming.
 -->
 <script setup lang="ts">
-import { computed, onUnmounted, ref, watch } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { post } from "@/lib/bridge.ts";
 import { formatCounts, formatDuration, formatTime, formatTokens } from "@/lib/format.ts";
 import { t } from "@/lib/i18n.ts";
@@ -62,33 +62,42 @@ const outcome = computed(() => {
 /**
  * What the closing status line says about the outcome — nothing, usually.
  *
- * 「已处理」 on every single turn was a word with nothing behind it (彬哥), and
- * the fold head above already carries it whenever there is work to fold. A
- * failure or a stop is the case the line exists for, so only those speak.
+ * The fold head names the outcome and carries the duration, so the line repeats
+ * neither: 「已处理」 on every single turn was a word with nothing behind it
+ * (彬哥), 「已停止」 has its own sentence above (`.aborted-notice`), and 失败 ·
+ * 2分25秒 already sits at the top of the turn. It only speaks for the turns with
+ * no head to hang anything on — folding off, or nothing to fold.
  */
-const settledOutcome = computed(() => {
-  if (props.turn.errorMessage) return t("failed");
-  if (props.turn.stopReason === "aborted") return t("Stopped");
-  return "";
-});
+const settledOutcome = computed(() => (props.turn.errorMessage ? t("failed") : ""));
 
-const outcomeClass = computed(() => {
-  if (props.turn.errorMessage) return "is-error";
-  if (props.turn.stopReason === "aborted") return "is-warn";
-  return "is-done";
-});
+/**
+ * pi's own word for an aborted run is "user cancelled" (`stopReason: "aborted"`
+ * — the stop button, or the host cancelling the run). A stopped reply reads as
+ * a finished one otherwise, so the transcript says where it was cut: Qoder
+ * prints the same sentence under a terminated reply.
+ */
+const stopped = computed(() => props.turn.stopReason === "aborted" && !running.value);
 
 /**
  * Fold header. The board keeps the head to one phrase: the outcome once the turn
- * is done, the elapsed time while it runs. Per-turn counters (turns, duration,
- * diff size) were dropped from the line — the diff counters still sit on the
- * right, and the closing status line carries the duration.
+ * is done, the elapsed time while it runs. The duration rides along in both
+ * states, in the same wording the closing line used to use — 「已处理 · 耗时
+ * 2分25秒」 reads as one phrase, and a bare `2分25秒` left the reader guessing
+ * what the number was (彬哥). Per-turn counters (turns, diff size) are still off
+ * the line; the diff counters sit on the right.
  */
 const workTitle = computed(() => {
-  if (!running.value) return outcome.value;
+  if (!running.value) {
+    return turnDuration.value
+      ? outcome.value + " · " + t("Worked for {0}", turnDuration.value)
+      : outcome.value;
+  }
   const start = props.turn.workStartedAt ?? props.turn.user?.timestamp ?? now.value;
   return t("Running for {0}", formatDuration(Math.max(0, now.value - start)));
 });
+
+/** The fold head only exists when there is work behind it and folding is on. */
+const hasFoldHead = computed(() => display.collapseWork && props.turn.workBlocks.length > 0);
 
 /** Wall-clock duration of the turn: the user's message to the last block. */
 const turnDuration = computed(() => {
@@ -98,24 +107,57 @@ const turnDuration = computed(() => {
   return formatDuration(end - start);
 });
 
+/** Every assistant message of the turn, once each. */
+const turnMessages = computed(() => [
+  ...new Set([...props.turn.workBlocks, ...props.turn.finalBlocks].map((entry) => entry.message)),
+]);
+
 /**
  * Cache counters for the whole turn — every assistant message in it, not just
- * the last one, because a turn that uses tools is several messages. The two
- * buckets are spelled out (读缓存/写缓存): `R205K` was the first thing 彬哥 had to
- * ask about, and a counter nobody can read is not a counter. The span's hover
- * title carries the rest of the picture (`formatUsage`).
+ * the last one, because a turn that uses tools is several messages. What comes
+ * out here is the icon's hover text: the figures themselves live in the card
+ * (读缓存/写缓存 spelled out, `R205K` was the first thing 彬哥 had to ask about).
+ *
+ * Deduplicated by message: usage is reported per *message*, but the fold holds
+ * one entry per *block* (a thinking block, each tool call, the prose), so the
+ * same message arrives here several times and summing the entries straight
+ * multiplied the counters by the block count — a 3.8M cache read on a three-
+ * block turn read as 11.4M.
  */
+const turnTotals = computed(() => aggregateUsage(turnMessages.value));
+
+/** Null when no message in the turn reported anything — then there is no card. */
 const turnUsage = computed(() => {
-  const messages = [...props.turn.workBlocks, ...props.turn.finalBlocks].map(
-    (entry) => entry.message,
-  );
-  const totals = aggregateUsage(messages);
-  const parts: string[] = [];
-  if (totals.cacheRead) parts.push(t("Cache read") + " " + formatTokens(totals.cacheRead));
-  if (totals.cacheWrite) parts.push(t("Cache write") + " " + formatTokens(totals.cacheWrite));
-  if (parts.length === 0) return null;
-  return { short: parts.join(" "), full: formatUsage(totals) };
+  const totals = turnTotals.value;
+  if (!totals.input && !totals.output && !totals.cacheRead && !totals.cacheWrite) return null;
+  return { full: formatUsage(totals) };
 });
+
+/** The details behind the chip, in the same shape as the ring's readout card. */
+const usageRows = computed(() => {
+  const totals = turnTotals.value;
+  const rows = [
+    { label: t("Input"), value: formatTokens(totals.input) },
+    { label: t("Output"), value: formatTokens(totals.output) },
+    { label: t("Cache read"), value: formatTokens(totals.cacheRead) },
+    { label: t("Cache write"), value: formatTokens(totals.cacheWrite) },
+    // One call per assistant message: pi answers, then answers again with the
+    // tool results in hand. `usage.turns` says the same thing per message, but
+    // it is per message — the row would be counting the wrong thing.
+    { label: t("Model calls"), value: String(turnMessages.value.length) },
+  ];
+  if (totals.cost > 0) rows.push({ label: t("Cost"), value: "$" + totals.cost.toFixed(4) });
+  return rows;
+});
+
+/** The answer — every block the fold left in the clear. */
+const conclusion = computed(() =>
+  props.turn.finalBlocks
+    .map((entry) => (entry.block.kind === "text" ? entry.block.markdown : ""))
+    .filter(Boolean)
+    .join("\n\n")
+    .trim(),
+);
 
 /** The closing status line is only meaningful once the turn has content. */
 const hasContent = computed(
@@ -135,6 +177,75 @@ function copyUserText(): void {
   post({ type: "copy", text: props.turn.user?.text ?? "" });
   overlays.toast(t("Copied"), "success");
 }
+
+function copyConclusion(): void {
+  if (!conclusion.value) return;
+  post({ type: "copy", text: conclusion.value });
+  overlays.toast(t("Copied"), "success");
+}
+
+// ---- the turn's usage card ------------------------------------------------
+//
+// The chip in the closing line keeps the cache counters readable at a glance
+// and opens the whole picture — input, output, both cache buckets, how many
+// times pi was called and what it cost. Same card as the ring's readout, placed
+// by hand for the same reason: the transcript scrolls, and a card anchored
+// inside it would be clipped at the fold.
+
+const usageOpen = ref(false);
+const usageBtnEl = ref<HTMLElement | null>(null);
+const usageCardEl = ref<HTMLElement | null>(null);
+const usagePos = ref({ left: 0, top: 0 });
+/** Gap between the chip and its card, and the viewport's own edge margin. */
+const USAGE_CARD_GAP = 6;
+
+async function toggleUsage(): Promise<void> {
+  usageOpen.value = !usageOpen.value;
+  if (!usageOpen.value) return;
+  await nextTick();
+  const btn = usageBtnEl.value;
+  const card = usageCardEl.value;
+  if (!btn || !card) return;
+  const r = btn.getBoundingClientRect();
+  const cw = card.offsetWidth;
+  const ch = card.offsetHeight;
+  let left = r.left + r.width / 2 - cw / 2;
+  if (left < 4) left = 4;
+  else if (left + cw > window.innerWidth - 4) left = window.innerWidth - cw - 4;
+  const above = r.top - ch - USAGE_CARD_GAP;
+  usagePos.value = { left, top: above < 4 ? r.bottom + USAGE_CARD_GAP : above };
+}
+
+function closeUsage(): void {
+  usageOpen.value = false;
+}
+
+function onDocumentMouseDown(ev: MouseEvent): void {
+  if (!usageOpen.value) return;
+  const target = ev.target as Node | null;
+  if (!target) return;
+  if (usageCardEl.value?.contains(target) || usageBtnEl.value?.contains(target)) return;
+  closeUsage();
+}
+
+function onKeyDown(ev: KeyboardEvent): void {
+  if (ev.key === "Escape") closeUsage();
+}
+
+/** The transcript scrolls under a fixed card, so the card goes with it. */
+const transcript = () => document.getElementById("messages");
+
+onMounted(() => {
+  document.addEventListener("mousedown", onDocumentMouseDown);
+  document.addEventListener("keydown", onKeyDown);
+  transcript()?.addEventListener("scroll", closeUsage, { passive: true });
+});
+
+onUnmounted(() => {
+  document.removeEventListener("mousedown", onDocumentMouseDown);
+  document.removeEventListener("keydown", onKeyDown);
+  transcript()?.removeEventListener("scroll", closeUsage);
+});
 
 async function forkTurn(): Promise<void> {
   const ts = props.turn.user?.timestamp;
@@ -199,7 +310,7 @@ async function forkTurn(): Promise<void> {
       <div v-if="message.text" class="compaction-summary-body">{{ message.text }}</div>
     </details>
     <div v-else class="error-banner">
-      {{ t("Error: Retry failed after {0} attempts: {1}", 0, message.text) }}
+      {{ t("Error: Retry failed after {0} attempts: {1}", message.attempt ?? 0, message.text) }}
     </div>
   </div>
 
@@ -239,21 +350,46 @@ async function forkTurn(): Promise<void> {
     <BlockView :block="entry.block" />
   </div>
 
-  <!-- Every settled turn closes with its own status line: the outcome when it
-       was not a plain success, the duration and the timestamp. While the turn
-       runs the head already counts the seconds, so the line stays out of the
-       way until there is an outcome to report.
+  <!-- Where a stopped reply ends. This is the one thing the closing status line
+       cannot say on its own: 「已停止」 is a word in a row of counters, and the
+       reply above it still reads as a whole answer. -->
+  <div v-if="stopped" class="aborted-notice">
+    {{ t("pi's reply was stopped by you.") }}
+  </div>
+
+  <!-- Every settled turn closes with its own status line. The order is 彬哥's
+       (2026-09-22): 复制 · 用量明细 · fork, then the timestamp — three icons the
+       same size plus the time, nothing else. The duration and the outcome live
+       on the fold head instead; the failure word stays here only for the turns
+       with no head at all (folding off, or nothing folded), which would
+       otherwise say nothing about it.
        Forking belongs here, not on the user bubble: a turn is only a branch
        point once the answer has landed. -->
   <div v-if="turn.messageTime && !running" class="msg-meta msg-status-line">
-    <span v-if="hasContent && settledOutcome" class="msg-outcome" :class="outcomeClass">
+    <span v-if="hasContent && settledOutcome && !hasFoldHead" class="msg-outcome">
       {{ settledOutcome }}
     </span>
-    <span v-if="hasContent && turnDuration" class="msg-duration">
-      {{ t("Worked for {0}", turnDuration) }}
-    </span>
-    <span v-if="turnUsage" class="msg-time" :title="turnUsage.full">{{ turnUsage.short }}</span>
-    <span class="msg-time">{{ formatTime(turn.messageTime) }}</span>
+    <button
+      v-if="conclusion"
+      class="icon-btn status-action"
+      type="button"
+      :title="t('Copy the conclusion')"
+      @click="copyConclusion"
+    >
+      <span class="codicon codicon-copy"></span>
+    </button>
+    <button
+      v-if="turnUsage"
+      ref="usageBtnEl"
+      class="icon-btn status-action usage-action"
+      :class="{ 'is-open': usageOpen }"
+      type="button"
+      :title="turnUsage.full"
+      :aria-expanded="usageOpen"
+      @click="toggleUsage"
+    >
+      <span class="codicon codicon-pie-chart"></span>
+    </button>
     <button
       v-if="turn.user?.timestamp != null"
       class="icon-btn status-action"
@@ -263,5 +399,21 @@ async function forkTurn(): Promise<void> {
     >
       <span class="codicon codicon-repo-forked"></span>
     </button>
+    <span class="msg-time">{{ formatTime(turn.messageTime) }}</span>
+  </div>
+
+  <!-- The chip's own card. Fixed-positioned and last in the turn so it is never
+       clipped by the fold; `v-show` keeps it measured for the placement above. -->
+  <div
+    v-show="usageOpen"
+    ref="usageCardEl"
+    class="usage-popup"
+    role="dialog"
+    :style="{ left: usagePos.left + 'px', top: usagePos.top + 'px' }"
+  >
+    <div v-for="row in usageRows" :key="row.label" class="usage-row">
+      <span>{{ row.label }}</span>
+      <span class="usage-row-value">{{ row.value }}</span>
+    </div>
   </div>
 </template>

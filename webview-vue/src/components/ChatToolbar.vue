@@ -91,7 +91,8 @@ function openSettings(): void {
 
 const statusLabel = (): string => {
   if (transcript.statusText === "compacting") return t("Compacting…");
-  if (transcript.retryAttempt > 0) return t("Retrying {0}/{1}…", transcript.retryAttempt, 3);
+  if (transcript.retryAttempt > 0)
+    return t("Retrying {0}/{1}…", transcript.retryAttempt, transcript.retryMax);
   if (session.isStreaming) return t("Working…");
   return "";
 };

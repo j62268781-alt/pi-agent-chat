@@ -253,12 +253,6 @@ body {
 .composer-controls-bar {
   display: flex;
   align-items: center;
-  gap: 2px;
-  padding: 2px 4px 4px;
-}
-.composer-spacer {
-  flex: 1 1 auto;
-  min-width: 4px;
 }
 /* Fork change: upstream hid these controls below 640px / 420px, which meant the default
    ~300px VS Code sidebar never showed the model / thinking / permission pickers at all.
@@ -292,19 +286,15 @@ body {
 .composer-controls-bar > .icon-btn {
   flex-shrink: 0;
 }
+/* Section D at the end of this sheet holds the card's typography — the
+ * readout is the one thing in the bar that is *not* a control, so it is spelled
+ * out with the rest of the hover surfaces rather than here. What only belongs to
+ * this spot in the flow is the fixed positioning: the ring sits at the bottom of
+ * a scrolling panel, so the card cannot be anchored in the composer's own box. */
 .ctx-tooltip {
   position: fixed;
   z-index: 50;
-  padding: 3px 8px;
-  background: var(--pi-bg-raised);
-  color: var(--pi-text);
-  border: var(--pi-stroke) solid var(--pi-border);
-  border-radius: var(--pi-r-sm);
-  font-size: var(--pi-fs-meta);
-  font-family: var(--pi-font);
-  white-space: pre;
   pointer-events: none;
-  box-shadow: var(--pi-shadow-menu);
 }
 .select-wrap {
   position: relative;
@@ -1706,13 +1696,18 @@ body {
 }
 
 /* Fork change: keep the floor in sync with the one in composer.ts autoGrow(). 36px reads as
-   one comfortable line + padding; anything taller just leaves a hollow gap above the toolbar. */
+   one comfortable line + padding; anything taller just leaves a hollow gap above the toolbar.
+   Horizontal padding is the card's own (10px + the 1px hairline): the text, the divider under
+   it and the `+` are then all on one left edge. The input used to add 10px of its own on top
+   — measured, the text started at 21px from the card edge while the divider and the chip
+   started at 11 — and 11 is what VS Code's own chat input insets its text by (6 container +
+   4 editor + 1). */
 #input {
   width: 100%;
   display: block;
   min-height: 36px;
   max-height: 200px;
-  padding: 8px 10px 6px;
+  padding: 8px 0 6px;
   background: transparent;
   color: var(--pi-text);
   border: none;
@@ -2388,14 +2383,56 @@ body {
 
 /* ── D · tooltip ─────────────────────────────────────────────────────────── */
 
+/* VS Code's own hover card, borrowed whole: 13px on a 1.5 line box, `4px 8px` of
+ * content padding, and a 200px floor (`--monaco-hover.workbench-hover` +
+ * `chat-context-usage-details`). The card used to be the micro rung — 10px —
+ * which read as one size too small next to the pills it hangs off.
+ *
+ * Each row is a label and a value the flex box pushes apart, which is how the
+ * numbers column up on the right; the legacy card padded its columns with a
+ * hand-counted run of spaces, and those never lined up outside a monospace
+ * font. VS Code lays its own context-usage card out the same way. */
+/* 用量明细那一枚（`.usage-action`）与复制/fork 一样是 `.status-action`，所以尺寸、
+ * 悬停底、字形大小都跟它们一致；这里只加它独有的「点开着」状态。 */
+.status-action.is-open {
+  background: var(--pi-bg-hover);
+  color: var(--pi-text);
+}
+
+/* 用量明细卡：跟上下文读数卡同一套（见 §D 里那组共用样式），位置在下面单独给 ——
+ * 它固定在视口上，转录滚动就关，否则卡片会飘在别的回合上面。 */
+.usage-popup {
+  position: fixed;
+  z-index: 50;
+}
+
+/* 用量明细卡与上下文读数卡共用同一套度量：13px / 1.5、4px 8px 内边距、200px 下限，
+ * 行是 label 与 value 两端对齐。加新的一处就加进这组选择器，别抄第二份。 */
 .ctx-tooltip,
-#ctx-tooltip {
-  padding: var(--pi-sp-2) var(--pi-sp-4);
+#ctx-tooltip,
+.usage-popup {
+  min-width: 200px;
+  padding: var(--pi-sp-1) var(--pi-sp-3);
+  border: var(--pi-stroke) solid var(--pi-border);
   border-radius: var(--pi-r-sm);
   background: var(--pi-bg-raised);
   color: var(--pi-text);
-  font-size: var(--pi-fs-micro);
+  font-size: var(--pi-fs-body);
+  font-family: var(--pi-font);
+  line-height: 1.5;
   box-shadow: var(--pi-shadow-menu);
+}
+
+.ctx-row,
+.usage-row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--pi-sp-8);
+}
+
+.ctx-row-value,
+.usage-row-value {
+  font-variant-numeric: tabular-nums;
 }
 
 /* ── C · session popup ───────────────────────────────────────────────────── */
@@ -3181,6 +3218,12 @@ body {
   content: "\ec10";
 }
 
+/* The turn's usage chip. Same story: declared here rather than at the top
+ * because it arrived with the card below (codepoint from @vscode/codicons). */
+.codicon-pie-chart::before {
+  content: "\ebe4";
+}
+
 /* ── one icon size for everything in the bar ─────────────────────────────── */
 
 /* The Plus is the same size and shape as the send button, both on the corner
@@ -3330,6 +3373,13 @@ body {
   height: 28px;
   flex-shrink: 0;
   color: var(--pi-brand);
+  /* The gauge opens the bar's right-hand pair, and the free space goes to its
+   * own margin: the ring sits on the bar's own gap from the permission pill,
+   * with every surplus pixel landing between the two groups. An empty flex item
+   * used to hold that space, which measured 4px on a full bar and left the ring
+   * 20px out — two gaps plus the item's floor — where every other pair measured
+   * 8. */
+  margin-left: auto;
 }
 
 .ctx-ring svg {
@@ -3438,8 +3488,8 @@ body {
 /* VS Code's practical minimum sidebar (~230px): the composer chrome alone
  * (8px outer padding + 10px box padding + borders) eats ~38px, which would
  * force the model name out. Tighten the chrome instead — the ring and send
- * each give back a couple of px, the spacer's 4px floor goes to 0, and the
- * model pill keeps a 70px floor (icon + ~5 ellipsised characters). */
+ * each give back a couple of px, and the model pill keeps a 70px floor
+ * (icon + ~5 ellipsised characters). */
 @media (max-width: 300px) {
   .composer {
     padding: 6px;
@@ -3451,10 +3501,6 @@ body {
 
   .composer-controls-bar {
     gap: 1px;
-  }
-
-  .composer-spacer {
-    min-width: 0;
   }
 
   .composer-controls-bar > .model-wrap {
@@ -3471,13 +3517,6 @@ body {
 
   .ctx-ring-label {
     display: none;
-  }
-
-  .send-btn {
-    /* The bar's own gap collapses to 1px down here, which would glue the send
-     * chip to the context ring; buy that pair a readable gutter back. No size
-     * here: `.composer-controls-bar > .send-btn` keeps it on the bar's token. */
-    margin-left: 5px;
   }
 }
 
@@ -4239,38 +4278,34 @@ body {
   line-height: 1;
 }
 
+/* 这行在窄侧栏里装不下：缓存 chip、时间戳、两个动作按钮。允许整块换行（而不是把
+ * chip 里的字拆开，「读缓存 3.8M 写缓存 / 20k」那种断法），chip 自己也设 nowrap。 */
 .msg-status-line {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--pi-sp-2);
   padding: 0 2px;
 }
 
+/* 用户终止的那次回复停在哪里。承上：正文块自己的下边距给出间距，这里不再加；
+ * 只跟状态行用同一个 2px 内缩，两行左缘才在同一条竖线上。颜色直接取 已停止 那一
+ * 档的 warning（`.msg-outcome.is-warn`），同一件事在两处不能有两种黄。Qoder 在
+ * 被终止的回复下面也是这么一句，但它带字形；这一版跟压缩分隔线一样只用文字。 */
+.aborted-notice {
+  padding: 0 2px;
+  color: var(--pi-warning);
+  font-size: var(--pi-fs-body);
+  line-height: 1.5;
+}
+
+/* 失败是这一行唯一还会说的词（成功和终止都由别处承担，见 TurnBlock 的注释），
+ * 所以颜色直接落在 `.msg-outcome` 上，不留 is-done / is-warn / is-running 那三个
+ * 已经没有生产者的分支。 */
 .msg-outcome {
   font-size: var(--pi-fs-body);
   font-weight: 500;
-}
-
-.msg-outcome.is-done {
-  color: var(--pi-success);
-}
-
-.msg-outcome.is-running {
-  color: var(--pi-text-muted);
-}
-
-.msg-outcome.is-warn {
-  color: var(--pi-warning);
-}
-
-.msg-outcome.is-error {
   color: var(--pi-danger);
-}
-
-.msg-duration {
-  font-size: var(--pi-fs-body);
-  color: var(--pi-text-secondary);
-  font-variant-numeric: tabular-nums;
 }
 
 /* The fork control sits in this row: a 20px box keeps the row as tall as its

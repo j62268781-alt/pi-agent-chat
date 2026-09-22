@@ -92,9 +92,13 @@ export interface AssistantMessage {
 export interface SystemMessage {
   kind: "system";
   id: string;
-  variant: "compaction" | "error" | "retry";
+  /** The two rows the transcript draws for itself: the compaction divider and
+   *  pi's "gave up retrying" banner. */
+  variant: "compaction" | "retry";
   text: string;
   timestamp: number | null;
+  /** `retry` rows: how many retries pi made before it gave up. */
+  attempt?: number;
 }
 
 export type TranscriptMessage = UserMessage | AssistantMessage | SystemMessage;
@@ -173,6 +177,9 @@ export const useTranscriptStore = defineStore("transcript", () => {
   const historyLoaded = ref(false);
   const historyLoading = ref(false);
   const retryAttempt = ref(0);
+  /** pi's own retry ceiling for the run, from `auto_retry_start.maxAttempts` —
+   *  it is a setting (`retry.maxRetries`), so the UI cannot assume a number. */
+  const retryMax = ref(0);
   const statusText = ref("");
 
   /** Index into `messages` of the assistant message currently streaming. */
@@ -304,6 +311,7 @@ export const useTranscriptStore = defineStore("transcript", () => {
     historyLoaded.value = false;
     historyLoading.value = false;
     retryAttempt.value = 0;
+    retryMax.value = 0;
     activeAssistantIndex.value = -1;
     toolLocations.clear();
   }
@@ -645,6 +653,7 @@ export const useTranscriptStore = defineStore("transcript", () => {
       case "agent_settled":
         session.applyState({ isStreaming: false });
         retryAttempt.value = 0;
+        retryMax.value = 0;
         if (activeAssistant.value) markTextFinalized(activeAssistant.value);
         activeAssistantIndex.value = -1;
         break;
@@ -722,18 +731,22 @@ export const useTranscriptStore = defineStore("transcript", () => {
         break;
       case "auto_retry_start":
         retryAttempt.value = typeof payload.attempt === "number" ? payload.attempt : 0;
+        retryMax.value = typeof payload.maxAttempts === "number" ? payload.maxAttempts : 0;
         break;
       case "auto_retry_end":
         if (payload.success === false) {
-          messages.value.push({
+          const row: SystemMessage = {
             kind: "system",
             id: nextId("sys"),
             variant: "retry",
             text: String(payload.finalError ?? ""),
             timestamp: null,
-          });
+          };
+          if (typeof payload.attempt === "number") row.attempt = payload.attempt;
+          messages.value.push(row);
         }
         retryAttempt.value = 0;
+        retryMax.value = 0;
         break;
       case "queue_update":
         queue.value = {
@@ -755,6 +768,7 @@ export const useTranscriptStore = defineStore("transcript", () => {
     historyLoaded,
     historyLoading,
     retryAttempt,
+    retryMax,
     statusText,
     activeAssistant,
     isEmpty,

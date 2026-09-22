@@ -8,7 +8,7 @@
 // control size — measured, "100%" is 24.4px wide at 10px and the hole is 21px,
 // which is why the sign is not in there.
 
-import { mount } from "@vue/test-utils";
+import { flushPromises, mount } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { t } from "@/lib/i18n.ts";
@@ -69,5 +69,26 @@ describe("Composer context ring", () => {
 
     expect(ring.classes()).toContain("is-error");
     expect(ring.get(".ctx-ring-label").text()).toBe("85");
+  });
+
+  it("reads out one figure per row, label and value apart", async () => {
+    // The card used to be a single `pre` string whose columns were padded with a
+    // hand-counted run of spaces, which only lines up in a monospace font. VS
+    // Code's own context-usage card is one row per figure, and so is this one.
+    read(34, 68_000);
+    const wrapper = mountComposer();
+    vi.useFakeTimers();
+    await wrapper.get("#ctx-ring").trigger("mouseenter");
+    vi.advanceTimersByTime(600);
+    await flushPromises();
+    vi.useRealTimers();
+
+    const rows = wrapper.get("#ctx-tooltip").findAll(".ctx-row");
+    expect(rows.map((row) => row.get(".ctx-row-label").text())).toEqual([
+      t("Usage:"),
+      t("Context:"),
+    ]);
+    expect(rows[0]?.get(".ctx-row-value").text()).toBe("34.0%");
+    expect(rows[1]?.get(".ctx-row-value").text()).toBe("68k / 200k");
   });
 });

@@ -88,6 +88,52 @@ describe("control-bar fill contract", () => {
   });
 });
 
+describe("control-bar rhythm contract", () => {
+  it("spaces every pair of controls on the bar's own gap", () => {
+    // The right-hand pair used to be pushed out by an empty flex item with a 4px
+    // floor. On a full bar that measured 20px from the permission pill to the
+    // ring — two gaps plus the item's floor — where every other pair measured 8,
+    // and at ≤300px the send button bought itself a private 5px on top of the
+    // bar's 1px. 彬哥: "间距应该以第一个按钮的右侧间距为准". The free space belongs to
+    // the ring's own auto margin, so no pair reads wider than its neighbours.
+    expect(readFileSync("src/components/Composer.vue", "utf8")).not.toContain("composer-spacer");
+    expect(chat).not.toContain(".composer-spacer");
+    expect(declarations(chat, ".ctx-ring")).toContain("margin-left: auto");
+    for (const rule of rules(chat)) {
+      if (!rule.selectors.includes(".send-btn")) continue;
+      expect(rule.body, "the send button bought its own gutter").not.toContain("margin-left");
+    }
+  });
+
+  it("puts the input's text on the same left edge as the divider and the + chip", () => {
+    // Measured before: the text started 21px from the card's edge while the
+    // divider and the `+` started at 11 — the input added 10px of its own on top
+    // of the card's padding. 11px is also what VS Code's own chat input insets
+    // its text by (6px container + 4px editor + the hairline), so the text, the
+    // rule under it and the chip now share one left edge.
+    const input = declarations(chat, "#input");
+    expect(input).toContain("padding: 8px 0 6px");
+    expect(input, "the input bought back its own side padding").not.toMatch(
+      /padding:\s*[^;]*\b10px/,
+    );
+  });
+
+  it("sets the readout on VS Code's hover card, not on the micro rung", () => {
+    // 13px on a 1.5 line box with `4px 8px` of padding and a 200px floor is
+    // VS Code's own hover card (`.monaco-hover.workbench-hover` +
+    // `chat-context-usage-details`); the 10px rung read a size too small beside
+    // the pills it hangs off.
+    const body = declarations(chat, ".ctx-tooltip");
+    expect(body).toContain("font-size: var(--pi-fs-body)");
+    expect(body).toContain("line-height: 1.5");
+    expect(body).toContain("padding: var(--pi-sp-1) var(--pi-sp-3)");
+    expect(body).toContain("min-width: 200px");
+    // The label/value split is what puts the figures in a column: `space-between`
+    // in a shrink-to-fit box right-aligns every value against the widest row.
+    expect(declarations(chat, ".ctx-row")).toContain("justify-content: space-between");
+  });
+});
+
 describe("transcript surface contract", () => {
   /** Everything the transcript paints as a *card*. Each one used to pick its own
    * grey, which is how five surfaces, three ink colours and three paddings ended
@@ -192,7 +238,7 @@ describe("meta-row contract", () => {
   });
 
   it("sizes the meta row from the body step, not the micro one", () => {
-    for (const selector of [".msg-outcome", ".msg-duration", ".msg-time"]) {
+    for (const selector of [".msg-outcome", ".msg-time"]) {
       expect(declarations(chat, selector), selector).toContain("var(--pi-fs-body)");
     }
   });

@@ -240,3 +240,43 @@ describe("transcript — a tool-using turn while it is still running", () => {
     expect(turn.finalBlocks).toHaveLength(1);
   });
 });
+
+// pi retries a retryable error with exponential backoff and, when it runs out,
+// emits `auto_retry_end{success:false}`. Both numbers the UI shows come off
+// those events — the banner's count was hardcoded to 0 and the toolbar's
+// ceiling to 3, so both lied whenever `retry.maxRetries` was not the default.
+describe("transcript — pi's retry counter", () => {
+  let transcript: ReturnType<typeof useTranscriptStore>;
+
+  beforeEach(() => {
+    setActivePinia(createPinia());
+    transcript = useTranscriptStore();
+  });
+
+  const send = (event: RpcEvent) => transcript.applyEvent(event);
+
+  it("carries the run's ceiling while it retries, and the count on the banner", () => {
+    send({ type: "auto_retry_start", attempt: 2, maxAttempts: 5, delayMs: 4_000 });
+    expect(transcript.retryAttempt).toBe(2);
+    expect(transcript.retryMax).toBe(5);
+
+    send({ type: "auto_retry_end", success: false, attempt: 2, finalError: "gateway down" });
+
+    const row = transcript.messages.at(-1);
+    if (row?.kind !== "system") throw new Error("expected pi's retry row");
+    expect(row.variant).toBe("retry");
+    expect(row.attempt).toBe(2);
+    expect(row.text).toBe("gateway down");
+    expect(transcript.retryAttempt).toBe(0);
+    expect(transcript.retryMax).toBe(0);
+  });
+
+  it("leaves no row behind when the retry succeeds", () => {
+    send({ type: "auto_retry_start", attempt: 1, maxAttempts: 5 });
+    const before = transcript.messages.length;
+    send({ type: "auto_retry_end", success: true, attempt: 1 });
+
+    expect(transcript.messages).toHaveLength(before);
+    expect(transcript.retryAttempt).toBe(0);
+  });
+});

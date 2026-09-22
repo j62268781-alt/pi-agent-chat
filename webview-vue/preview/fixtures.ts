@@ -6,7 +6,12 @@
 // this repository, so the sample text has honest lengths and code in it.
 
 import type { PendingMessage } from "@/stores/pending.ts";
-import type { AssistantMessage, TranscriptMessage, UserMessage } from "@/stores/transcript.ts";
+import type {
+  AssistantMessage,
+  SystemMessage,
+  TranscriptMessage,
+  UserMessage,
+} from "@/stores/transcript.ts";
 
 const T0 = 1_756_000_000_000;
 const MIN = 60_000;
@@ -17,7 +22,7 @@ function user(id: string, text: string, at: number): UserMessage {
 
 function system(
   id: string,
-  variant: "compaction" | "error" | "retry",
+  variant: SystemMessage["variant"],
   text: string,
   at: number,
 ): TranscriptMessage {

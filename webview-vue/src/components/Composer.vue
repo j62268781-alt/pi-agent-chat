@@ -733,41 +733,41 @@ const ctxAriaLabel = computed(() =>
 // The ring is an indicator, not a readout: the numbers live in a hover card
 // (`#ctx-tooltip`, positioned by hand because the ring sits at the bottom of a
 // scrolling panel). Ported from the legacy `rebuildCtxRingTooltip` +
-// `showTooltip` pair — a multi-line `pre` card with the percentage, the used /
-// total context and, when the host reports one, the session cost.
+// `showTooltip` pair — a card with the percentage, the used / total context and,
+// when the host reports one, the session cost.
 
 const ctxRingEl = ref<HTMLElement | null>(null);
 const ctxTooltipEl = ref<HTMLElement | null>(null);
-const ctxTooltipText = ref("");
+const ctxTooltipRows = ref<{ label: string; value: string }[]>([]);
 const ctxTooltipOpen = ref(false);
 const ctxTooltipPos = ref({ left: 0, top: 0 });
 /** Hover intent delay, mirrored from the legacy tooltip. */
 const CTX_TOOLTIP_DELAY_MS = 500;
 let ctxTooltipTimer: number | null = null;
 
-const ctxLines = computed(() => {
+const ctxRows = computed(() => {
   const usage = session.contextUsage;
   const tokens = usage && typeof usage.tokens === "number" ? usage.tokens : null;
   const total = usage && typeof usage.contextWindow === "number" ? usage.contextWindow : null;
-  const lines: string[] = [];
+  const rows: { label: string; value: string }[] = [];
   if (tokens != null && total != null) {
-    lines.push(t("Usage:") + "   " + contextPercent.value.toFixed(1) + "%");
-    lines.push(t("Context:") + " " + formatTokens(tokens) + " / " + formatTokens(total));
+    rows.push({ label: t("Usage:"), value: contextPercent.value.toFixed(1) + "%" });
+    rows.push({ label: t("Context:"), value: formatTokens(tokens) + " / " + formatTokens(total) });
   }
   // Session-wide share of the prompt that came from the prompt cache, not the
   // last turn's: it is there as soon as a restored transcript renders.
   const cacheHitPct = computeCacheHitPct(aggregateUsage(transcript.messages));
-  if (cacheHitPct != null) lines.push(t("Cache:") + "   " + cacheHitPct.toFixed(1) + "%");
+  if (cacheHitPct != null) rows.push({ label: t("Cache:"), value: cacheHitPct.toFixed(1) + "%" });
   if (session.sessionCost != null)
-    lines.push(t("Cost:") + "    $" + session.sessionCost.toFixed(3));
-  return lines;
+    rows.push({ label: t("Cost:"), value: "$" + session.sessionCost.toFixed(3) });
+  return rows;
 });
 
 async function showCtxTooltip(): Promise<void> {
-  const text = ctxLines.value.join("\n");
+  const rows = ctxRows.value;
   const ring = ctxRingEl.value;
-  if (!text || !ring) return;
-  ctxTooltipText.value = text;
+  if (rows.length === 0 || !ring) return;
+  ctxTooltipRows.value = rows;
   ctxTooltipOpen.value = true;
   await nextTick();
   const el = ctxTooltipEl.value;
@@ -1003,7 +1003,6 @@ onUnmounted(() => {
             <PermissionPicker />
           </div>
         </div>
-        <div class="composer-spacer"></div>
         <span
           id="ctx-ring"
           ref="ctxRingEl"
@@ -1049,7 +1048,9 @@ onUnmounted(() => {
     </div>
 
     <!-- Context readout. Fixed-positioned and appended last so it is never
-         clipped by the composer's own overflow. -->
+         clipped by the composer's own overflow. Label and value are separate
+         spans on one row: the legacy card padded its columns with spaces, which
+         only lines up in a monospace font. -->
     <div
       v-show="ctxTooltipOpen"
       id="ctx-tooltip"
@@ -1058,7 +1059,10 @@ onUnmounted(() => {
       role="tooltip"
       :style="{ left: ctxTooltipPos.left + 'px', top: ctxTooltipPos.top + 'px' }"
     >
-      {{ ctxTooltipText }}
+      <div v-for="row in ctxTooltipRows" :key="row.label" class="ctx-row">
+        <span class="ctx-row-label">{{ row.label }}</span>
+        <span class="ctx-row-value">{{ row.value }}</span>
+      </div>
     </div>
   </div>
 </template>

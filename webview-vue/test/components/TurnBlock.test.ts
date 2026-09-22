@@ -9,12 +9,19 @@
 
 import { mount } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { post } from "@/lib/bridge.ts";
 import { t } from "@/lib/i18n.ts";
 import { useDisplayStore } from "@/stores/display.ts";
 import { useSessionStore } from "@/stores/session.ts";
 import type { AssistantMessage, Block, Turn } from "@/stores/transcript.ts";
 import TurnBlock from "@/components/TurnBlock.vue";
+
+vi.mock("@/lib/bridge.ts", () => ({
+  post: vi.fn(),
+  persisted: { get: () => undefined, set: () => {} },
+  onHostMessage: () => () => {},
+}));
 
 const T0 = 1_700_000_000_000;
 
@@ -97,24 +104,64 @@ describe("TurnBlock — is this turn still running?", () => {
     setActivePinia(createPinia());
   });
 
-  it("says nothing about a plain success on the closing line, and carries it", () => {
+  it("spells the duration out on the fold head, and never on the closing line", () => {
     const wrapper = mountTurn({}, true);
 
-    // The fold head labels the group it folds; the closing line has nothing to
-    // report about a turn that simply worked (彬哥).
-    expect(wrapper.get(".work-head").text()).toContain(t("Processed"));
+    // The head labels the group it folds and is the first line of the turn, so
+    // the duration rides along there — spelled out (「耗时 2分25秒」), because a
+    // bare `5s` left the reader guessing what the number was (彬哥).
+    const head = wrapper.get(".work-head").text();
+    expect(head).toContain(t("Processed"));
+    expect(head).toContain(t("Worked for {0}").replace("{0}", "").trim());
+
+    // The closing line is the three actions and the time; the duration and the
+    // outcome belong to the head.
     const status = wrapper.get(".msg-status-line");
     expect(status.find(".msg-outcome").exists()).toBe(false);
     expect(status.text()).not.toContain(t("Processed"));
-    expect(status.get(".msg-duration").text().trim()).not.toBe("");
+    expect(status.find(".msg-duration").exists()).toBe(false);
   });
 
-  it("still names a failure and a stop on the closing line", () => {
-    const failed = mountTurn({ errorMessage: "boom" }, true);
-    expect(failed.get(".msg-status-line .msg-outcome").text()).toBe(t("failed"));
+  it("keeps the closing line to the three actions and the time, head or not", () => {
+    // No work to fold (or folding off) means no head and no duration anywhere:
+    // the line is 复制 · 明细 · fork · 时间 in every case (彬哥).
+    useDisplayStore().settings.collapseWork = false;
+    const wrapper = mountTurn({ workBlocks: [] }, true);
 
+    expect(wrapper.find(".work-block").exists()).toBe(false);
+    const status = wrapper.get(".msg-status-line");
+    expect(status.find(".msg-duration").exists()).toBe(false);
+    expect(status.find(".msg-outcome").exists()).toBe(false);
+  });
+
+  it("names an outcome on the fold head, and on the line only when there is none", () => {
+    const failed = mountTurn({ errorMessage: "boom" }, true);
+    expect(failed.get(".work-head").text()).toContain(t("failed"));
+    expect(failed.find(".msg-status-line .msg-outcome").exists()).toBe(false);
+
+    // No head (folding off, or nothing folded) means the line has to name it.
+    useDisplayStore().settings.collapseWork = false;
+    const noHead = mountTurn({ errorMessage: "boom" }, true);
+    expect(noHead.get(".msg-status-line .msg-outcome").text()).toBe(t("failed"));
+
+    // A stop never gets the word: the notice above says it in full.
     const stopped = mountTurn({ stopReason: "aborted" }, true);
-    expect(stopped.get(".msg-status-line .msg-outcome").text()).toBe(t("Stopped"));
+    expect(stopped.find(".msg-status-line .msg-outcome").exists()).toBe(false);
+  });
+
+  it("says where a stopped reply was cut", () => {
+    // 「已停止」 is one word in a row of counters, and the reply above it still
+    // reads as a whole answer — Qoder prints a sentence under a terminated
+    // reply, and pi's own word for the state is "user cancelled".
+    const stopped = mountTurn({ stopReason: "aborted" }, true);
+    expect(stopped.get(".aborted-notice").text()).toBe(t("pi's reply was stopped by you."));
+
+    for (const over of [{}, { errorMessage: "boom" }] as const) {
+      expect(mountTurn(over, true).find(".aborted-notice").exists()).toBe(false);
+    }
+    // Mid-abort the turn is still running: the notice waits for the settle.
+    useSessionStore().applyState({ isStreaming: true });
+    expect(mountTurn({ stopReason: "aborted" }, true).find(".aborted-notice").exists()).toBe(false);
   });
 
   it("keeps a settled turn in the middle settled while the session streams", () => {
@@ -180,20 +227,125 @@ describe("TurnBlock — the turn's cache counters", () => {
       finalBlocks: [usageEntry("text-b", { input: 300, output: 40, cacheRead: 5000 })],
     });
 
-    // `R24k W900` was what 彬哥 asked about; the line says what the numbers are.
-    const span = wrapper.get(".msg-status-line span[title]");
-    expect(span.text()).toBe(`${t("Cache read")} 24k ${t("Cache write")} 900`);
-    expect(span.attributes("title")).toBe(
+    // The figures live in the card now; the icon still carries them on hover.
+    const icon = wrapper.get(".msg-status-line .usage-action");
+    expect(icon.find(".codicon-pie-chart").exists()).toBe(true);
+    expect(icon.attributes("title")).toBe(
       `\u21911.5k \u2193380 ${t("Cache read")} 24k ${t("Cache write")} 900 $0.0123`,
     );
   });
 
-  it("stays out of the line when the provider reported no cache activity", () => {
+  it("stays out of the line when no message reported anything at all", () => {
     const wrapper = mountTurn({
-      workBlocks: [usageEntry("text-a", { input: 5000, output: 100, cacheRead: 0, cacheWrite: 0 })],
+      workBlocks: [usageEntry("text-a", { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 })],
     });
 
-    expect(wrapper.find(".msg-status-line span[title]").exists()).toBe(false);
+    expect(wrapper.find(".msg-status-line .usage-action").exists()).toBe(false);
+  });
+
+  it("counts a message once however many blocks it owns", () => {
+    // Usage is reported per *message*, but the fold holds one entry per *block*
+    // (the thinking block, each tool call, the prose), so a one-message turn
+    // arrives here three times over. Summing the entries straight multiplied the
+    // counters by the block count — a 3.8M cache read read as 11.4M.
+    const usage = { input: 1200, output: 340, cacheRead: 3_800_000, cacheWrite: 900 };
+    const message = { ...assistant(TEXT), usage };
+    const wrapper = mountTurn({
+      workBlocks: [
+        { message, block: THINKING },
+        { message, block: { ...TEXT, id: "text-b" } },
+      ],
+      finalBlocks: [{ message, block: TEXT }],
+    });
+
+    // The figures live in the card; the icon that opens it carries the sum on
+    // hover. Counting a message once keeps 3.8M from reading as 11.4M.
+    const icon = wrapper.get(".msg-status-line .usage-action");
+    expect(icon.attributes("title")).toContain(`${t("Cache read")} 3.8M`);
+    expect(icon.attributes("title")).not.toContain("11.4M");
+  });
+});
+
+// The closing line's actions: copy the answer, open the turn's usage card, fork.
+// The copy took a chip on the user's message and nothing on the answer — so the
+// one thing a reader wants to take away was the one thing they could not.
+describe("TurnBlock — the closing line's actions", () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+    vi.mocked(post).mockClear();
+  });
+
+  const withUsage = (over: Partial<Turn> = {}) =>
+    mountTurn({
+      finalBlocks: [
+        {
+          message: {
+            ...assistant(TEXT),
+            usage: { input: 1_200, output: 340, cacheRead: 3_800_000 },
+          },
+          block: TEXT,
+        },
+      ],
+      ...over,
+    });
+
+  it("keeps the closing line in the order 彬哥 asked for", () => {
+    // 复制 · 明细 · fork · 时间 — three icons of one size plus the time.
+    const wrapper = withUsage();
+    const kind = (el: Element): string => {
+      if (el.classList.contains("usage-action")) return "usage";
+      if (el.classList.contains("status-action")) return el.getAttribute("title") ?? "action";
+      return el.className;
+    };
+
+    expect([...wrapper.get(".msg-status-line").element.children].map(kind)).toEqual([
+      t("Copy the conclusion"),
+      "usage",
+      t("Fork"),
+      "msg-time",
+    ]);
+  });
+
+  it("copies the answer, not the work behind it", async () => {
+    const wrapper = withUsage();
+    await wrapper.get('.status-action[title="' + t("Copy the conclusion") + '"]').trigger("click");
+
+    expect(post).toHaveBeenCalledWith({ type: "copy", text: "答案" });
+  });
+
+  it("hides the copy when there is no answer to copy", () => {
+    const wrapper = withUsage({ finalBlocks: [] });
+    expect(wrapper.find(`.status-action[title="${t("Copy the conclusion")}"]`).exists()).toBe(
+      false,
+    );
+  });
+
+  it("opens the usage card from the chip, and closes it again", async () => {
+    const wrapper = withUsage();
+    const chip = wrapper.get(".usage-action");
+    // jsdom lays nothing out, so `isVisible()` is always false here — `v-show`
+    // writes `display` into the element's own style, which is the check.
+    const shown = () => !(wrapper.get(".usage-popup").attributes("style") ?? "").includes("none");
+
+    expect(shown()).toBe(false);
+    await chip.trigger("click");
+
+    const card = wrapper.get(".usage-popup");
+    expect(shown()).toBe(true);
+    // One call per assistant message: the work block and the answer are two
+    // messages, so pi was called twice.
+    expect(
+      card.findAll(".usage-row").map((row) => row.findAll("span").map((span) => span.text())),
+    ).toEqual([
+      [t("Input"), "1.2k"],
+      [t("Output"), "340"],
+      [t("Cache read"), "3.8M"],
+      [t("Cache write"), "0"],
+      [t("Model calls"), "2"],
+    ]);
+
+    await chip.trigger("click");
+    expect(shown()).toBe(false);
   });
 });
 
@@ -259,5 +411,36 @@ describe("TurnBlock — the compaction divider", () => {
     expect(label.classes()).not.toContain("is-running");
     expect(label.attributes("title")).toBe("## 摘要");
     expect(wrapper.get(".compaction-summary-body").text()).toBe("## 摘要");
+  });
+});
+
+// pi gave up on a retryable error: the row has to say how many retries it made.
+// The count is on the message (`auto_retry_end.attempt`) — the banner used to
+// print a literal 0, so it read 「重试 0 次仍失败」 for every real failure.
+describe("TurnBlock — pi's retry banner", () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+  });
+
+  const withRetry = (attempt: number) =>
+    mountTurn({
+      leading: [
+        {
+          kind: "system",
+          id: "sys-1",
+          variant: "retry",
+          text: "gateway down",
+          timestamp: null,
+          attempt,
+        },
+      ],
+    });
+
+  it("says how many attempts pi made before it gave up", () => {
+    const wrapper = withRetry(2);
+
+    expect(wrapper.get(".error-banner").text()).toBe(
+      t("Error: Retry failed after {0} attempts: {1}", 2, "gateway down"),
+    );
   });
 });
