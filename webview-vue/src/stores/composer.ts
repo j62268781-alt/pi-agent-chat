@@ -30,6 +30,8 @@ export const useComposerStore = defineStore("composer", () => {
 
   const openPopup = ref<ComposerPopup>(null);
   const modelSearch = ref("");
+  /** The session switcher's filter — same lifecycle as `modelSearch`. */
+  const sessionSearch = ref("");
   /** Which sub-panel the model popup shows: the list, or the thinking picker. */
   const modelSubview = ref<"list" | "thinking">("list");
 
@@ -120,6 +122,7 @@ export const useComposerStore = defineStore("composer", () => {
   function closePopups(): void {
     openPopup.value = null;
     modelSearch.value = "";
+    sessionSearch.value = "";
     modelSubview.value = "list";
   }
 
@@ -129,6 +132,7 @@ export const useComposerStore = defineStore("composer", () => {
       modelSearch.value = "";
       modelSubview.value = "list";
     }
+    if (which === "sessions") sessionSearch.value = "";
   }
 
   return {
@@ -138,6 +142,7 @@ export const useComposerStore = defineStore("composer", () => {
     history,
     openPopup,
     modelSearch,
+    sessionSearch,
     modelSubview,
     autocomplete,
     streamingBehavior,

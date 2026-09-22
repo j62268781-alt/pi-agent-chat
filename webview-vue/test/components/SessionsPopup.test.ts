@@ -40,7 +40,23 @@ const LIST = [
     modified: "2026-08-24T10:49:00.000Z",
     messageCount: 8,
   },
+  {
+    // Unnamed: its row shows a date label instead of a name — the string 彬哥
+    // read, typed into the search box, and got nothing back for.
+    file: "/tmp/sessions/c.jsonl",
+    name: "",
+    firstMessage: "随便聊两句",
+    modified: "2026-08-25T14:07:00.000Z",
+    messageCount: 3,
+  },
 ];
+
+/** The "MM-DD" the row's own title shows for a session that has no name. */
+function dayLabel(iso: string): string {
+  const date = new Date(iso);
+  const pad = (value: number): string => (value < 10 ? `0${value}` : String(value));
+  return `${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
 
 const mountPopup = () => {
   const session = useSessionStore();
@@ -183,5 +199,83 @@ describe("SessionsPopup — switching", () => {
     expect(isBooting.value).toBe(false);
     // The window the transcript's own loading state is drawn from.
     expect(useSessionStore().switchSnapshot).not.toBeNull();
+  });
+});
+
+// The search area (彬哥的参考图): filtering happens in the webview over the list the
+// host already pushed, so it is instant and needs no round trip. It reuses the
+// model popup's recipe — query in the composer store, Escape closes, arrows move
+// the highlight, Enter opens it.
+describe("SessionsPopup — the search area", () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+    vi.mocked(post).mockClear();
+  });
+
+  const box = (wrapper: ReturnType<typeof mountPopup>) => wrapper.get("#sessions-search");
+
+  it("filters by first message and by name", async () => {
+    const wrapper = mountPopup();
+
+    await box(wrapper).setValue("间距");
+    expect(wrapper.findAll(".session-item")).toHaveLength(1);
+    expect(wrapper.get(".session-item").text()).toContain("再看间距");
+
+    await box(wrapper).setValue("会话 A");
+    expect(wrapper.findAll(".session-item")).toHaveLength(1);
+    expect(wrapper.get(".session-item").text()).toContain("会话 A");
+  });
+
+  it("matches the title it shows, date label included", async () => {
+    const wrapper = mountPopup();
+    const unnamed = LIST[2]!;
+    const label = dayLabel(unnamed.modified);
+    // The row really does show that label — the search has to agree with it.
+    expect(wrapper.findAll(".session-item-title")[2]?.text()).toContain(label);
+
+    await box(wrapper).setValue(label);
+
+    expect(wrapper.findAll(".session-item")).toHaveLength(1);
+    expect(wrapper.get(".session-item").text()).toContain(unnamed.firstMessage);
+  });
+
+  it("says so when nothing matches, and keeps the box in place", async () => {
+    const wrapper = mountPopup();
+
+    await box(wrapper).setValue("没有这条");
+
+    expect(wrapper.findAll(".session-item")).toHaveLength(0);
+    expect(wrapper.get(".sessions-empty").text()).toBe(t("No matching sessions"));
+    expect(wrapper.find("#sessions-search").exists()).toBe(true);
+  });
+
+  it("lands the highlight on the open session", async () => {
+    const wrapper = mountPopup();
+
+    // Row 0 is the open session: bare Enter asks for the session already on
+    // screen, which `choose` ignores — the popup just closes, nothing is posted.
+    await box(wrapper).trigger("keydown", { key: "Enter" });
+
+    expect(post).not.toHaveBeenCalled();
+  });
+
+  it("opens whatever an arrow and Enter point at", async () => {
+    const wrapper = mountPopup();
+
+    await box(wrapper).trigger("keydown", { key: "ArrowDown" });
+    await box(wrapper).trigger("keydown", { key: "Enter" });
+
+    expect(post).toHaveBeenCalledWith({ type: "switchSession", file: LIST[1]?.file });
+  });
+
+  it("does not carry the filter into the next visit", async () => {
+    const wrapper = mountPopup();
+    await box(wrapper).setValue("间距");
+    expect(wrapper.findAll(".session-item")).toHaveLength(1);
+
+    useComposerStore().closePopups();
+    await wrapper.vm.$nextTick();
+
+    expect(useComposerStore().sessionSearch).toBe("");
   });
 });

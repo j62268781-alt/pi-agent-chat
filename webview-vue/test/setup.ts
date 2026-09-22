@@ -13,3 +13,9 @@ class ResizeObserverStub {
 }
 
 globalThis.ResizeObserver ??= ResizeObserverStub as unknown as typeof ResizeObserver;
+
+// The popups scroll a keyboard highlight into view; jsdom has no layout and no
+// such method at all, so a popup that opens would throw inside `nextTick`.
+if (typeof Element.prototype.scrollIntoView !== "function") {
+  Element.prototype.scrollIntoView = () => {};
+}

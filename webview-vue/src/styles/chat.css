@@ -531,11 +531,15 @@ body {
   visibility: visible;
 }
 .sessions-popup {
-  position: absolute;
+  /* Fixed, not absolute: the panel *is* the popup's width (see below), and its
+     absolute containing block would otherwise be the 24px button wrapper — every
+     header shift (the icon font landing, a status word appearing) moved the popup
+     with it. 定位只在纵轴上靠 JS（按钮下面还是上面）。 */
+  position: fixed;
   z-index: 60;
-  left: 0;
-  min-width: min(340px, calc(100vw - 16px));
-  max-width: 460px;
+  /* 拉满面板宽度（彬哥的参考图）：两边各留 8px 内缩。 */
+  left: 8px;
+  width: calc(100vw - 16px);
   background: var(--pi-bg-raised);
   color: var(--pi-text);
   border: var(--pi-stroke) solid var(--pi-border);
@@ -669,7 +673,10 @@ body {
   flex-direction: column;
   gap: 4px;
 }
-.model-search {
+/* 搜索框：模型弹窗那一套（同一个父容器、同一个焦点色），会话弹窗直接沿用 ——
+   参考图里两者也是同一种灰底输入框。 */
+.model-search,
+.sessions-search {
   width: 100%;
   box-sizing: border-box;
   background: var(--pi-bg-raised);
@@ -681,7 +688,8 @@ body {
   font-family: inherit;
   outline: none;
 }
-.model-search:focus {
+.model-search:focus,
+.sessions-search:focus {
   border-color: var(--pi-brand);
 }
 .model-list {
@@ -2493,7 +2501,8 @@ body {
 /* ── C · session popup ───────────────────────────────────────────────────── */
 
 .sessions-popup {
-  width: 360px;
+  /* Width and placement are the base rule's (`.sessions-popup` above): this pass
+     only owns the paint. */
   padding: var(--pi-sp-3);
   border: var(--pi-stroke) solid var(--pi-border);
   border-radius: var(--pi-r-lg);
@@ -2516,7 +2525,8 @@ body {
   border-radius: var(--pi-r-md);
 }
 
-.session-item:hover {
+.session-item:hover,
+.session-item.active {
   background: var(--pi-bg-hover);
 }
 

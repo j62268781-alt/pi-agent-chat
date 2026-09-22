@@ -23,6 +23,70 @@ const session = useSessionStore();
 const transcript = useTranscriptStore();
 
 const popupEl = ref<HTMLElement | null>(null);
+const searchEl = ref<HTMLInputElement | null>(null);
+const listEl = ref<HTMLElement | null>(null);
+/** Row Enter lands on — the model picker's `highlight`, same shape. */
+const highlight = ref(0);
+
+/** The row's own title — a name when it has one, else a derived date label. */
+function titleFor(item: SessionListItem): string {
+  return sessionTitle(item.file, item.name, item.modified);
+}
+
+/**
+ * The rows the search admits. It runs over what the row *shows* — its title and
+ * its preview line — because that is what the user reads and types back; an
+ * unnamed session's title is a date label ("会话 09-22 21:34"), and filtering on
+ * the stored fields alone silently dropped every row whose only "2" was in that
+ * date (彬哥: 标题里一堆 2，搜 2 只出一条).
+ */
+const filtered = computed<SessionListItem[]>(() => {
+  const query = composer.sessionSearch.trim().toLowerCase();
+  if (!query) return session.sessionList;
+  return session.sessionList.filter((item) =>
+    `${titleFor(item)} ${item.firstMessage}`.toLowerCase().includes(query),
+  );
+});
+
+function scrollActive(): void {
+  listEl.value?.querySelector<HTMLElement>(".session-item.active")?.scrollIntoView({
+    block: "nearest",
+  });
+}
+
+/** Landing highlight: the open session when it is listed, else the first row. */
+watch(
+  filtered,
+  (rows) => {
+    const index = rows.findIndex((item) => item.file === session.sessionFile);
+    highlight.value = index >= 0 ? index : 0;
+    void nextTick(scrollActive);
+  },
+  { immediate: true },
+);
+
+function onSearchKeydown(ev: KeyboardEvent): void {
+  if (ev.key === "Escape") {
+    ev.preventDefault();
+    composer.closePopups();
+    return;
+  }
+  const total = filtered.value.length;
+  if (total === 0) return;
+  if (ev.key === "ArrowDown") {
+    ev.preventDefault();
+    highlight.value = (highlight.value + 1) % total;
+    void nextTick(scrollActive);
+  } else if (ev.key === "ArrowUp") {
+    ev.preventDefault();
+    highlight.value = (highlight.value - 1 + total) % total;
+    void nextTick(scrollActive);
+  } else if (ev.key === "Enter") {
+    ev.preventDefault();
+    const row = filtered.value[highlight.value];
+    if (row) choose(row);
+  }
+}
 
 /**
  * The row whose delete is in flight. Deleting the *open* session goes through a
@@ -103,32 +167,40 @@ function statusFor(item: SessionListItem): string | null {
   return item.file === session.sessionFile ? currentStatus.value : null;
 }
 
+/**
+ * Place the popup under its button — the vertical half only.
+ *
+ * Width and the left edge are the stylesheet's (`.sessions-popup`): the popup is
+ * fixed to the panel, because its absolute containing block is the button's own
+ * 24px wrapper, and the header shifts under it (an icon font landing, a status
+ * word appearing) as the panel loads. 彬哥: 给 popup 的宽拉满 —— a session row
+ * carries a name, a preview line and a meta line, none of which had room in a
+ * third of a sidebar.
+ */
 function position(): void {
   const el = popupEl.value;
-  const anchor = (el?.offsetParent as HTMLElement | null) ?? null;
+  const anchor = el?.parentElement ?? null;
   if (!el || !anchor) return;
   const rect = anchor.getBoundingClientRect();
   const margin = 8;
-  el.style.minWidth = `${Math.min(window.innerWidth - margin * 2, 360, Math.max(240, rect.width))}px`;
-  el.style.maxWidth = `${window.innerWidth - margin * 2}px`;
-  el.style.left = "0px";
-  el.style.top = "";
-  el.style.bottom = "";
-  const width = el.offsetWidth;
-  if (rect.left + width > window.innerWidth - margin) {
-    el.style.left = `${Math.max(margin - rect.left, rect.width - width)}px`;
-  }
   const height = el.offsetHeight || 260;
   const spaceBelow = window.innerHeight - rect.bottom;
+  el.style.top = "";
+  el.style.bottom = "";
+  // Not enough room below and more above: hang it from the button's top edge.
   if (spaceBelow < height + margin && rect.top > spaceBelow)
-    el.style.bottom = `${rect.height + 12}px`;
-  else el.style.top = `${rect.height + 12}px`;
+    el.style.bottom = `${window.innerHeight - rect.top + 12}px`;
+  else el.style.top = `${rect.bottom + 12}px`;
 }
 
 watch(open, async (isOpen) => {
   if (!isOpen) return;
   await nextTick();
   position();
+  // Type-to-filter, with the caret where the next keystroke goes — same as the
+  // model popup. The host is asked at the same time, so a list that changed
+  // meanwhile arrives while the user is already typing.
+  searchEl.value?.focus();
   post({ type: "listSessions" });
 });
 
@@ -200,9 +272,24 @@ onUnmounted(() => document.removeEventListener("mousedown", onDocumentMouseDown)
 <template>
   <div v-if="open" id="sessions-popup" ref="popupEl" class="sessions-popup">
     <div id="sessions-title" class="picker-title">{{ t("Sessions") }}</div>
-    <div id="sessions-list" class="sessions-list">
+    <!-- 搜索区（彬哥的参考图）：固定在列表上方，输入即过滤名称与首条消息。 -->
+    <input
+      v-if="session.sessionList.length > 0"
+      id="sessions-search"
+      ref="searchEl"
+      v-model="composer.sessionSearch"
+      class="sessions-search"
+      type="text"
+      autocomplete="off"
+      :placeholder="t('Search sessions…')"
+      @keydown="onSearchKeydown"
+    />
+    <div id="sessions-list" ref="listEl" class="sessions-list">
       <div v-if="session.sessionList.length === 0" class="sessions-empty">
         {{ t("No sessions yet.") }}
+      </div>
+      <div v-else-if="filtered.length === 0" class="sessions-empty">
+        {{ t("No matching sessions") }}
       </div>
       <template v-else>
         <!-- A row is a div rather than a button so the delete button can live
@@ -214,10 +301,11 @@ onUnmounted(() => document.removeEventListener("mousedown", onDocumentMouseDown)
              Enter on the trash switched the session and never opened the
              confirmation (彬哥's "删除功能有逻辑bug"). -->
         <div
-          v-for="item in session.sessionList"
+          v-for="(item, index) in filtered"
           :key="item.file"
           class="session-item"
           :class="{
+            active: index === highlight,
             selected: item.file === session.sessionFile,
             'is-deleting': item.file === deleting,
           }"
@@ -230,7 +318,7 @@ onUnmounted(() => document.removeEventListener("mousedown", onDocumentMouseDown)
         >
           <span class="session-item-text">
             <span class="session-item-title">
-              {{ sessionTitle(item.file, item.name, item.modified) }}
+              {{ titleFor(item) }}
             </span>
             <span v-if="preview(item.firstMessage)" class="session-item-preview">
               {{ preview(item.firstMessage) }}
