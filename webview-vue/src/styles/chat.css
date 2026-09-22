@@ -973,9 +973,37 @@ body {
   padding-bottom: var(--pi-queue-h, 0px);
 }
 
-.messages-inner:has(.empty) {
+.messages-inner:has(.empty),
+.messages-inner:has(.switch-loading) {
   height: 100%;
   justify-content: center;
+}
+
+/* 切换会话的加载态。换会话要等 pi 重建运行时（实测 2.2–6.6s），目标会话没有
+   缓存时（例如它是在另一个 pi 进程里建的）这一段没有任何内容可先画 —— 以前这里
+   盖的是启动页（pi logo + 三点），面板看着像重启了（彬哥）。现在画的是自己的
+   加载态：转圈 + 会话名，标题栏和输入框都还在原地。 */
+.switch-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 24px 0;
+  color: var(--pi-text-muted);
+  font-size: var(--pi-fs-meta);
+}
+
+.switch-loading-spin {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--pi-text-muted);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: tool-spin 0.7s linear infinite;
+}
+
+.switch-loading-name {
+  color: var(--pi-text-secondary);
 }
 /* Fork change: boot splash — the sidebar's loading screen hands off to this in-webview one,
    which stays up until the session history has actually rendered (message listener in main.ts). */

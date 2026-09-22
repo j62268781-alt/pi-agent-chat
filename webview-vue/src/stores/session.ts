@@ -147,6 +147,8 @@ export const useSessionStore = defineStore("session", () => {
     piFailure,
     sessionList,
     pendingNew,
+    /** Non-null exactly while a switch is in flight (see `beginSwitch`). */
+    switchSnapshot,
     beginSwitch,
     endSwitch,
     rollbackSwitch,

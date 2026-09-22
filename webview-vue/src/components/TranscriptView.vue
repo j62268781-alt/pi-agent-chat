@@ -195,7 +195,7 @@ watch(
           </div>
         </details>
 
-        <div v-if="transcript.isEmpty" class="empty">
+        <div v-if="transcript.isEmpty && !session.switchSnapshot" class="empty">
           <div class="empty-logo">
             <svg viewBox="0 0 800 800" fill="currentColor">
               <path
@@ -217,6 +217,18 @@ watch(
               >{{ hint.label }}
             </span>
           </div>
+        </div>
+
+        <!-- A switch in flight: the transcript is empty because the *next*
+             session is still loading, not because this is a new one. The
+             snapshot is set from the click until the content (or an error)
+             lands, which is exactly this window. -->
+        <div v-if="session.switchSnapshot" class="switch-loading">
+          <span class="switch-loading-spin" aria-hidden="true"></span>
+          <span>{{ t("Loading session…") }}</span>
+          <span v-if="session.sessionName" class="switch-loading-name">
+            {{ session.sessionName }}
+          </span>
         </div>
 
         <TurnBlock

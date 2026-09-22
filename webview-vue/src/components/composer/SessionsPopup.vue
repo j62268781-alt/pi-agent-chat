@@ -12,7 +12,6 @@ import type { SessionListItem } from "@protocol/messages";
 import { post } from "@/lib/bridge.ts";
 import { formatClock } from "@/lib/format.ts";
 import { t } from "@/lib/i18n.ts";
-import { isBooting } from "@/composables/useHostLink.ts";
 import { useComposerStore } from "@/stores/composer.ts";
 import { useOverlaysStore } from "@/stores/overlays.ts";
 import { useSessionStore } from "@/stores/session.ts";
@@ -134,10 +133,17 @@ watch(open, async (isOpen) => {
 });
 
 /**
- * Switch sessions optimistically: the highlight, the header and a loading
- * splash move right away — the perceived lag used to be pi loading the session
- * before anything on screen changed. If the host reports an error instead of
- * content, `rollbackSwitch` puts the previous session back.
+ * Switch sessions optimistically: the highlight, the header and the transcript's
+ * own loading state move right away — the perceived lag used to be pi loading
+ * the session before anything on screen changed. If the host reports an error
+ * instead of content, `rollbackSwitch` puts the previous session back.
+ *
+ * The wait is *not* covered by the boot splash: that page is the pi logo at a
+ * cold start (and the failure card), so raising it here made a session switch
+ * look like the extension restarting — for the seconds pi needs to rebuild its
+ * runtime, and worst for a session this panel has never opened, which has no
+ * cached transcript to paint in the meantime (彬哥: 点别的进程建的会话，面板变成
+ * 启动页再进 chat ui).
  */
 function choose(item: SessionListItem): void {
   composer.closePopups();
@@ -152,7 +158,6 @@ function choose(item: SessionListItem): void {
     transcript.messages.slice(),
   );
   transcript.reset();
-  isBooting.value = true;
   post({ type: "switchSession", file: item.file });
 }
 

@@ -14,6 +14,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { post } from "@/lib/bridge.ts";
 import { t } from "@/lib/i18n.ts";
 import SessionsPopup from "@/components/composer/SessionsPopup.vue";
+import { isBooting } from "@/composables/useHostLink.ts";
 import { useComposerStore } from "@/stores/composer.ts";
 import { useOverlaysStore } from "@/stores/overlays.ts";
 import { useSessionStore } from "@/stores/session.ts";
@@ -157,5 +158,30 @@ describe("SessionsPopup — the delete button", () => {
     await flushPromises();
 
     expect(wrapper.findAll(".session-item")[1]?.classes()).not.toContain("is-deleting");
+  });
+});
+
+// A switch is slow — pi rebuilds its runtime, seconds — and when the target has
+// no cached transcript (a session created in another pi process, say) there is
+// nothing to paint meanwhile. What covers that wait must not be the boot page:
+// that one is the pi logo of a cold start, so raising it made a switch look like
+// the extension restarting (彬哥: 点别的进程建的会话，面板变成启动页再进 chat ui).
+// The transcript draws its own state instead, off `switchSnapshot`.
+describe("SessionsPopup — switching", () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+    vi.mocked(post).mockClear();
+    isBooting.value = false;
+  });
+
+  it("does not raise the boot page over the panel", async () => {
+    const wrapper = mountPopup();
+
+    await wrapper.findAll(".session-item")[1]?.trigger("click");
+
+    expect(post).toHaveBeenCalledWith({ type: "switchSession", file: LIST[1]?.file });
+    expect(isBooting.value).toBe(false);
+    // The window the transcript's own loading state is drawn from.
+    expect(useSessionStore().switchSnapshot).not.toBeNull();
   });
 });
