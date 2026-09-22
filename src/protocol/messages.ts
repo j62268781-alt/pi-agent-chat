@@ -16,6 +16,7 @@ import type {
   RpcContextUsage,
   RpcEvent,
   RpcModel,
+  RpcSessionStats,
   RpcState,
 } from "./rpc.ts";
 
@@ -181,7 +182,7 @@ export type ExtToWebview =
   | { type: "event"; event: RpcEvent }
   | { type: "dialog"; request: ExtensionUiRequest }
   | { type: "pickedResources"; paths: string[] }
-  | { type: "contextUsage"; usage: RpcContextUsage | null; cost?: number }
+  | { type: "contextUsage"; usage: RpcContextUsage | null; cost?: number; stats?: RpcSessionStats }
   | { type: "widget"; widgetKey?: string; widgetLines?: string[] }
   | { type: "toast"; text: string; kind?: ToastKind }
   | { type: "infoPanel"; title: string; markdown: string }

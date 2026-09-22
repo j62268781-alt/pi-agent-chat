@@ -180,6 +180,10 @@ export function useHostLink() {
       case "contextUsage":
         session.contextUsage = message.usage as RpcContextUsage | null;
         session.sessionCost = message.cost ?? null;
+        // Kept when a push carries none: the compaction path synthesizes a usage
+        // reading of its own, and dropping the statistics there would empty half
+        // the ring's card until the next turn ends.
+        if (message.stats) session.stats = message.stats;
         break;
 
       case "widget":

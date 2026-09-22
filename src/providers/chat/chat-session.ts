@@ -286,10 +286,14 @@ export async function createChatSession(
     try {
       const stats = await rpc.getSessionStatsFull();
       if (sessionDisposed) return;
+      // The whole reading travels, not just the ring's percentage: pi reports the
+      // token split, the message and tool-call counts and the cost in the same
+      // answer, and the ring's card shows them (彬哥: 参考图里那张卡有很多东西).
       host.postMessage({
         type: "contextUsage",
         usage: stats.contextUsage ?? null,
         cost: stats.cost,
+        stats,
       });
     } catch {
       // ignore - stats are best-effort

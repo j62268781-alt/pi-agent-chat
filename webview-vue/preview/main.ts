@@ -19,7 +19,7 @@ import { useOverlaysStore } from "@/stores/overlays";
 import { usePendingStore } from "@/stores/pending";
 import { useSessionStore } from "@/stores/session";
 import { useTranscriptStore } from "@/stores/transcript";
-import { ASK, PENDING, SESSION, SESSIONS, TRANSCRIPT } from "./fixtures";
+import { ASK, PENDING, SESSION, SESSIONS, STATS, TRANSCRIPT } from "./fixtures";
 import { applyPreviewTheme, themeFromUrl } from "./theme-host";
 import { THEMES } from "./themes.generated";
 
@@ -66,6 +66,7 @@ session.isStreaming = params.get("streaming") !== "0";
 session.messageCount = SESSION.messageCount;
 session.contextUsage = SESSION.contextUsage;
 session.sessionCost = SESSION.sessionCost;
+session.stats = STATS;
 
 transcript.statusText = SESSION.statusText;
 // `?ask=permission|questionnaire` puts one of pi's two questions on the card

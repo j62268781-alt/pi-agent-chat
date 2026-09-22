@@ -6,7 +6,7 @@
 
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
-import type { RpcCommand, RpcContextUsage, RpcModel } from "@protocol/rpc";
+import type { RpcCommand, RpcContextUsage, RpcModel, RpcSessionStats } from "@protocol/rpc";
 import type { PermissionMode, SessionListItem } from "@protocol/messages";
 import { aggregateUsage, type UsageTotals } from "@/lib/usage";
 
@@ -35,6 +35,12 @@ export const useSessionStore = defineStore("session", () => {
   const sessionList = ref<SessionListItem[]>([]);
   const contextUsage = ref<RpcContextUsage | null>(null);
   const sessionCost = ref<number | null>(null);
+  /**
+   * pi's own session statistics — tokens split, message and tool-call counts,
+   * cost and context usage in one answer (`get_session_stats`). The ring's card
+   * reads it; it stays on the last reading when a push arrives without one.
+   */
+  const stats = ref<RpcSessionStats | null>(null);
 
   /**
    * Set by the "+" button: the guide is showing but pi has no session for it
@@ -154,6 +160,7 @@ export const useSessionStore = defineStore("session", () => {
     rollbackSwitch,
     contextUsage,
     sessionCost,
+    stats,
     totals,
     currentModelLabel,
     contextPercent,

@@ -754,12 +754,32 @@ const ctxRows = computed(() => {
     rows.push({ label: t("Usage:"), value: contextPercent.value.toFixed(1) + "%" });
     rows.push({ label: t("Context:"), value: formatTokens(tokens) + " / " + formatTokens(total) });
   }
+  // pi's own session statistics — the four token buckets, the totals and the two
+  // counts. Same figures the `get_session_stats` answer carries; the labels are
+  // the transcript's usage-row ones (输入 / 输出 / 读缓存 / 写缓存) so the two
+  // readouts speak one vocabulary.
+  const st = session.stats;
+  const bucket = st?.tokens;
+  if (bucket) {
+    rows.push({ label: t("Input"), value: formatTokens(bucket.input ?? 0) });
+    rows.push({ label: t("Output"), value: formatTokens(bucket.output ?? 0) });
+    rows.push({ label: t("Cache read"), value: formatTokens(bucket.cacheRead ?? 0) });
+    rows.push({ label: t("Cache write"), value: formatTokens(bucket.cacheWrite ?? 0) });
+  }
   // Session-wide share of the prompt that came from the prompt cache, not the
   // last turn's: it is there as soon as a restored transcript renders.
   const cacheHitPct = computeCacheHitPct(aggregateUsage(transcript.messages));
   if (cacheHitPct != null) rows.push({ label: t("Cache:"), value: cacheHitPct.toFixed(1) + "%" });
-  if (session.sessionCost != null)
-    rows.push({ label: t("Cost:"), value: "$" + session.sessionCost.toFixed(3) });
+  if (bucket && typeof bucket.total === "number")
+    rows.push({ label: t("Total tokens"), value: formatTokens(bucket.total) });
+  // `stats.cost` first: it is the same answer the buckets came in, and a push
+  // without statistics (the compaction path) cannot blank it.
+  const cost = st?.cost ?? session.sessionCost;
+  if (cost != null) rows.push({ label: t("Cost:"), value: "$" + cost.toFixed(3) });
+  if (typeof st?.totalMessages === "number")
+    rows.push({ label: t("Messages"), value: String(st.totalMessages) });
+  if (typeof st?.toolCalls === "number")
+    rows.push({ label: t("Tool calls"), value: String(st.toolCalls) });
   return rows;
 });
 

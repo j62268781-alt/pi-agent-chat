@@ -397,3 +397,19 @@ export const SESSIONS = [
     messageCount: 42,
   },
 ];
+
+/**
+ * pi's `get_session_stats` answer, as the host forwards it to the ring's card —
+ * the four token buckets, the total, cost, and the two counts. Shaped exactly
+ * like the real response (checked against `pi --mode rpc`).
+ */
+export const STATS = {
+  tokens: { input: 12_300, output: 4_500, cacheRead: 51_600, cacheWrite: 0, total: 68_400 },
+  userMessages: 5,
+  assistantMessages: 7,
+  totalMessages: 12,
+  toolCalls: 7,
+  toolResults: 7,
+  cost: 0.42,
+  contextUsage: { tokens: 68_400, contextWindow: 200_000, percent: 34.2 },
+};

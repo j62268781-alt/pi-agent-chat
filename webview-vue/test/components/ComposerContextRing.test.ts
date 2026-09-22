@@ -91,4 +91,51 @@ describe("Composer context ring", () => {
     expect(rows[0]?.get(".ctx-row-value").text()).toBe("34.0%");
     expect(rows[1]?.get(".ctx-row-value").text()).toBe("68k / 200k");
   });
+
+  it("carries pi's own statistics too — tokens, cost and the two counts", async () => {
+    // 彬哥's reference card: four token buckets, the total, the cost, messages and
+    // tool calls. pi answers all of it in `get_session_stats`; the host used to
+    // forward only the ring's percentage and the cost.
+    read(34, 68_000);
+    useSessionStore().stats = {
+      tokens: { input: 12_300, output: 4_500, cacheRead: 51_600, cacheWrite: 0, total: 68_400 },
+      totalMessages: 12,
+      toolCalls: 7,
+      cost: 0.42,
+    };
+    const wrapper = mountComposer();
+    vi.useFakeTimers();
+    await wrapper.get("#ctx-ring").trigger("mouseenter");
+    vi.advanceTimersByTime(600);
+    await flushPromises();
+    vi.useRealTimers();
+
+    const rows = wrapper.get("#ctx-tooltip").findAll(".ctx-row");
+    const value = (label: string): string =>
+      rows
+        .find((row) => row.get(".ctx-row-label").text() === label)
+        ?.get(".ctx-row-value")
+        .text() ?? "";
+
+    expect(rows.map((row) => row.get(".ctx-row-label").text())).toEqual([
+      t("Usage:"),
+      t("Context:"),
+      t("Input"),
+      t("Output"),
+      t("Cache read"),
+      t("Cache write"),
+      t("Total tokens"),
+      t("Cost:"),
+      t("Messages"),
+      t("Tool calls"),
+    ]);
+    expect(value(t("Input"))).toBe("12k");
+    expect(value(t("Output"))).toBe("4.5k");
+    expect(value(t("Cache read"))).toBe("52k");
+    expect(value(t("Cache write"))).toBe("0");
+    expect(value(t("Total tokens"))).toBe("68k");
+    expect(value(t("Cost:"))).toBe("$0.420");
+    expect(value(t("Messages"))).toBe("12");
+    expect(value(t("Tool calls"))).toBe("7");
+  });
 });
