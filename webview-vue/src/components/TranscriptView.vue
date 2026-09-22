@@ -148,7 +148,11 @@ onMounted(() => {
     observer = new ResizeObserver(() => {
       if (stuck.value) void scrollToBottom();
     });
-    if (inner.value) observer.observe(inner.value);
+    // Border box, not the default content box: the queue's inset is padding on
+    // this element (`--pi-queue-h`), which grows only the border box — watching
+    // the content box left the view one card short of the bottom, exactly the
+    // row the inset was reserving.
+    if (inner.value) observer.observe(inner.value, { box: "border-box" });
   }
 });
 

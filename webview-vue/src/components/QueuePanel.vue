@@ -14,7 +14,7 @@
   shows (彬哥: 对齐参考图，靠在 input 上、更小).
 -->
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, onUnmounted, ref, watch } from "vue";
 import { t } from "@/lib/i18n.ts";
 import { useComposerStore } from "@/stores/composer.ts";
 import { useOverlaysStore } from "@/stores/overlays.ts";
@@ -30,6 +30,34 @@ const hostFollowUp = computed(() => transcript.queue.followUp);
 const hasAny = computed(
   () => !pending.isEmpty || hostSteering.value.length > 0 || hostFollowUp.value.length > 0,
 );
+
+/**
+ * The card is an overlay, so it covers the transcript's bottom edge — which is
+ * where the live status row sits. The transcript reserves this height
+ * (`--pi-queue-h`) so that row stays visible; publish it from the card itself,
+ * since only the card knows how many rows it is showing.
+ */
+const card = ref<HTMLElement | null>(null);
+let observer: ResizeObserver | undefined;
+
+watch(card, (el) => {
+  observer?.disconnect();
+  observer = undefined;
+  const style = document.documentElement.style;
+  if (!el) {
+    style.removeProperty("--pi-queue-h");
+    return;
+  }
+  observer = new ResizeObserver(() => {
+    style.setProperty("--pi-queue-h", `${el.getBoundingClientRect().height}px`);
+  });
+  observer.observe(el);
+});
+
+onUnmounted(() => {
+  observer?.disconnect();
+  document.documentElement.style.removeProperty("--pi-queue-h");
+});
 
 /**
  * Pull a queued message back into the composer to change it. A draft that is
@@ -52,7 +80,7 @@ function steer(id: string): void {
 </script>
 
 <template>
-  <div v-if="hasAny" id="queue" class="queue">
+  <div v-if="hasAny" id="queue" ref="card" class="queue">
     <div v-for="item in pending.items" :key="item.id" class="queue-item is-pending">
       <span class="codicon codicon-indent queue-lead" aria-hidden="true"></span>
       <span class="queue-text" :title="item.text">{{ item.text }}</span>

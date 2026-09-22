@@ -960,6 +960,19 @@ body {
   display: flex;
   flex-direction: column;
 }
+
+/* Room for the floating queue (QueuePanel publishes `--pi-queue-h`). The card
+   rests on the composer's top edge and used to cover the bottom of the
+   transcript — which is exactly where the live status row ("正在回复中") lives,
+   so 彬哥 saw the queue drawn over it. Reserving the card's height puts that row
+   just above the card when the view is at the bottom; `TranscriptView`'s
+   ResizeObserver is what re-pins the view once the inset lands. Scoped to a
+   transcript with content: the empty guide is centred, and an inset there would
+   only push it off centre. */
+.messages-inner:not(:has(.empty)) {
+  padding-bottom: var(--pi-queue-h, 0px);
+}
+
 .messages-inner:has(.empty) {
   height: 100%;
   justify-content: center;
@@ -1642,7 +1655,9 @@ body {
 
 .composer {
   flex-shrink: 0;
-  padding: 8px;
+  /* The dock below owns these two insets: the queue and the ask card line up on
+     them. Vertical is the tighter one (彬哥: 输入框上下再收一点). */
+  padding: var(--pi-composer-pad-y) var(--pi-composer-pad);
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -2011,25 +2026,33 @@ body {
 .composer-dock {
   flex-shrink: 0;
   position: relative;
-  /* The composer's own inset is shared with the queue below, which lines its
-     bottom edge up with the input box's top border. */
+  /* The composer's own inset, shared with the queue and the ask card below —
+     the queue lines its bottom edge up with the input box's top border, the ask
+     card lands on the box itself. `-y` is the vertical half, and the one that
+     got tightened: 8px of air above and below a one-line input read as a band
+     of nothing (彬哥). */
   --pi-composer-pad: 8px;
+  --pi-composer-pad-y: 6px;
 }
 
 /* 待发送条：贴着输入框顶边的窄卡（彬哥的参考图），比 input 窄一圈、顶点圆角，
    底边正好压在输入框的上边框上 —— 中间没有缝，读起来是一张卡片搭在 input 上。
-   它仍是叠加层（外面那层 absolute），队列再长也不会把消息区顶上去。 */
+   它仍是叠加层（外面那层 absolute），队列再长也不会把消息区顶上去 —— 让它别盖住
+   正在回复中的是 `.messages-inner` 的下内边距（见那节的预留），不是把卡塞进流里。 */
 .queue {
+  /* One row's height, named once: the card shows three of them and scrolls
+     after that (彬哥: 3 条以上要能滚). */
+  --pi-queue-row: 32px;
   position: absolute;
-  bottom: calc(100% - var(--pi-composer-pad));
+  bottom: calc(100% - var(--pi-composer-pad-y));
   left: calc(var(--pi-composer-pad) + 12px);
   right: calc(var(--pi-composer-pad) + 12px);
   z-index: 5;
   display: flex;
   flex-direction: column;
-  /* An overlay has no ceiling of its own: a long queue would cover the whole
-     transcript, so it scrolls instead. */
-  max-height: 45vh;
+  /* An overlay has no ceiling of its own: the rows past the third scroll
+     inside the card instead of covering the whole transcript. */
+  max-height: calc(var(--pi-queue-row) * 3 + var(--pi-stroke));
   overflow-y: auto;
   /* Same surface as `.composer-box`, so the two read as one piece. */
   background: color-mix(
@@ -2048,7 +2071,7 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
-  min-height: 32px;
+  min-height: var(--pi-queue-row);
   padding: 4px 12px;
   font-size: var(--pi-fs-meta);
 }
@@ -3137,9 +3160,12 @@ body {
 /* The chat input is the one surface VS Code spells out for itself: the input
  * container is `cornerRadius-large`, its controls sit on a 22px row
  * (`--chat-input-control-height`), the send button is a filled circle and the
- * glyphs inside the bar carry the compact 12px icon size. All four follow. */
+ * glyphs inside the bar carry the compact 12px icon size. All four follow.
+ * The vertical padding is the fork's: 8/10 above and below a one-line input
+ * left the card looking puffed (彬哥: 上下再收一点), and the bar's divider needs
+ * less air than the box's edge did. */
 .composer-box {
-  padding: 8px 10px 10px;
+  padding: 6px 10px;
   border-color: var(--pi-border);
   border-radius: var(--pi-r-lg);
 }
@@ -3147,8 +3173,8 @@ body {
 /* The board splits the card with a hairline between the input and the bar. */
 .composer-controls-bar {
   gap: var(--pi-sp-3);
-  margin-top: 8px;
-  padding: 10px 0 0;
+  margin-top: 6px;
+  padding: 6px 0 0;
   border-top: var(--pi-stroke) solid var(--pi-border-divider);
 }
 
@@ -4100,6 +4126,7 @@ body {
  * 的思考滚到底后，外层就再也滚不动了）。 */
 .messages,
 #sessions-list,
+#queue,
 .lightbox,
 .thinking-body,
 .term-output,
@@ -4112,6 +4139,7 @@ body {
 
 .messages::-webkit-scrollbar,
 #sessions-list::-webkit-scrollbar,
+#queue::-webkit-scrollbar,
 .lightbox::-webkit-scrollbar,
 .thinking-body::-webkit-scrollbar,
 .term-output::-webkit-scrollbar,
@@ -4125,6 +4153,7 @@ body {
 
 .messages::-webkit-scrollbar-thumb,
 #sessions-list::-webkit-scrollbar-thumb,
+#queue::-webkit-scrollbar-thumb,
 .lightbox::-webkit-scrollbar-thumb,
 .thinking-body::-webkit-scrollbar-thumb,
 .term-output::-webkit-scrollbar-thumb,
@@ -4137,6 +4166,7 @@ body {
 
 .messages::-webkit-scrollbar-track,
 #sessions-list::-webkit-scrollbar-track,
+#queue::-webkit-scrollbar-track,
 .lightbox::-webkit-scrollbar-track,
 .thinking-body::-webkit-scrollbar-track,
 .term-output::-webkit-scrollbar-track,
@@ -4252,7 +4282,7 @@ body {
   position: absolute;
   left: var(--pi-composer-pad);
   right: var(--pi-composer-pad);
-  bottom: var(--pi-composer-pad);
+  bottom: var(--pi-composer-pad-y);
   /* 盖住 composer（其内部无 z-index）与浮在上面的队列（5） */
   z-index: 10;
 }

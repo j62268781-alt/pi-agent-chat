@@ -97,7 +97,7 @@ describe("the chat input's control row", () => {
   });
 
   it("rounds the input container the way VS Code rounds its own", () => {
-    const body = /\.composer-box\s*\{[^}]*padding: 8px 10px 10px;[^}]*\}/.exec(chat)?.[0] ?? "";
+    const body = /\.composer-box\s*\{[^}]*padding: 6px 10px;[^}]*\}/.exec(chat)?.[0] ?? "";
     expect(body).toContain("border-radius: var(--pi-r-lg)");
   });
 

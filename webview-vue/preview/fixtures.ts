@@ -282,6 +282,20 @@ export const PENDING: PendingMessage[] = [
     mode: "steer",
     createdAt: 1_756_000_542_000,
   },
+  {
+    id: "pending-4",
+    text: "composer 的上下内缩也一起收一下，别只收队列",
+    images: [],
+    mode: "queue",
+    createdAt: 1_756_000_543_000,
+  },
+  {
+    id: "pending-5",
+    text: "队列超过三条要能在卡里滚，别再往上顶",
+    images: [],
+    mode: "queue",
+    createdAt: 1_756_000_544_000,
+  },
 ];
 
 /** Session state the toolbar and composer read: model, thinking, the ring. */

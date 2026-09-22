@@ -42,7 +42,9 @@ describe("ask card placement", () => {
     expect(dock).toContain("position: absolute");
     expect(dock).toContain("left: var(--pi-composer-pad)");
     expect(dock).toContain("right: var(--pi-composer-pad)");
-    expect(dock).toContain("bottom: var(--pi-composer-pad)");
+    // Vertical is the dock's own half of the inset, the one the composer's
+    // padding uses: the card's bottom edge is the input box's bottom edge.
+    expect(dock).toContain("bottom: var(--pi-composer-pad-y)");
     // The dock itself is what defines that inset, and it is the positioning
     // context — without `relative` the card would escape to the page.
     expect(declarations(chat, ".composer-dock")).toContain("position: relative");

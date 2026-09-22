@@ -15,6 +15,9 @@ export default defineConfig({
     // `lib/i18n.ts` reads `window.__PI__` at import time and the render path is
     // DOM-only from there on, so the whole package tests against jsdom.
     environment: "jsdom",
+    // jsdom gaps the components reach for (see the file): observability only,
+    // never layout.
+    setupFiles: ["test/setup.ts"],
     // Tests live in `test/`, mirroring `src/`, and reach it through the `@/`
     // alias this config already resolves.
     include: ["test/**/*.test.ts"],

@@ -4,6 +4,7 @@
 // strip carries nothing but the rows themselves.
 
 import { mount } from "@vue/test-utils";
+import { nextTick } from "vue";
 import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { t } from "@/lib/i18n.ts";
@@ -157,5 +158,51 @@ describe("QueuePanel", () => {
     const hostRow = wrapper.get(".queue-item.is-host");
     expect(hostRow.text()).toContain("扩展自己入队的一条");
     expect(hostRow.findAll("button")).toHaveLength(0);
+  });
+});
+
+// The card is an overlay: it covers the transcript's bottom edge, where the
+// live status row sits. The transcript reserves whatever height the card
+// reports (`--pi-queue-h`), so that row stays visible — the wiring is here, the
+// padding it drives is checked against the stylesheet in
+// `test/styles/queue-strip.test.ts`.
+describe("QueuePanel — the height it publishes", () => {
+  /** The setup stub never fires; this one reports once, the way a real
+   * observer does when it starts observing. */
+  class FiringResizeObserver {
+    constructor(private readonly callback: ResizeObserverCallback) {}
+    observe(target: Element): void {
+      this.callback([{ target } as ResizeObserverEntry], this as unknown as ResizeObserver);
+    }
+    unobserve(): void {}
+    disconnect(): void {}
+  }
+
+  beforeEach(() => {
+    setActivePinia(createPinia());
+    vi.stubGlobal("ResizeObserver", FiringResizeObserver);
+    vi.spyOn(Element.prototype, "getBoundingClientRect").mockReturnValue({
+      height: 97,
+    } as DOMRect);
+    document.documentElement.style.removeProperty("--pi-queue-h");
+  });
+
+  it("hands the transcript the measured card height, and clears it again", async () => {
+    usePendingStore().enqueue("排着的一条", []);
+    const wrapper = mount(QueuePanel);
+    await nextTick();
+
+    expect(document.documentElement.style.getPropertyValue("--pi-queue-h")).toBe("97px");
+
+    wrapper.unmount();
+    await nextTick();
+    expect(document.documentElement.style.getPropertyValue("--pi-queue-h")).toBe("");
+  });
+
+  it("publishes nothing while it draws no card", () => {
+    const wrapper = mount(QueuePanel);
+
+    expect(wrapper.find("#queue").exists()).toBe(false);
+    expect(document.documentElement.style.getPropertyValue("--pi-queue-h")).toBe("");
   });
 });

@@ -46,6 +46,13 @@ const composer = useComposerStore();
 
 transcript.messages = TRANSCRIPT;
 pending.items = structuredClone(PENDING);
+// `?queue=<n>` sizes the pending strip: 0 hides it, 5 is where the card's
+// three-row ceiling starts scrolling (the live status row has to stay visible
+// behind it either way).
+const queueRows = Number(params.get("queue"));
+if (params.has("queue") && Number.isFinite(queueRows)) {
+  pending.items = structuredClone(PENDING.slice(0, Math.max(0, queueRows)));
+}
 composer.draft = "";
 
 session.sessionName = SESSION.sessionName;
