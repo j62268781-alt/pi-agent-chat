@@ -1254,12 +1254,20 @@ export async function createChatSession(
           }
           host.postMessage({ type: "event", event });
           if (event.type === "agent_settled") {
-            if (needsSessionFile) {
-              void rpc
-                .getState()
-                .then((s) => applySessionFile(s.sessionFile, s.sessionName))
-                .catch(() => {});
-            }
+            // The run is over and the transcript has stopped growing. The
+            // webview's copy of `state` is what the header's "+" gate reads
+            // (ChatToolbar's `sessionHasMessages`), and without this push it
+            // still says `messageCount: 0` for a session the guide created —
+            // the button stays dead for the whole conversation. The file of a
+            // session that was only written on this first turn lands here too.
+            void rpc
+              .getState()
+              .then((s) => {
+                if (gen !== rpcGeneration || sessionDisposed) return;
+                if (needsSessionFile) applySessionFile(s.sessionFile, s.sessionName);
+                host.postMessage({ type: "state", state: s });
+              })
+              .catch(() => {});
             refreshCommands();
             void sendContextUsage();
           } else if (event.type === "message_end") {
