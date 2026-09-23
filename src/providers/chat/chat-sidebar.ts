@@ -21,6 +21,8 @@ import {
 } from "./display-settings.ts";
 import { getChatWebviewHtml } from "./webview-html.ts";
 import { createChatSession, type ChatHost, type ChatSession } from "./chat-session.ts";
+import { createWorkspaceGate, type WorkspaceGate } from "./workspace-gate.ts";
+import type { ChatTracker } from "./chat-tracker.ts";
 
 export const SIDEBAR_VIEW_ID = "pi-agent-chat.chatSidebar";
 
@@ -56,6 +58,8 @@ interface SidebarChatOptions {
   bridgeConfig?: BridgeConfig;
   sessionFile?: string;
   newSession?: boolean;
+  /** Bookkeeping shared with the editor-panel mode (see `chat-tracker.ts`). */
+  chatTracker?: ChatTracker;
 }
 
 let sidebarState: SidebarState | undefined;
@@ -153,6 +157,12 @@ async function startSidebarSession(
   host: ChatHost,
   opts: SidebarChatOptions,
 ): Promise<void> {
+  // No folder means no project for pi to run against; the gate (see
+  // workspace-gate.ts) owns the webview in that window, so nothing starts here.
+  if (!resolveChatCwd(vscode.workspace.workspaceFolders?.[0]?.uri.fsPath)) {
+    webviewView.webview.postMessage({ type: "workspaceRequired", required: true });
+    return;
+  }
   let session: ChatSession | undefined;
   try {
     session = await ensureSidebarSession(opts);
@@ -205,6 +215,9 @@ export function createChatSidebarViewProvider(
         }
       });
 
+      /** Set while this window has no folder to run the chat against. */
+      let gate: WorkspaceGate | undefined;
+
       const langSub = vscode.workspace.onDidChangeConfiguration((e) => {
         // Display preferences are pushed live; re-rendering the webview for them
         // would throw away the draft, the scroll position and the pending queue.
@@ -224,17 +237,29 @@ export function createChatSidebarViewProvider(
 
       if (sidebarState.session) {
         sidebarState.session.attach(host);
-      } else {
+      } else if (resolveChatCwd(vscode.workspace.workspaceFolders?.[0]?.uri.fsPath)) {
         // Fork change: auto-start on first open — no manual "Start Chat" click needed. The
         // most recent session of the workspace is resumed so the history is right there; the
         // loading screen stays up only for the ~1s the RPC subprocess needs to boot (and as a
         // retry affordance if starting fails).
         void startSidebarSessionWithInitialFile(webviewView, host, opts);
+      } else {
+        // Nothing to run against until a folder exists (see workspace-gate.ts).
+        gate = createWorkspaceGate({
+          host,
+          onFolder: () => {
+            host.postMessage({ type: "workspaceRequired", required: false });
+            void startSidebarSessionWithInitialFile(webviewView, host, opts);
+          },
+          onOpenFolderRequested: () => opts.chatTracker?.markReopenAfterFolder(),
+        });
       }
 
       webviewView.onDidDispose(() => {
         langSub.dispose();
         startSub.dispose();
+        gate?.dispose();
+        gate = undefined;
         if (currentHost === host) currentHost = undefined;
         if (sidebarState?.view === webviewView) {
           // Keep the session running in the background; it re-attaches on re-resolve.

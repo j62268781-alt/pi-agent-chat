@@ -90,6 +90,12 @@ display.apply({
   surface: params.get("surface") === "editor" ? "editor" : "sidebar",
 });
 
+// `?nofolder=1` is a window with no workspace folder open: there is no session
+// behind the webview, so the boot page holds the message and the folder picker.
+if (params.get("nofolder") === "1") {
+  session.workspaceRequired = true;
+}
+
 const { isBooting } = await import("@/composables/useHostLink");
 isBooting.value = false;
 await nextTick();

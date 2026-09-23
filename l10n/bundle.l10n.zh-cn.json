@@ -124,5 +124,7 @@
   "A pi extension cancelled the session switch.": "某个 pi 扩展取消了这次会话切换。",
   "A pi extension cancelled the new session.": "某个 pi 扩展取消了新建会话。",
   "This pi build does not support {0} — update pi to use it.": "当前 pi 版本不支持{0}——升级 pi 后可用。",
-  "forking from a message": "从某条消息 fork"
+  "forking from a message": "从某条消息 fork",
+  "Open a workspace folder to start pi.": "打开一个工作区文件夹以开始使用 pi。",
+  "Could not start pi in the folder that was opened.": "在打开的文件夹里启动 pi 失败。"
 }

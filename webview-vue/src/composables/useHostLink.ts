@@ -138,6 +138,18 @@ export function useHostLink() {
         session.unsupportedCommands = message.unsupported;
         break;
 
+      case "workspaceRequired":
+        session.workspaceRequired = message.required;
+        // No folder: the boot page becomes the answer, not a wait. A folder that
+        // arrives later puts the splash back while the session it starts boots.
+        if (message.required) {
+          settleBoot();
+        } else {
+          isBooting.value = true;
+          startBootWatchdog();
+        }
+        break;
+
       case "displaySettings":
         display.apply(message.value);
         break;

@@ -136,6 +136,9 @@ export type WebviewToExt =
   | { type: "deleteSession"; file: string }
   | { type: "newSession" }
   | { type: "openSettings" }
+  /** Ask the host to run VS Code's folder picker — the way out of a window that
+   *  has no folder open, where the chat cannot start. */
+  | { type: "openFolder" }
   | { type: "openContextChip"; path: string; line: number }
   | { type: "rewindAccept" }
   | { type: "rewindAcceptFile"; id: number }
@@ -167,6 +170,13 @@ export interface ContextChip {
 
 export type ExtToWebview =
   | { type: "ready" }
+  /**
+   * The window has no workspace folder, so there is no session behind this
+   * webview: nothing to run pi against, and a conversation started anyway would
+   * be filed under a cwd the user never chose. `required: false` arrives when a
+   * folder appears and the real session takes over.
+   */
+  | { type: "workspaceRequired"; required: boolean }
   | { type: "state"; state: RpcState }
   | { type: "sessionInfo"; label: string; sessionFile: string | null }
   | { type: "sessionFailed"; message: string }

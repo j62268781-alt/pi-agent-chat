@@ -49,6 +49,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         return createChatSidebarViewProvider({
           extensionUri,
           bridgeConfig: currentBridgeConfig(),
+          chatTracker,
         });
       }),
     ),
@@ -68,6 +69,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   // In editor-panel mode, reopen whatever chat panels were alive last session.
   if (resolveUiMode() === "webview") restoreTrackedPanels(extensionUri, chatTracker);
+  // A folder pick asked for the chat to come back: the window reloaded onto the
+  // new workspace and would otherwise land with no chat and no way to the one
+  // that asked (its tracked panels belong to the workspace it left).
+  if (chatTracker.consumeReopenAfterFolder()) openChatAfterFolder(extensionUri, chatTracker);
 }
 
 export async function deactivate(): Promise<void> {
@@ -121,6 +126,40 @@ function restoreTrackedPanels(extensionUri: vscode.Uri, chatTracker: ChatTracker
       panelId,
     });
   });
+}
+
+/** Bring the chat back after the reload an `Open Folder…` caused, in whichever
+ *  surface this window uses — the sidebar view is part of the layout and comes
+ *  back on its own, but focusing it is what tells the user where the chat went. */
+function openChatAfterFolder(extensionUri: vscode.Uri, chatTracker: ChatTracker): void {
+  void (async () => {
+    try {
+      if (resolveUiMode() === "sidebar") {
+        const { openSidebarChat } = await import("./providers/chat/chat-sidebar.ts");
+        await openSidebarChat({
+          extensionUri,
+          bridgeConfig: currentBridgeConfig(),
+          chatTracker,
+        });
+        return;
+      }
+      const { getActivePanelHandle, openChatPanel } = await import("./providers/chat/chat-panel.ts");
+      // The new workspace may have restored a chat of its own; landing on any
+      // chat is the point, so a second panel is not worth opening.
+      const open = getActivePanelHandle();
+      if (open) {
+        open.panel.reveal(open.panel.viewColumn ?? vscode.ViewColumn.Active, false);
+        return;
+      }
+      await openChatPanel({
+        extensionUri,
+        bridgeConfig: currentBridgeConfig(),
+        tracker: chatTracker,
+      });
+    } catch (e) {
+      console.error("[pi-agent-chat] Failed to reopen the chat after opening a folder", e);
+    }
+  })();
 }
 
 /** Dispose chat surfaces that may never have been imported. */

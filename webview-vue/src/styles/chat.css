@@ -4957,8 +4957,12 @@ body {
 /* ── 启动失败卡片：左右留白 + 居中 + 大圆角按钮 ────────────────────────────────
  * 之前这套样式挂的是类名（.boot-error-msg / .boot-retry），而模板给的是 id，
  * 所以按钮是浏览器默认样式、文案直接顶到侧栏两边。这里按 id 再来一遍，并把文案
- * 居中、限宽 + 左右留白（窄侧栏下长句不再贴边），按钮圆角加大。 */
-#boot-error {
+ * 居中、限宽 + 左右留白（窄侧栏下长句不再贴边），按钮圆角加大。
+ *
+ * 「没有工作区文件夹」是同一种卡片、另一种语气：缺的是前置条件而不是出错，
+ * 所以文案走次级文字色，按钮仍用品牌色（它是这一页唯一能做的事）。 */
+#boot-error,
+#boot-workspace {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -4968,7 +4972,8 @@ body {
   text-align: center;
 }
 
-#boot-error-msg {
+#boot-error-msg,
+#boot-workspace-msg {
   margin: 0;
   max-width: 420px;
   color: var(--pi-text-danger);
@@ -4978,7 +4983,12 @@ body {
   text-wrap: pretty;
 }
 
-#boot-retry {
+#boot-workspace-msg {
+  color: var(--pi-text-secondary);
+}
+
+#boot-retry,
+#boot-open-folder {
   padding: 8px 22px;
   border: none;
   border-radius: var(--pi-r-full);
@@ -4989,7 +4999,8 @@ body {
   cursor: pointer;
 }
 
-#boot-retry:hover {
+#boot-retry:hover,
+#boot-open-folder:hover {
   filter: brightness(1.08);
 }
 

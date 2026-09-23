@@ -21,6 +21,7 @@ import {
 } from "./chat-session.ts";
 import { sessionStatusRegistry } from "../../services/chat/session-status-registry.ts";
 import { findPiColumn, findUnusedColumn } from "../../utils/webview-columns.ts";
+import { createWorkspaceGate, type WorkspaceGate } from "./workspace-gate.ts";
 
 export { type ChatSessionUpdate } from "./chat-session.ts";
 
@@ -63,10 +64,8 @@ export async function openChatPanel(
     }
   }
 
-  const piPath = await ensurePiBinary();
-  if (!piPath) return undefined;
-
   const panelId = opts.panelId ?? randomUUID();
+  const workspace = resolveChatCwd(opts.cwd ?? vscode.workspace.workspaceFolders?.[0]?.uri.fsPath);
   const panel = vscode.window.createWebviewPanel(
     CHAT_VIEW_TYPE,
     CHAT_PANEL_TITLE,
@@ -81,7 +80,6 @@ export async function openChatPanel(
     light: vscode.Uri.joinPath(opts.extensionUri, "resources", "logo-light.svg"),
     dark: vscode.Uri.joinPath(opts.extensionUri, "resources", "logo.svg"),
   };
-  const workspace = resolveChatCwd(opts.cwd ?? vscode.workspace.workspaceFolders?.[0]?.uri.fsPath);
   panel.webview.html = getChatWebviewHtml(buildChatWebviewOptions(workspace));
 
   let disposed = false;
@@ -114,83 +112,117 @@ export async function openChatPanel(
   };
 
   let session: ChatSession | undefined;
-  session = await createChatSession({
-    extensionUri: opts.extensionUri,
-    bridgeConfig: opts.bridgeConfig,
-    sessionFile: opts.sessionFile,
-    cwd: resolveChatCwd(opts.cwd ?? vscode.workspace.workspaceFolders?.[0]?.uri.fsPath),
-    traceTag: panelId.slice(0, 8),
-    host,
-    onSessionFile: (sessionFile, _name, previous) => {
-      if (previous && previous !== sessionFile) {
-        sessionToPanel.delete(previous);
-        sessionStatusRegistry.remove(previous);
-      }
-      if (sessionFile) {
-        sessionToPanel.set(sessionFile, panelId);
-        opts.tracker.update(panelId, sessionFile);
-        sessionStatusRegistry.upsert({
-          sessionFile,
-          status: session?.streaming ? "running" : "idle",
-          source: "chat",
-          panelId,
-        });
-      }
-    },
-    onStreamingChange: (running) => {
-      if (session?.sessionFile) {
-        sessionStatusRegistry.upsert({
-          sessionFile: session.sessionFile,
-          status: running ? "running" : "idle",
-          source: "chat",
-          panelId,
-        });
-      }
-    },
-    onExit: () => {
-      if (session?.sessionFile) sessionStatusRegistry.remove(session.sessionFile);
-    },
-  });
-  if (!session) {
-    panel.dispose();
-    return undefined;
+  let gate: WorkspaceGate | undefined;
+  let handle: ChatPanelHandle | undefined;
+
+  /** Start the session on `folder` and hand the webview over to it. */
+  async function startSession(folder: string | undefined): Promise<ChatPanelHandle | undefined> {
+    const piPath = await ensurePiBinary();
+    if (!piPath) return undefined;
+    gate?.dispose();
+    gate = undefined;
+    const created = await createChatSession({
+      extensionUri: opts.extensionUri,
+      bridgeConfig: opts.bridgeConfig,
+      sessionFile: opts.sessionFile,
+      cwd: folder,
+      traceTag: panelId.slice(0, 8),
+      host,
+      onSessionFile: (sessionFile, _name, previous) => {
+        if (previous && previous !== sessionFile) {
+          sessionToPanel.delete(previous);
+          sessionStatusRegistry.remove(previous);
+        }
+        if (sessionFile) {
+          sessionToPanel.set(sessionFile, panelId);
+          opts.tracker.update(panelId, sessionFile);
+          sessionStatusRegistry.upsert({
+            sessionFile,
+            status: session?.streaming ? "running" : "idle",
+            source: "chat",
+            panelId,
+          });
+        }
+      },
+      onStreamingChange: (running) => {
+        if (session?.sessionFile) {
+          sessionStatusRegistry.upsert({
+            sessionFile: session.sessionFile,
+            status: running ? "running" : "idle",
+            source: "chat",
+            panelId,
+          });
+        }
+      },
+      onExit: () => {
+        if (session?.sessionFile) sessionStatusRegistry.remove(session.sessionFile);
+      },
+    });
+    if (!created) return undefined;
+    session = created;
+    handle = {
+      panel,
+      rpc: session.rpc,
+      panelId,
+      get sessionFile() {
+        return session?.sessionFile;
+      },
+      sync: session.sync,
+    };
+    activePanels.set(panelId, handle);
+    lastActivePanelId = panelId;
+    panel.onDidChangeViewState((e) => {
+      if (e.webviewPanel.visible) lastActivePanelId = panelId;
+    });
+    if (opts.sessionFile) {
+      sessionToPanel.set(opts.sessionFile, panelId);
+      sessionStatusRegistry.upsert({
+        sessionFile: opts.sessionFile,
+        status: "idle",
+        source: "chat",
+        panelId,
+      });
+    }
+    // A folder arrived after all (the gate's panel was showing the boot page).
+    host.postMessage({ type: "workspaceRequired", required: false });
+    return handle;
   }
 
-  const handle: ChatPanelHandle = {
-    panel,
-    rpc: session.rpc,
-    panelId,
-    get sessionFile() {
-      return session.sessionFile;
-    },
-    sync: session.sync,
-  };
-  activePanels.set(panelId, handle);
-  lastActivePanelId = panelId;
-  panel.onDidChangeViewState((e) => {
-    if (e.webviewPanel.visible) lastActivePanelId = panelId;
-  });
-  if (opts.sessionFile) {
-    sessionToPanel.set(opts.sessionFile, panelId);
-    sessionStatusRegistry.upsert({
-      sessionFile: opts.sessionFile,
-      status: "idle",
-      source: "chat",
-      panelId,
+  if (workspace) {
+    await startSession(workspace);
+    if (!session) {
+      panel.dispose();
+      return undefined;
+    }
+  } else {
+    gate = createWorkspaceGate({
+      host,
+      onFolder: (folder) => {
+        void startSession(folder).then((started) => {
+          if (!started && !disposed) {
+            host.postMessage({
+              type: "error",
+              message: t("Could not start pi in the folder that was opened."),
+            });
+          }
+        });
+      },
+      onOpenFolderRequested: () => opts.tracker.markReopenAfterFolder(),
     });
   }
 
   panel.onDidDispose(() => {
     langSub.dispose();
     disposed = true;
+    gate?.dispose();
     activePanels.delete(panelId);
     if (lastActivePanelId === panelId) lastActivePanelId = undefined;
-    if (handle.sessionFile) {
+    if (handle?.sessionFile) {
       sessionToPanel.delete(handle.sessionFile);
       sessionStatusRegistry.remove(handle.sessionFile);
     }
     opts.tracker.removePanel(panelId);
-    session.dispose();
+    session?.dispose();
   });
 
   return handle;

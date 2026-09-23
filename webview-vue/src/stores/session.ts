@@ -108,6 +108,12 @@ export const useSessionStore = defineStore("session", () => {
    * user looking at the wrong thing entirely.
    */
   const piFailure = ref("");
+  /**
+   * True while the window has no workspace folder, so there is no session
+   * behind this webview at all: the boot page says so and offers the folder
+   * picker, and the composer must not pretend a prompt would go anywhere.
+   */
+  const workspaceRequired = ref(false);
   const isFavorite = (candidate: RpcModel): boolean =>
     enabledModelKeys.value.includes(modelKey(candidate.provider, candidate.id));
 
@@ -157,6 +163,7 @@ export const useSessionStore = defineStore("session", () => {
     enabledModelKeys,
     permissionMode,
     piFailure,
+    workspaceRequired,
     sessionList,
     pendingNew,
     /** Non-null exactly while a switch is in flight (see `beginSwitch`). */

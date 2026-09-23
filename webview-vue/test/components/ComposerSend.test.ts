@@ -103,4 +103,18 @@ describe("Composer send button", () => {
 
     expect(posted).toEqual([{ type: "prompt", message: "做个 UI 重构" }]);
   });
+
+  it("will not send while the window has no workspace folder", async () => {
+    // The boot page covers the composer in this state, so the disabled button
+    // and the refusal are what keep a typed prompt from reaching nothing.
+    useSessionStore().workspaceRequired = true;
+    useComposerStore().setDraft("先别发");
+    const send = mountComposer().get("#send");
+
+    expect(send.attributes("disabled")).toBeDefined();
+    expect(send.attributes("title")).toBe(t("Open a workspace folder to start pi."));
+
+    await send.trigger("click");
+    expect(posted).toEqual([]);
+  });
 });

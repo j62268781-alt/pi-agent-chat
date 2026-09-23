@@ -592,6 +592,12 @@ function onAttach(): void {
 // ------------------------------------------------------------------ send / stop
 
 function sendPrompt(explicitQueue?: boolean): void {
+  // No folder means no session to send to — the boot page is covering this
+  // composer, so this is only reachable by a keyboard race.
+  if (session.workspaceRequired) {
+    overlays.toast(t("Open a workspace folder to start pi."), "info");
+    return;
+  }
   // A compaction rebuilds the context; a message sent mid-flight would race it.
   if (session.isCompacting) {
     overlays.toast(t("Context is being compacted"), "info");
@@ -654,16 +660,21 @@ function sendPrompt(explicitQueue?: boolean): void {
 // means queueing it here or steering pi immediately.
 const stopMode = computed(() => session.isStreaming && !composer.hasContent);
 const sendDisabled = computed(
-  () => session.isCompacting || (!stopMode.value && !composer.hasContent),
+  () =>
+    session.workspaceRequired ||
+    session.isCompacting ||
+    (!stopMode.value && !composer.hasContent),
 );
 const sendTitle = computed(() =>
-  session.isCompacting
-    ? t("Context is being compacted")
-    : stopMode.value
-      ? t("Stop generation")
-      : sendWhileRunning.value
-        ? `${t("Send message")} — ${runningSendHint.value}`
-        : t("Send message"),
+  session.workspaceRequired
+    ? t("Open a workspace folder to start pi.")
+    : session.isCompacting
+      ? t("Context is being compacted")
+      : stopMode.value
+        ? t("Stop generation")
+        : sendWhileRunning.value
+          ? `${t("Send message")} — ${runningSendHint.value}`
+          : t("Send message"),
 );
 
 function onSendClick(): void {
