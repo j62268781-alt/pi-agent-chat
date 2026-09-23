@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { createPiCapabilities, isUnknownCommandError } from "../../../../src/services/pi/capabilities.ts";
+import {
+  createPiCapabilities,
+  isUnknownCommandError,
+} from "../../../../src/services/pi/capabilities.ts";
 
 describe("isUnknownCommandError", () => {
   it("recognizes the reply pi gives for a command it does not have", () => {
@@ -11,7 +14,9 @@ describe("isUnknownCommandError", () => {
 
   it("does not mistake a real failure of a supported command for a missing one", () => {
     expect(isUnknownCommandError(new Error("Invalid argument: entryId"))).toBe(false);
-    expect(isUnknownCommandError(new Error("Cannot switch: an extension cancelled it"))).toBe(false);
+    expect(isUnknownCommandError(new Error("Cannot switch: an extension cancelled it"))).toBe(
+      false,
+    );
     expect(isUnknownCommandError(new Error("Pi RPC process exited"))).toBe(false);
     expect(isUnknownCommandError(new Error(""))).toBe(false);
     expect(isUnknownCommandError(undefined)).toBe(false);

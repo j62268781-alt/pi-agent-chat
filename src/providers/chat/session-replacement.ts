@@ -47,7 +47,9 @@ export function createSessionMutations(deps: {
       const start = (): Promise<T> => {
         const client = deps.client();
         if (deps.disposed()) {
-          return Promise.reject(new Error(t("This chat was closed before the operation finished.")));
+          return Promise.reject(
+            new Error(t("This chat was closed before the operation finished.")),
+          );
         }
         return operation({
           client,
@@ -144,7 +146,11 @@ export async function waitForSessionReplacement(
 
   for (;;) {
     const state = await getState();
-    if (expected ? sameFile(state.sessionFile, expected) : identityChanged(before, state) || !hadIdentity) {
+    if (
+      expected
+        ? sameFile(state.sessionFile, expected)
+        : identityChanged(before, state) || !hadIdentity
+    ) {
       return state;
     }
     if (Date.now() >= deadline) {

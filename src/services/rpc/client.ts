@@ -152,7 +152,10 @@ export async function createRpcClient(options: CreateRpcClientOptions): Promise<
     rpcTrace(traceTag, "out", json);
   };
 
-  const request = <T>(command: Record<string, unknown>, timeoutMs = DEFAULT_REQUEST_TIMEOUT_MS): Promise<T> => {
+  const request = <T>(
+    command: Record<string, unknown>,
+    timeoutMs = DEFAULT_REQUEST_TIMEOUT_MS,
+  ): Promise<T> => {
     const id = randomUUID();
     return new Promise<T>((resolve, reject) => {
       const type = String(command.type ?? "command");
@@ -161,9 +164,7 @@ export async function createRpcClient(options: CreateRpcClientOptions): Promise<
         // handler: the id is no longer in `pending`.
         if (!pending.delete(id)) return;
         reject(
-          new Error(
-            t('Pi did not answer "{0}" within {1}s.', type, Math.round(timeoutMs / 1000)),
-          ),
+          new Error(t('Pi did not answer "{0}" within {1}s.', type, Math.round(timeoutMs / 1000))),
         );
       }, timeoutMs);
       pending.set(id, {

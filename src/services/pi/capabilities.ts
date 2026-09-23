@@ -11,8 +11,7 @@
 const UNKNOWN_COMMAND_RE = /\b(?:unknown|unsupported|unrecognized)\s+command\b/iu;
 
 export function isUnknownCommandError(error: unknown): boolean {
-  const message =
-    error instanceof Error ? error.message : typeof error === "string" ? error : "";
+  const message = error instanceof Error ? error.message : typeof error === "string" ? error : "";
   if (message.length === 0 || message.length > 16 * 1024) return false;
   return UNKNOWN_COMMAND_RE.test(message);
 }

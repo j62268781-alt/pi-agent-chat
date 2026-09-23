@@ -27,7 +27,6 @@ import type {
   RpcImage,
   RpcSessionEntry,
   RpcSessionStats,
-  RpcState,
 } from "../../protocol/rpc.ts";
 import type { SessionListItem, ToastKind, WebviewToExt } from "../../protocol/messages.ts";
 import { createRpcClient } from "../../services/rpc/client.ts";
@@ -767,7 +766,7 @@ export async function createChatSession(
       // The respawn replaces the client itself, so it runs in the queue with
       // every other replacement: nothing else may hold a request against the
       // client that is about to be disposed.
-      await mutations.run(async (guard) => {
+      await mutations.run(async () => {
         await rpc.dispose();
         rpc = await bootRpc(currentSessionFile);
         await hydrate();
@@ -1016,7 +1015,9 @@ export async function createChatSession(
             guard.assertCurrent();
             const entry = entriesData.entries.find(
               (e) =>
-                e.type === "message" && e.message?.role === "user" && e.message?.timestamp === msg.ts,
+                e.type === "message" &&
+                e.message?.role === "user" &&
+                e.message?.timestamp === msg.ts,
             );
             if (!entry) {
               toast("Could not locate that message to fork from.", "error");

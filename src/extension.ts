@@ -143,7 +143,8 @@ function openChatAfterFolder(extensionUri: vscode.Uri, chatTracker: ChatTracker)
         });
         return;
       }
-      const { getActivePanelHandle, openChatPanel } = await import("./providers/chat/chat-panel.ts");
+      const { getActivePanelHandle, openChatPanel } =
+        await import("./providers/chat/chat-panel.ts");
       // The new workspace may have restored a chat of its own; landing on any
       // chat is the point, so a second panel is not worth opening.
       const open = getActivePanelHandle();

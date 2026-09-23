@@ -661,9 +661,7 @@ function sendPrompt(explicitQueue?: boolean): void {
 const stopMode = computed(() => session.isStreaming && !composer.hasContent);
 const sendDisabled = computed(
   () =>
-    session.workspaceRequired ||
-    session.isCompacting ||
-    (!stopMode.value && !composer.hasContent),
+    session.workspaceRequired || session.isCompacting || (!stopMode.value && !composer.hasContent),
 );
 const sendTitle = computed(() =>
   session.workspaceRequired

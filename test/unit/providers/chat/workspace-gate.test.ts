@@ -92,9 +92,7 @@ describe("workspace gate", () => {
 
     send({ type: "prompt", message: "hello" });
 
-    expect(posts).toEqual([
-      { type: "error", message: "Open a workspace folder to start pi." },
-    ]);
+    expect(posts).toEqual([{ type: "error", message: "Open a workspace folder to start pi." }]);
   });
 
   it("starts the chat once a folder is added to the window", () => {

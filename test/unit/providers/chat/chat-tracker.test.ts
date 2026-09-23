@@ -11,7 +11,7 @@ function memento() {
   const values = new Map<string, unknown>();
   return {
     get: <T>(key: string, fallback?: T): T | undefined =>
-      (values.has(key) ? (values.get(key) as T) : fallback),
+      values.has(key) ? (values.get(key) as T) : fallback,
     update: async (key: string, value: unknown): Promise<void> => {
       if (value === undefined) values.delete(key);
       else values.set(key, value);
