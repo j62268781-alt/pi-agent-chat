@@ -134,6 +134,10 @@ export function useHostLink() {
         session.commands = message.commands as RpcCommand[];
         break;
 
+      case "capabilities":
+        session.unsupportedCommands = message.unsupported;
+        break;
+
       case "displaySettings":
         display.apply(message.value);
         break;

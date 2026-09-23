@@ -27,11 +27,20 @@ import type {
   RpcImage,
   RpcSessionEntry,
   RpcSessionStats,
+  RpcState,
 } from "../../protocol/rpc.ts";
 import type { SessionListItem, ToastKind, WebviewToExt } from "../../protocol/messages.ts";
 import { createRpcClient } from "../../services/rpc/client.ts";
+import { createPiCapabilities } from "../../services/pi/capabilities.ts";
 import { mergeBuiltinCommands, parseBuiltin } from "../../services/chat/builtin-commands.ts";
 import { readPiChangelog } from "../../utils/changelog.ts";
+import {
+  createSessionMutations,
+  sessionBusyReason,
+  sessionIdentity,
+  waitForSessionReplacement,
+  type SessionIdentity,
+} from "./session-replacement.ts";
 
 export interface ChatSessionUpdate {
   rename?: string;
@@ -234,6 +243,14 @@ export async function createChatSession(
   let historyLoaded = false;
   let historyLoading: Promise<void> | null = null;
   let rpc: RpcClient;
+  /** A compaction is in flight inside pi; a replacement now would drop it. */
+  let compacting = false;
+  const capabilities = createPiCapabilities();
+  const mutations = createSessionMutations({
+    client: () => rpc,
+    disposed: () => sessionDisposed,
+    busy: () => (compacting ? "compacting" : streaming ? "streaming" : undefined),
+  });
 
   const cwd = resolveChatCwd(opts.cwd ?? vscode.workspace.workspaceFolders?.[0]?.uri.fsPath);
 
@@ -241,6 +258,41 @@ export async function createChatSession(
     streaming = running;
     host.updateTitle?.(running, sessionName);
     opts.onStreamingChange?.(running);
+  }
+
+  /** Why the session cannot be replaced right now, or undefined when it can.
+   *  The queue asks the same question again when the operation's turn comes —
+   *  a run can start while it waits. */
+  function replacementBlocked(): string | undefined {
+    return sessionBusyReason(compacting ? "compacting" : streaming ? "streaming" : undefined);
+  }
+
+  function postCapabilities(): void {
+    host.postMessage({ type: "capabilities", unsupported: capabilities.unsupported() });
+  }
+
+  /**
+   * Runs a command whose presence depends on the pi build, and turns the one
+   * failure that means "this binary does not have it" into a message the user
+   * can act on. Every other failure is the command's own and keeps reporting
+   * as itself.
+   */
+  async function withCapability<T>(
+    command: string,
+    label: string,
+    run: () => Promise<T>,
+  ): Promise<T> {
+    try {
+      const out = await run();
+      capabilities.recordSuccess(command);
+      return out;
+    } catch (e) {
+      if (capabilities.recordFailure(command, e)) {
+        postCapabilities();
+        throw new Error(t("This pi build does not support {0} — update pi to use it.", label));
+      }
+      throw e;
+    }
   }
 
   function applySessionFile(sessionFile: string | undefined, name?: string): void {
@@ -706,16 +758,21 @@ export async function createChatSession(
   }
 
   async function reloadSession(): Promise<void> {
-    if (streaming || sessionDisposed) return;
+    if (streaming || compacting || sessionDisposed) return;
     if (!currentSessionFile) {
       toast("This session has not been saved yet.", "error");
       return;
     }
     try {
-      await rpc.dispose();
-      rpc = await bootRpc(currentSessionFile);
-      await hydrate();
-      toast("Session reloaded", "success");
+      // The respawn replaces the client itself, so it runs in the queue with
+      // every other replacement: nothing else may hold a request against the
+      // client that is about to be disposed.
+      await mutations.run(async (guard) => {
+        await rpc.dispose();
+        rpc = await bootRpc(currentSessionFile);
+        await hydrate();
+        toast("Session reloaded", "success");
+      });
     } catch (e) {
       if (!sessionDisposed) {
         host.postMessage({
@@ -753,8 +810,25 @@ export async function createChatSession(
             }
             pendingNewSession = false;
             newSessionFirstMessage = String(msg.message ?? "");
-            await rpc.newSession();
-            await refreshAfterSwitch();
+            const replacement = await mutations.run(async (guard) => {
+              guard.assertIdle();
+              const before = sessionIdentity(await rpc.getState());
+              guard.assertCurrent();
+              const result = await rpc.newSession();
+              guard.assertCurrent();
+              if (result.cancelled) return result;
+              await refreshAfterSwitch(before);
+              return result;
+            });
+            if (replacement.cancelled) {
+              // pi refused it, so the message belongs to the session the user
+              // left — sending it there would be a silent misfile.
+              host.postMessage({
+                type: "error",
+                message: t("A pi extension cancelled the new session."),
+              });
+              return;
+            }
           }
           if (await handleBuiltin(String(msg.message ?? ""))) break;
           const ackId = typeof msg.ackId === "string" ? msg.ackId : undefined;
@@ -929,31 +1003,38 @@ export async function createChatSession(
       }
       case "fork":
         try {
-          if (streaming) {
-            toast("Stop the agent before forking.", "error");
+          const blockedFromFork = replacementBlocked();
+          if (blockedFromFork) {
+            toast(blockedFromFork, "error");
             break;
           }
-          const entriesData = await rpc.getEntries();
-          const entry = entriesData.entries.find(
-            (e) =>
-              e.type === "message" && e.message?.role === "user" && e.message?.timestamp === msg.ts,
-          );
-          if (!entry) {
-            toast("Could not locate that message to fork from.", "error");
-            break;
-          }
-          const forkResult = await rpc.fork(entry.id);
-          if (forkResult.cancelled) {
-            toast("Fork cancelled.");
-            break;
-          }
-          const rSt = await rpc.getState();
-          applySessionFile(rSt.sessionFile, rSt.sessionName);
-          host.postMessage({ type: "state", state: rSt });
-          const rMsgs = await rpc.getMessages();
-          postMessages(rMsgs);
-          void sendContextUsage();
-          toast("Forked from selected message.", "success");
+          await mutations.run(async (guard) => {
+            guard.assertIdle();
+            const before = sessionIdentity(await rpc.getState());
+            guard.assertCurrent();
+            const entriesData = await rpc.getEntries();
+            guard.assertCurrent();
+            const entry = entriesData.entries.find(
+              (e) =>
+                e.type === "message" && e.message?.role === "user" && e.message?.timestamp === msg.ts,
+            );
+            if (!entry) {
+              toast("Could not locate that message to fork from.", "error");
+              return;
+            }
+            // In the queue, so the entry id cannot go stale between the lookup
+            // and the fork: nothing else moves the session in between.
+            const forkResult = await withCapability("fork", t("forking from a message"), () =>
+              rpc.fork(entry.id),
+            );
+            guard.assertCurrent();
+            if (forkResult.cancelled) {
+              toast("Fork cancelled.");
+              return;
+            }
+            await refreshAfterSwitch(before);
+            toast("Forked from selected message.", "success");
+          });
         } catch (e) {
           host.postMessage({
             type: "error",
@@ -1026,26 +1107,40 @@ export async function createChatSession(
               return;
             }
             if (file === currentSessionFile) {
-              if (streaming) await rpc.abort();
-              const others = list
-                .filter(function (s) {
-                  return s.path !== file;
-                })
-                .sort(function (a, b) {
-                  return (b.modified?.getTime() ?? 0) - (a.modified?.getTime() ?? 0);
-                });
-              pendingNewSession = false;
-              if (others[0]) {
-                await rpc.switchSession(others[0].path);
-              } else {
-                // Nothing left to move onto: pi needs a live session, so this
-                // one case does write a fresh (empty) transcript.
-                await rpc.newSession();
-              }
-              await refreshAfterSwitch();
+              // The move off the doomed file and the unlink are one queued
+              // operation: no other replacement can slip between them and put pi
+              // back onto a file this one is about to remove.
+              await mutations.run(async (guard) => {
+                if (streaming) await rpc.abort();
+                guard.assertCurrent();
+                const others = list
+                  .filter(function (s) {
+                    return s.path !== file;
+                  })
+                  .sort(function (a, b) {
+                    return (b.modified?.getTime() ?? 0) - (a.modified?.getTime() ?? 0);
+                  });
+                pendingNewSession = false;
+                if (others[0]) {
+                  await rpc.switchSession(others[0].path);
+                  guard.assertCurrent();
+                  await refreshAfterSwitch({}, others[0].path);
+                } else {
+                  // Nothing left to move onto: pi needs a live session, so this
+                  // one case does write a fresh (empty) transcript.
+                  const before = sessionIdentity(await rpc.getState());
+                  guard.assertCurrent();
+                  await rpc.newSession();
+                  guard.assertCurrent();
+                  await refreshAfterSwitch(before);
+                }
+                await rm(file, { force: true });
+                messagesCache.delete(file);
+              });
+            } else {
+              await rm(file, { force: true });
+              messagesCache.delete(file);
             }
-            await rm(file, { force: true });
-            messagesCache.delete(file);
             toast(t("Session deleted."), "success");
             await postSessionsList();
           } catch (e) {
@@ -1181,8 +1276,11 @@ export async function createChatSession(
     void sendSessionInfo();
   }
 
-  async function refreshAfterSwitch(): Promise<void> {
-    const st = await rpc.getState();
+  async function refreshAfterSwitch(
+    before: SessionIdentity = {},
+    expected?: string,
+  ): Promise<void> {
+    const st = await waitForSessionReplacement(() => rpc.getState(), before, expected);
     if (sessionDisposed) return;
     applySessionFile(st.sessionFile, st.sessionName);
     host.postMessage({ type: "state", state: st });
@@ -1192,18 +1290,39 @@ export async function createChatSession(
     void sendContextUsage();
   }
 
+  /**
+   * A replacement that failed on our side — a timeout, an error — may still
+   * land inside pi afterwards, so re-read whatever session pi ended up on
+   * instead of leaving the pane on the one the user left. Idempotent: when
+   * nothing changed this reposts the same transcript.
+   */
+  function resyncAfterFailedReplacement(): void {
+    void refreshAfterSwitch().catch(() => {});
+  }
+
   async function switchTo(sessionFile: string): Promise<void> {
     pendingNewSession = false;
     // Whatever the guide's message said belongs to the session being left.
     newSessionFirstMessage = "";
-    if (streaming) {
-      toast(t("Stop the agent before switching sessions."), "error");
+    const blockedFromSwitch = replacementBlocked();
+    if (blockedFromSwitch) {
+      toast(blockedFromSwitch, "error");
       return;
     }
     try {
-      await rpc.switchSession(sessionFile);
-      await refreshAfterSwitch();
+      await mutations.run(async (guard) => {
+        guard.assertIdle();
+        const result = await rpc.switchSession(sessionFile);
+        guard.assertCurrent();
+        // An extension's before-switch hook can refuse it; pi answers instead of
+        // failing, so the refusal has to be read from the result.
+        if (result.cancelled) {
+          throw new Error(t("A pi extension cancelled the session switch."));
+        }
+        await refreshAfterSwitch({}, sessionFile);
+      });
     } catch (e) {
+      resyncAfterFailedReplacement();
       if (!sessionDisposed) {
         host.postMessage({
           type: "error",
@@ -1232,8 +1351,9 @@ export async function createChatSession(
   }
 
   async function newSession(): Promise<void> {
-    if (streaming) {
-      toast(t("Stop the agent before starting a new session."), "error");
+    const blockedFromNew = replacementBlocked();
+    if (blockedFromNew) {
+      toast(blockedFromNew, "error");
       return;
     }
     if (await sessionIsEmpty()) {
@@ -1241,10 +1361,20 @@ export async function createChatSession(
       return;
     }
     try {
-      await rpc.newSession();
-      await refreshAfterSwitch();
-      toast(t("Started new session."), "success");
+      await mutations.run(async (guard) => {
+        guard.assertIdle();
+        const before = sessionIdentity(await rpc.getState());
+        guard.assertCurrent();
+        const result = await rpc.newSession();
+        guard.assertCurrent();
+        if (result.cancelled) {
+          throw new Error(t("A pi extension cancelled the new session."));
+        }
+        await refreshAfterSwitch(before);
+        toast(t("Started new session."), "success");
+      });
     } catch (e) {
+      resyncAfterFailedReplacement();
       if (!sessionDisposed) {
         host.postMessage({
           type: "error",
@@ -1266,6 +1396,10 @@ export async function createChatSession(
   async function bootRpc(sessionFileForSpawn: string | undefined): Promise<RpcClient> {
     if (!piPath) throw new Error("pi is not available");
     const gen = ++rpcGeneration;
+    // A different process may accept a different command set, so nothing this
+    // one learned about the last binary carries over.
+    capabilities.reset();
+    postCapabilities();
     return createRpcClient({
       piPath,
       args: createRpcShellArgs({
@@ -1282,6 +1416,11 @@ export async function createChatSession(
             updateStreamingState(true);
           } else if (event.type === "agent_settled") {
             updateStreamingState(false);
+          } else if (event.type === "compaction_start") {
+            compacting = true;
+          } else if (event.type === "compaction_end") {
+            compacting = false;
+            void refreshContextAfterCompaction(event);
           }
           host.postMessage({ type: "event", event });
           if (event.type === "agent_settled") {
@@ -1303,8 +1442,6 @@ export async function createChatSession(
             void sendContextUsage();
           } else if (event.type === "message_end") {
             void sendContextUsage();
-          } else if (event.type === "compaction_end") {
-            void refreshContextAfterCompaction(event);
           }
         },
         onExtensionUiRequest: (req) => {

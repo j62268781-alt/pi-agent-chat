@@ -114,5 +114,15 @@
   "The session in use cannot be deleted.": "正在使用的会话不能删除。",
   "Session deleted.": "会话已删除。",
   "Already in a new session.": "已经是新会话。",
-  "The previous session is still generating — stop it or wait before starting a new one.": "上一个会话仍在生成中——请先停止或等待完成，再开始新会话。"
+  "The previous session is still generating — stop it or wait before starting a new one.": "上一个会话仍在生成中——请先停止或等待完成，再开始新会话。",
+  "Pi did not answer \"{0}\" within {1}s.": "pi 在 {1} 秒内没有响应 \"{0}\"。",
+  "This chat was closed before the operation finished.": "操作完成前该会话已被关闭。",
+  "Pi restarted before the operation finished.": "操作完成前 pi 已重启。",
+  "Stop the agent before changing sessions.": "请先停止 agent，再更改会话。",
+  "Pi did not switch to the requested session.": "pi 没有切到所请求的会话。",
+  "Pi did not start the new session.": "pi 没有开始新会话。",
+  "A pi extension cancelled the session switch.": "某个 pi 扩展取消了这次会话切换。",
+  "A pi extension cancelled the new session.": "某个 pi 扩展取消了新建会话。",
+  "This pi build does not support {0} — update pi to use it.": "当前 pi 版本不支持{0}——升级 pi 后可用。",
+  "forking from a message": "从某条消息 fork"
 }

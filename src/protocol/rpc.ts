@@ -109,7 +109,9 @@ export type RpcQueueMode = "all" | "one-at-a-time";
 /** Typed client over a `pi --mode rpc` subprocess. */
 export interface RpcClient {
   send(command: Record<string, unknown>): void;
-  request<T = unknown>(command: Record<string, unknown>): Promise<T>;
+  /** Rejects when pi has not answered within `timeoutMs`, so a wedged process
+   *  surfaces as an error instead of a promise that never settles. */
+  request<T = unknown>(command: Record<string, unknown>, timeoutMs?: number): Promise<T>;
   prompt(
     message: string,
     streamingBehavior?: "steer" | "followUp",

@@ -5,6 +5,7 @@ import { normalizePiSpawnTarget } from "../pi/process.ts";
 import { createStderrTail } from "./stderr-tail.ts";
 import { toExtensionUiResponse } from "./extension-ui-response.ts";
 import { rpcTrace, rpcTraceErr } from "../../providers/chat/rpc-trace.ts";
+import { t } from "../../utils/i18n.ts";
 import type {
   ExtensionUiRequest,
   RpcClient,
@@ -38,7 +39,19 @@ export interface CreateRpcClientOptions {
 type Pending = {
   resolve: (value: unknown) => void;
   reject: (error: Error) => void;
+  timer: NodeJS.Timeout;
 };
+
+/** Most commands are answered as soon as pi has read them, so this only fires
+ *  when the process is wedged rather than busy. */
+export const DEFAULT_REQUEST_TIMEOUT_MS = 30_000;
+/** Session replacement rebuilds pi's runtime, and every extension's
+ *  `session_start` runs inside that: the MCP adapter alone allows itself 30s
+ *  there, and a misconfigured server has been measured at 5.8s. The default is
+ *  too tight to tell "slow MCP" from "hung". */
+export const SESSION_REPLACEMENT_TIMEOUT_MS = 120_000;
+/** Compaction is a model call over the whole context. */
+export const COMPACTION_TIMEOUT_MS = 600_000;
 
 export async function createRpcClient(options: CreateRpcClientOptions): Promise<RpcClient> {
   const traceTag = options.traceTag ?? "rpc";
@@ -55,7 +68,10 @@ export async function createRpcClient(options: CreateRpcClientOptions): Promise<
   let disposed = false;
 
   const failAll = (message: string) => {
-    for (const [, p] of pending) p.reject(new Error(message));
+    for (const [, p] of pending) {
+      clearTimeout(p.timer);
+      p.reject(new Error(message));
+    }
     pending.clear();
   };
 
@@ -136,17 +152,36 @@ export async function createRpcClient(options: CreateRpcClientOptions): Promise<
     rpcTrace(traceTag, "out", json);
   };
 
-  const request = <T>(command: Record<string, unknown>): Promise<T> => {
+  const request = <T>(command: Record<string, unknown>, timeoutMs = DEFAULT_REQUEST_TIMEOUT_MS): Promise<T> => {
     const id = randomUUID();
     return new Promise<T>((resolve, reject) => {
+      const type = String(command.type ?? "command");
+      const timer = setTimeout(() => {
+        // An answer that arrives after this point is dropped by the response
+        // handler: the id is no longer in `pending`.
+        if (!pending.delete(id)) return;
+        reject(
+          new Error(
+            t('Pi did not answer "{0}" within {1}s.', type, Math.round(timeoutMs / 1000)),
+          ),
+        );
+      }, timeoutMs);
       pending.set(id, {
-        resolve: (v) => resolve(v as T),
-        reject,
+        resolve: (v) => {
+          clearTimeout(timer);
+          resolve(v as T);
+        },
+        reject: (e) => {
+          clearTimeout(timer);
+          reject(e);
+        },
+        timer,
       });
       try {
         send({ ...command, id });
       } catch (e) {
         pending.delete(id);
+        clearTimeout(timer);
         reject(e instanceof Error ? e : new Error(String(e)));
       }
     });
@@ -233,14 +268,23 @@ export async function createRpcClient(options: CreateRpcClientOptions): Promise<
     compact: (customInstructions) =>
       request<RpcCompactionResult>(
         customInstructions ? { type: "compact", customInstructions } : { type: "compact" },
+        COMPACTION_TIMEOUT_MS,
       ),
     setAutoCompaction: (enabled) => request<void>({ type: "set_auto_compaction", enabled }),
     setSessionName: (name) => request<void>({ type: "set_session_name", name }),
-    newSession: () => request<{ cancelled: boolean }>({ type: "new_session" }),
+    newSession: () =>
+      request<{ cancelled: boolean }>({ type: "new_session" }, SESSION_REPLACEMENT_TIMEOUT_MS),
     switchSession: (sessionPath) =>
-      request<{ cancelled: boolean }>({ type: "switch_session", sessionPath }),
+      request<{ cancelled: boolean }>(
+        { type: "switch_session", sessionPath },
+        SESSION_REPLACEMENT_TIMEOUT_MS,
+      ),
     getEntries: () => request<RpcEntriesData>({ type: "get_entries" }),
-    fork: (entryId) => request<{ text: string; cancelled: boolean }>({ type: "fork", entryId }),
+    fork: (entryId) =>
+      request<{ text: string; cancelled: boolean }>(
+        { type: "fork", entryId },
+        SESSION_REPLACEMENT_TIMEOUT_MS,
+      ),
     lastStderr: () => stderrTail.text(),
     respondExtensionUi,
     dispose,

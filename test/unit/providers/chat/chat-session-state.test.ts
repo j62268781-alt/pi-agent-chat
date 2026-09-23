@@ -42,7 +42,14 @@ vi.mock("../../../../src/services/rpc/client.ts", () => ({
       getAvailableThinkingLevels: async () => [],
       getCommands: async () => [],
       getSessionStatsFull: async () => ({}),
-      newSession: async () => ({ cancelled: false }),
+      newSession: async () => {
+        // What pi does for `new_session`: the runtime is rebuilt onto a session
+        // of its own — a fresh id, and the file path it will write (the path is
+        // assigned when the session is created, the write itself is lazy).
+        harness.state.sessionId = "session-guide";
+        harness.state.sessionFile = "/tmp/pi-sessions/guide.jsonl";
+        return { cancelled: false };
+      },
       prompt: async () => {},
       dispose: async () => {},
       lastStderr: () => "",
@@ -97,6 +104,7 @@ describe("the state the host pushes", () => {
   beforeEach(() => {
     harness.posts.length = 0;
     harness.listed.length = 0;
+    harness.state.sessionId = undefined;
     harness.state.sessionFile = undefined;
     harness.state.sessionName = undefined;
     harness.state.messageCount = 0;
@@ -160,7 +168,10 @@ describe("the session list", () => {
   };
 
   it("carries the live session before pi has written its file", async () => {
-    harness.state.sessionFile = "/tmp/pi-sessions/guide.jsonl";
+    // The session the guide's send replaces; the row that has to appear is the
+    // replacement's, whose file pi has not written yet.
+    harness.state.sessionId = "session-before";
+    harness.state.sessionFile = "/tmp/pi-sessions/before.jsonl";
     const session = await boot();
     await session.sendFromWebview({ type: "webviewReady" });
     await vi.waitFor(() => expect(states().length).toBeGreaterThan(0));
@@ -177,7 +188,8 @@ describe("the session list", () => {
   });
 
   it("hands the row back to the disk scan once the file exists", async () => {
-    harness.state.sessionFile = "/tmp/pi-sessions/guide.jsonl";
+    harness.state.sessionId = "session-before";
+    harness.state.sessionFile = "/tmp/pi-sessions/before.jsonl";
     const session = await boot();
     await session.sendFromWebview({ type: "webviewReady" });
     await vi.waitFor(() => expect(states().length).toBeGreaterThan(0));

@@ -176,6 +176,11 @@ export type ExtToWebview =
   | { type: "permissionMode"; mode: PermissionMode }
   | { type: "sessionsList"; sessions: SessionListItem[]; currentFile: string | null }
   | { type: "commands"; commands: RpcCommand[] }
+  /**
+   * Commands this pi build has refused as unknown. Surfaces that offer one
+   * (the transcript's fork button) read this instead of failing on the click.
+   */
+  | { type: "capabilities"; unsupported: string[] }
   | { type: "displaySettings"; value: ChatDisplaySettings }
   | { type: "messages"; messages: unknown[]; historyAvailable?: boolean }
   | { type: "history"; messages: unknown[] }

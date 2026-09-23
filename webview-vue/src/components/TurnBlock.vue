@@ -391,7 +391,7 @@ async function forkTurn(): Promise<void> {
       <span class="codicon codicon-pie-chart"></span>
     </button>
     <button
-      v-if="turn.user?.timestamp != null"
+      v-if="turn.user?.timestamp != null && !session.unsupportedCommands.includes('fork')"
       class="icon-btn status-action"
       type="button"
       :title="t('Fork')"

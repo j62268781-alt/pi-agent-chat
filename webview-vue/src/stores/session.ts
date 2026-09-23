@@ -28,6 +28,12 @@ export const useSessionStore = defineStore("session", () => {
   const models = ref<RpcModel[]>([]);
   const thinkingLevels = ref<string[]>([]);
   const commands = ref<RpcCommand[]>([]);
+  /**
+   * Commands this pi build answered "unknown" to. Only ever a downgrade from
+   * the host's own probe of the running binary, never a guess from a version
+   * number.
+   */
+  const unsupportedCommands = ref<string[]>([]);
   /** `provider/id` keys the user starred; drives model-picker ordering. */
   const enabledModelKeys = ref<string[]>([]);
   const permissionMode = ref<PermissionMode>("AskForApproval");
@@ -102,7 +108,6 @@ export const useSessionStore = defineStore("session", () => {
    * user looking at the wrong thing entirely.
    */
   const piFailure = ref("");
-
   const isFavorite = (candidate: RpcModel): boolean =>
     enabledModelKeys.value.includes(modelKey(candidate.provider, candidate.id));
 
@@ -148,6 +153,7 @@ export const useSessionStore = defineStore("session", () => {
     models,
     thinkingLevels,
     commands,
+    unsupportedCommands,
     enabledModelKeys,
     permissionMode,
     piFailure,
