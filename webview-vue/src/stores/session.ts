@@ -65,6 +65,8 @@ export const useSessionStore = defineStore("session", () => {
   );
 
   function beginSwitch(file: string, name: string, messages: unknown[]): void {
+    // Whatever the previous session was waiting for belongs to that session.
+    awaitingAgent.value = false;
     switchSnapshot.value = { file: sessionFile.value, name: sessionName.value, messages };
     sessionFile.value = file;
     sessionName.value = name;
@@ -114,6 +116,13 @@ export const useSessionStore = defineStore("session", () => {
    * picker, and the composer must not pretend a prompt would go anywhere.
    */
   const workspaceRequired = ref(false);
+  /**
+   * A prompt has been handed to pi and the run has not started yet. pi rebuilds
+   * its runtime before the first turn of a session (seconds, once MCP is
+   * configured), and until `agent_start` lands there is nothing to report — so
+   * the transcript says what it is waiting for instead of showing nothing.
+   */
+  const awaitingAgent = ref(false);
   const isFavorite = (candidate: RpcModel): boolean =>
     enabledModelKeys.value.includes(modelKey(candidate.provider, candidate.id));
 
@@ -128,7 +137,11 @@ export const useSessionStore = defineStore("session", () => {
   }): void {
     if (state.model !== undefined) model.value = state.model;
     if (state.thinkingLevel !== undefined) thinkingLevel.value = state.thinkingLevel;
-    if (state.isStreaming !== undefined) isStreaming.value = state.isStreaming;
+    if (state.isStreaming !== undefined) {
+      isStreaming.value = state.isStreaming;
+      // The run started: the live row takes over from the waiting one.
+      if (state.isStreaming) awaitingAgent.value = false;
+    }
     if (state.isCompacting !== undefined) isCompacting.value = state.isCompacting;
     if (state.sessionFile !== undefined) sessionFile.value = state.sessionFile;
     if (state.sessionName !== undefined) sessionName.value = state.sessionName;
@@ -164,6 +177,7 @@ export const useSessionStore = defineStore("session", () => {
     permissionMode,
     piFailure,
     workspaceRequired,
+    awaitingAgent,
     sessionList,
     pendingNew,
     /** Non-null exactly while a switch is in flight (see `beginSwitch`). */

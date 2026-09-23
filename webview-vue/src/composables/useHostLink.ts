@@ -102,6 +102,7 @@ export function useHostLink() {
       case "sessionFailed":
         // The session is dead rather than slow: drop the running affordances and
         // undo an optimistic switch, then let the card carry the reason.
+        session.awaitingAgent = false;
         session.applyState({ isStreaming: false });
         transcript.statusText = "";
         session.rollbackSwitch(transcript);
@@ -217,11 +218,13 @@ export function useHostLink() {
       case "promptRejected":
         // pi would not take it, so the queue does. Nothing about the run changed,
         // which is why this is not the `error` case below.
+        session.awaitingAgent = false;
         pending.reject(message.ackId);
         overlays.toast(message.message || t("The queued message was not sent"), "error");
         break;
 
       case "error":
+        session.awaitingAgent = false;
         session.applyState({ isStreaming: false });
         transcript.statusText = "";
         // An optimistic switch that never got its content: put the previous

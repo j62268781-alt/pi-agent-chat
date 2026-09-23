@@ -651,6 +651,9 @@ export const useTranscriptStore = defineStore("transcript", () => {
         session.applyState({ isStreaming: true });
         break;
       case "agent_settled":
+        // A settle ends whatever the session was waiting on, including a run
+        // that never started.
+        session.awaitingAgent = false;
         session.applyState({ isStreaming: false });
         retryAttempt.value = 0;
         retryMax.value = 0;

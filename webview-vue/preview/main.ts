@@ -95,6 +95,11 @@ display.apply({
 if (params.get("nofolder") === "1") {
   session.workspaceRequired = true;
 }
+// `?awaiting=1` is the gap between sending and the run starting — pi rebuilds
+// its runtime first — where the status row names the wait.
+if (params.get("awaiting") === "1") {
+  session.awaitingAgent = true;
+}
 
 const { isBooting } = await import("@/composables/useHostLink");
 isBooting.value = false;

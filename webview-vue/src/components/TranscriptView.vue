@@ -42,6 +42,15 @@ const liveLabel = computed(() => {
   if (!session.isStreaming) return "";
   return activeBlock.value?.kind === "thinking" ? t("Deep thinking…") : t("Replying…");
 });
+/**
+ * Before a session's first turn pi rebuilds its runtime, and this row is what
+ * the user looks at while that happens: naming the wait is cheaper than an
+ * empty transcript, and the live label replaces it the moment `agent_start`
+ * lands.
+ */
+const statusLabel = computed(
+  () => liveLabel.value || (session.awaitingAgent ? t("Waiting for the agent…") : ""),
+);
 
 /** Distance from the bottom within which the view is considered "at bottom". */
 const STICK_THRESHOLD_PX = 48;
@@ -240,9 +249,9 @@ watch(
 
         <!-- Live status row: the dotted grid + what the agent is doing right
              now. It leaves as soon as the agent settles. -->
-        <div v-if="liveLabel" class="status-row">
+        <div v-if="statusLabel" class="status-row">
           <span class="status-dots" aria-hidden="true"></span>
-          <span class="status-text">{{ liveLabel }}</span>
+          <span class="status-text">{{ statusLabel }}</span>
         </div>
       </div>
     </div>

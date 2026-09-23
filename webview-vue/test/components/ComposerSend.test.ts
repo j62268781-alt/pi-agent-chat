@@ -104,6 +104,28 @@ describe("Composer send button", () => {
     expect(posted).toEqual([{ type: "prompt", message: "做个 UI 重构" }]);
   });
 
+  it("marks an idle send as waiting for the agent", async () => {
+    // pi takes a moment to start the run (it rebuilds its runtime first), and the
+    // transcript has to say so instead of looking idle.
+    useComposerStore().setDraft("先跑起来");
+    const send = mountComposer().get("#send");
+
+    await send.trigger("click");
+
+    expect(posted).toEqual([{ type: "prompt", message: "先跑起来" }]);
+    expect(useSessionStore().awaitingAgent).toBe(true);
+  });
+
+  it("does not mark a queued message as waiting: the agent is already running", async () => {
+    useDisplayStore().apply({ ...useDisplayStore().settings, runningSendBehavior: "queue" });
+    useSessionStore().isStreaming = true;
+    useComposerStore().setDraft("排队就行");
+
+    await mountComposer().get("#send").trigger("click");
+
+    expect(useSessionStore().awaitingAgent).toBe(false);
+  });
+
   it("will not send while the window has no workspace folder", async () => {
     // The boot page covers the composer in this state, so the disabled button
     // and the refusal are what keep a typed prompt from reaching nothing.

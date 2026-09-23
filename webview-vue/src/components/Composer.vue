@@ -652,6 +652,10 @@ function sendPrompt(explicitQueue?: boolean): void {
     });
     return;
   }
+  // pi rebuilds the runtime before a session's first turn, so the run does not
+  // start the moment this is posted: say what is being waited on in the
+  // meantime instead of leaving the transcript silent.
+  session.awaitingAgent = true;
   post({ type: "prompt", message: messageWithTagLine, ...(images.length > 0 ? { images } : {}) });
 }
 

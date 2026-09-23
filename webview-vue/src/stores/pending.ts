@@ -127,6 +127,9 @@ export const usePendingStore = defineStore("pending", () => {
   ): string {
     const ackId = `ack-${++ackSeq}`;
     inFlight.set(ackId, { item, index });
+    // Delivered to an idle agent: the run starts a moment later, and the
+    // transcript should say so rather than look asleep.
+    if (!useSessionStore().isStreaming) useSessionStore().awaitingAgent = true;
     post({
       type: "prompt",
       ackId,
