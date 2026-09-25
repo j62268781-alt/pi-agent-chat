@@ -11,6 +11,7 @@
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { RpcClient, RpcEvent, RpcState } from "../../../../src/protocol/rpc.ts";
+import { setConfigValue } from "../../stubs/vscode.ts";
 
 const harness = vi.hoisted(() => ({
   posts: [] as Array<Record<string, unknown>>,
@@ -34,14 +35,28 @@ const harness = vi.hoisted(() => ({
   calls: [] as Array<Record<string, unknown>>,
   /** What the title generator would answer for this first message. */
   title: undefined as string | undefined,
+  /** Answers served in order, before `title` takes over. */
+  titleScript: [] as Array<string | undefined>,
+  /** How many times the generator was asked. */
+  titleCalls: 0,
+  /** The sound files the host asked a player for. */
+  sounds: [] as string[],
   /** Set by a test to hold the title back until it says so. */
   titleGate: null as Promise<void> | null,
 }));
 
+vi.mock("../../../../src/services/chat/completion-sound.ts", () => ({
+  COMPLETION_SOUND_FILE: "resources/completion.wav",
+  playCompletionSound: (file: string) => {
+    harness.sounds.push(file);
+  },
+}));
+
 vi.mock("../../../../src/services/chat/session-title.ts", () => ({
   generateSessionTitle: async () => {
+    harness.titleCalls += 1;
     if (harness.titleGate) await harness.titleGate;
-    return harness.title;
+    return harness.titleScript.length > 0 ? harness.titleScript.shift() : harness.title;
   },
 }));
 
@@ -146,6 +161,11 @@ async function bootWithSessionOpen(preferences?: Parameters<typeof boot>[0]): Pr
   const session = await boot(preferences);
   await session.sendFromWebview({ type: "webviewReady" });
   await vi.waitFor(() => expect(states().length).toBeGreaterThan(0));
+  // Hydration is two interleaved bursts of awaits — the constructor's own and
+  // the one `webviewReady` triggers — and zeroing the counters mid-flight leaves
+  // the tail of the boot counted as whatever the test does next. Every mocked
+  // call resolves in a microtask, so a macrotask drains both.
+  await new Promise((resolve) => setTimeout(resolve, 0));
   harness.calls.length = 0;
   harness.posts.length = 0;
   return session;
@@ -161,6 +181,9 @@ beforeEach(() => {
   // Empty by default: the title coroutine is fire-and-forget, and a test that
   // does not care about naming must not leave one running behind it.
   harness.title = undefined;
+  harness.titleScript = [];
+  harness.titleCalls = 0;
+  harness.sounds.length = 0;
   harness.titleGate = null;
   harness.state.sessionId = undefined;
   harness.state.sessionFile = undefined;
@@ -352,6 +375,39 @@ describe("the model a new session starts on", () => {
   });
 });
 
+// The guide's send replaces the session *while the message that caused it is on
+// screen*, and pi's new session has no transcript of its own — the message is
+// only reaching pi now. Re-reading that empty list emptied the panel and brought
+// the new-session guide back until pi echoed the message (彬哥: 闪到原始新会话页面
+// 然后又恢复), so this landing keeps the transcript instead.
+describe("the guide's own replacement", () => {
+  it("keeps the transcript the panel already has", async () => {
+    const session = await bootWithSessionOpen();
+
+    await guideSend(session, "先看登录流程");
+
+    expect(posts().filter((p) => p.type === "adoptSession")).toHaveLength(1);
+    expect(posts().filter((p) => p.type === "messages")).toEqual([]);
+  });
+
+  it("still hands the header the session it landed on", async () => {
+    const session = await bootWithSessionOpen();
+
+    await guideSend(session, "先看登录流程");
+
+    await vi.waitFor(() =>
+      expect(
+        posts()
+          .filter((p) => p.type === "sessionInfo")
+          .at(-1),
+      ).toMatchObject({
+        sessionFile: "/tmp/pi-sessions/guide.jsonl",
+      }),
+    );
+    expect(lastState()?.sessionFile).toBe("/tmp/pi-sessions/guide.jsonl");
+  });
+});
+
 // The guide's session shows up as a timestamp in the switcher until it has a
 // name. The name comes from the message that created it — generated in-process
 // while the first turn runs, written quietly (no toast), and never over a name
@@ -401,5 +457,97 @@ describe("naming the session the guide created", () => {
     await new Promise((resolve) => setTimeout(resolve, 20));
 
     expect(harness.calls.filter((c) => c.type === "setSessionName")).toEqual([]);
+  });
+
+  // The model call can come back empty — a gateway that is down, a reply that
+  // sanitized away — and a session that is never named is what 彬哥 reported.
+  // The settle of the turn it belongs to is the second chance.
+  it("tries again at the settle when the first attempt came back empty", async () => {
+    const session = await bootWithSessionOpen();
+    harness.titleScript = [undefined, "登录会话丢失"];
+
+    await guideSend(session, "先看登录流程，为什么刷新之后 session 会丢");
+    harness.onEvent?.({ type: "agent_start" });
+    harness.onEvent?.({ type: "agent_settled" });
+
+    await vi.waitFor(() =>
+      expect(harness.calls).toContainEqual({ type: "setSessionName", name: "登录会话丢失" }),
+    );
+    expect(harness.titleCalls).toBe(2);
+  });
+
+  it("gives up after two attempts, however many turns follow", async () => {
+    const session = await bootWithSessionOpen();
+    harness.title = undefined;
+
+    await guideSend(session, "先看登录流程");
+    for (let turn = 0; turn < 3; turn++) {
+      harness.onEvent?.({ type: "agent_start" });
+      harness.onEvent?.({ type: "agent_settled" });
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    }
+
+    // Two calls for this session, not one per turn: a session that cannot be
+    // named must not keep spending model calls for the rest of its life.
+    expect(harness.titleCalls).toBe(2);
+    expect(harness.calls.filter((c) => c.type === "setSessionName")).toEqual([]);
+  });
+});
+
+// The chime moved to the host (`completion-sound.ts`): the panel cannot be
+// trusted for it — it has no audio rights until the user touches it, and VS Code
+// disposes the whole document when the view is put away, so a run that ends while
+// the user is elsewhere rang nothing at all. The host has no such gate, and the
+// moment it rings is the settle of the run.
+describe("the completion chime", () => {
+  beforeEach(() => {
+    // The setting is the panel's own switch (`pi-agent-chat.chatCompletionSound`).
+    setConfigValue("chatCompletionSound", true);
+  });
+
+  const settle = (session: Session, stopReason?: string) => {
+    harness.onEvent?.({ type: "agent_start" });
+    if (stopReason)
+      harness.onEvent?.({
+        type: "message_end",
+        message: { role: "assistant", stopReason },
+      } as unknown as RpcEvent);
+    harness.onEvent?.({ type: "agent_settled" });
+    return session;
+  };
+
+  it("rings when a run settles", async () => {
+    const session = await bootWithSessionOpen();
+
+    settle(session);
+
+    // The file as it ships: `resources/` is what the .vsix carries.
+    expect(harness.sounds).toEqual([expect.stringContaining("resources/completion.wav")]);
+  });
+
+  it("stays silent for a run the user stopped", async () => {
+    const session = await bootWithSessionOpen();
+
+    settle(session, "aborted");
+
+    expect(harness.sounds).toEqual([]);
+  });
+
+  it("rings again for the next run after a stopped one", async () => {
+    const session = await bootWithSessionOpen();
+
+    settle(session, "aborted");
+    settle(session);
+
+    expect(harness.sounds).toHaveLength(1);
+  });
+
+  it("stays silent when the setting is off", async () => {
+    setConfigValue("chatCompletionSound", false);
+    const session = await bootWithSessionOpen();
+
+    settle(session);
+
+    expect(harness.sounds).toEqual([]);
   });
 });

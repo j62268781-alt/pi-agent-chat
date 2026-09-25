@@ -79,8 +79,6 @@ export interface ChatDisplaySettings {
   expandThinking: boolean;
   /** Pin a new turn to the top of the viewport instead of the bottom (`chatKeepReadingAnchor`). */
   keepReadingAnchor: boolean;
-  /** Ring the panel's own chime when a run settles (`chatCompletionSound`). */
-  completionSound: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -184,6 +182,12 @@ export type ExtToWebview =
    * by, so the header can show the same title.
    */
   | { type: "sessionInfo"; label: string; sessionFile: string | null; modified: string }
+  /**
+   * A replacement landed whose content the panel is *already* showing, so its
+   * transcript is kept rather than re-read. Only the guide's own first message
+   * does this: the session pi created is empty until that message arrives.
+   */
+  | { type: "adoptSession" }
   | { type: "sessionFailed"; message: string }
   | { type: "models"; models: RpcModel[] }
   | { type: "enabledModels"; keys: string[] }

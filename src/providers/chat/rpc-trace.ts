@@ -23,6 +23,19 @@ export function rpcTraceErr(tag: string, line: string): void {
   getChannel().appendLine(`[${tag}] [err] ${line}`);
 }
 
+/**
+ * The session-title call's own report.
+ *
+ * It is the panel's other model call, and unlike the chat it fails *silently* by
+ * design (the session keeps its date), so without a line here "起名没生效" is
+ * unanswerable: `console.*` from an extension host does not reach the exthost log
+ * (measured), which is the only other place this could have gone.
+ */
+export function titleTrace(line: string): void {
+  if (!isEnabled()) return;
+  getChannel().appendLine(`[title] ${line}`);
+}
+
 export function disposeRpcTrace(): void {
   channel?.dispose();
   channel = undefined;

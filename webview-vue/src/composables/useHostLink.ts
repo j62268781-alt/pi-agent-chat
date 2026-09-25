@@ -8,7 +8,6 @@ import type { RpcCommand, RpcContextUsage, RpcModel, RpcState } from "@protocol/
 import { ref } from "vue";
 import { onHostMessage, post } from "@/lib/bridge";
 import { t } from "@/lib/i18n";
-import { playCompletionChime } from "@/lib/sound";
 import { useComposerStore } from "@/stores/composer";
 import { useDisplayStore } from "@/stores/display";
 import { useOverlaysStore } from "@/stores/overlays";
@@ -73,19 +72,22 @@ export function useHostLink() {
   const display = useDisplayStore();
   const pending = usePendingStore();
 
-  /**
-   * A run ended on its own — ring the panel's chime, unless the setting is off
-   * or the user is the one who ended it: a stop means they already left that
-   * answer behind, and a chime would call them back to it. `stopReason` is
-   * written by `message_end`, which lands before `agent_settled`.
-   */
-  function chime(): void {
-    if (!display.completionSound) return;
-    if (transcript.turns.at(-1)?.stopReason === "aborted") return;
-    playCompletionChime();
-  }
-
   function handle(message: ExtToWebview): void {
+    /**
+     * The session on screen was replaced and the panel is on it: the switch is
+     * over (nothing to roll back to), the guide gives way to the session the host
+     * just made, and a pi that had failed counts as back.
+     *
+     * About the transcript it says nothing — `messages` replaces it and
+     * `adoptSession` keeps it, which is the whole difference between the two.
+     */
+    const landSession = (): void => {
+      session.endSwitch();
+      session.pendingNew = false;
+      session.piFailure = "";
+      bootFailure.value = "";
+    };
+
     switch (message.type) {
       case "ready":
         break;
@@ -159,14 +161,22 @@ export function useHostLink() {
       case "messages":
         // Real content for whatever session is now open: an optimistic switch
         // has landed and the "new chat" guide is over.
-        session.endSwitch();
-        session.pendingNew = false;
-        session.piFailure = "";
-        // The watchdog may already have fired while pi was installing its
-        // packages; this is the proof it came back, so the card has to go.
-        bootFailure.value = "";
+        landSession();
         transcript.hydrate(message.messages);
         transcript.historyAvailable = message.historyAvailable === true;
+        settleBoot();
+        break;
+
+      /**
+       * The switch landed, but the transcript is the panel's own — the session
+       * pi just made has none of its own yet. That is the guide's first send:
+       * pi's new session contains nothing until the message reaches it, so
+       * hydrating here emptied the panel and put the new-session guide back on
+       * screen for the moment in between, then the message came back when pi
+       * echoed it (彬哥: 闪到原始新会话页面然后又恢复).
+       */
+      case "adoptSession":
+        landSession();
         settleBoot();
         break;
 
@@ -180,8 +190,10 @@ export function useHostLink() {
         transcript.applyEvent(message.event);
         if ((message.event as { type?: string }).type === "agent_settled") {
           // The turn just settled, so the head of the pending queue is deliverable.
+          // The chime is not rung from here: the host plays it (`completion-sound.ts`),
+          // because this document cannot be relied on to have audio rights or even
+          // to exist while the user is elsewhere.
           pending.flushNext();
-          chime();
         }
         settleBoot();
         break;

@@ -5,7 +5,7 @@
 import { statSync } from "node:fs";
 import { rm } from "node:fs/promises";
 import { homedir } from "node:os";
-import { isAbsolute, relative, resolve, sep } from "node:path";
+import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import * as vscode from "vscode";
 import { SessionManager } from "@earendil-works/pi-coding-agent";
 import { resolveChatCwd } from "../../utils/chat-cwd.ts";
@@ -43,6 +43,10 @@ import {
 } from "./session-replacement.ts";
 import type { ChatPreferences } from "./chat-tracker.ts";
 import { generateSessionTitle } from "../../services/chat/session-title.ts";
+import {
+  COMPLETION_SOUND_FILE,
+  playCompletionSound,
+} from "../../services/chat/completion-sound.ts";
 
 export interface ChatSessionUpdate {
   rename?: string;
@@ -309,6 +313,11 @@ export async function createChatSession(
     needsSessionFile = false;
     const previous = currentSessionFile;
     currentSessionFile = sessionFile;
+    if (previous !== sessionFile) {
+      // A different session: naming starts over for it.
+      naming.attempts = 0;
+      naming.candidate = "";
+    }
     opts.onSessionFile?.(sessionFile, name, previous);
     void sendSessionInfo();
   }
@@ -618,25 +627,61 @@ export async function createChatSession(
   }
 
   /**
-   * Name the session the guide just created after the message that created it.
+   * Give an unnamed session a name, taken from the message that created it.
    *
    * The title comes from an in-process model call (`session-title.ts`: no
    * subprocess, no MCP) that runs while the first turn is in flight, so nothing
-   * waits on it. Every failure is silent on purpose — a session that keeps its
-   * timestamp title is what the panel did before, and the user never asked for
-   * this name. It is skipped if they renamed the session themselves meanwhile,
-   * or moved to another one.
+   * waits on it. Failures are silent on purpose — a session that keeps its
+   * timestamp is what the panel did before, and the user never asked for this
+   * name — but the call *can* come back empty (a gateway that is down, a reply
+   * that sanitized away), so an unnamed session gets two chances: when its first
+   * message is sent, and once more at the next settle. Bounded on purpose: a
+   * session that cannot be named must not spend a call on every turn it lives
+   * through. It is skipped if the user renamed the session meanwhile, or moved
+   * to another one.
    */
-  function autoNameSession(firstMessage: string, file: string | undefined): void {
-    if (!file || !cwd || !firstMessage.trim()) return;
+  const NAMING_ATTEMPTS = 2;
+  const naming = { attempts: 0, candidate: "", inFlight: false };
+
+  /**
+   * How the last run ended, from the assistant message's own `stopReason` — the
+   * same field the transcript's turn carries. A run the user stopped is not a
+   * run that finished, so it does not ring.
+   */
+  let lastStopReason: string | undefined;
+
+  /**
+   * The chime is the host's to play, right here: the panel cannot be trusted for
+   * it (see `completion-sound.ts`), and the run settling is the moment the user
+   * asked to hear.
+   */
+  function ringCompletionSound(): void {
+    const enabled =
+      vscode.workspace.getConfiguration("pi-agent-chat").get<boolean>("chatCompletionSound") ??
+      true;
+    if (!enabled || lastStopReason === "aborted") return;
+    playCompletionSound(join(opts.extensionUri.fsPath, COMPLETION_SOUND_FILE));
+  }
+
+  function considerNamingSession(message: string, file: string | undefined): void {
+    if (!file || !cwd || sessionName || naming.inFlight) return;
+    if (!message.trim() || naming.attempts >= NAMING_ATTEMPTS) return;
+    naming.attempts += 1;
+    naming.inFlight = true;
     void (async () => {
-      const title = await generateSessionTitle(firstMessage, cwd);
-      if (sessionDisposed || !title) return;
-      if (currentSessionFile !== file || sessionName) return;
-      await pushSessionName(title);
-      // The switcher's row for this session is built from `sessionName`.
-      void postSessionsList();
-    })().catch(() => {});
+      try {
+        const title = await generateSessionTitle(message, cwd);
+        if (sessionDisposed || !title) return;
+        if (currentSessionFile !== file || sessionName) return;
+        await pushSessionName(title);
+        // The switcher's row for this session is built from `sessionName`.
+        void postSessionsList();
+      } catch {
+        /* a name is never worth a failure report: the date stands */
+      } finally {
+        naming.inFlight = false;
+      }
+    })();
   }
 
   async function handleBuiltin(message: string): Promise<boolean> {
@@ -882,7 +927,9 @@ export async function createChatSession(
               if (result.cancelled) return result;
               await applyPickedModel();
               guard.assertCurrent();
-              await refreshAfterSwitch(before);
+              // Not `refreshAfterSwitch`: this replacement's transcript is the
+              // message the user just sent, which the panel already shows.
+              await adoptReplacement(before);
               return result;
             });
             if (replacement.cancelled) {
@@ -894,7 +941,8 @@ export async function createChatSession(
               });
               return;
             }
-            autoNameSession(newSessionFirstMessage, currentSessionFile);
+            naming.candidate = newSessionFirstMessage;
+            considerNamingSession(newSessionFirstMessage, currentSessionFile);
           }
           if (await handleBuiltin(String(msg.message ?? ""))) break;
           const ackId = typeof msg.ackId === "string" ? msg.ackId : undefined;
@@ -904,6 +952,11 @@ export async function createChatSession(
               msg.streamingBehavior as "steer" | "followUp" | undefined,
               msg.images as RpcImage[] | undefined,
             );
+            // Whatever created this session, the message that opened it is what
+            // names it — kept until it has a name, so a first attempt that came
+            // back empty can be made again at the settle (see
+            // `considerNamingSession`).
+            if (!sessionName && !naming.candidate) naming.candidate = String(msg.message ?? "");
           } catch (e) {
             // A prompt that came out of the pending queue has a row to go back
             // to; the generic error channel would only report "stopped".
@@ -1407,6 +1460,26 @@ export async function createChatSession(
     }
   }
 
+  /**
+   * Take over the session pi just created without re-reading its transcript.
+   *
+   * The guide's send replaces the session *while the message that caused it is on
+   * screen*, and the replacement has no transcript of its own — the first message
+   * is only reaching pi now. `refreshAfterSwitch` hydrated that empty list, which
+   * emptied the panel and brought the new-session guide back for the moment
+   * before pi echoed the message (彬哥: 闪到原始新会话页面然后又恢复). The state
+   * push is what the header and the "+" gate read; the transcript is already
+   * right, and `adoptSession` is that half of the landing.
+   */
+  async function adoptReplacement(before: SessionIdentity): Promise<void> {
+    const st = await waitForSessionReplacement(() => rpc.getState(), before);
+    if (sessionDisposed) return;
+    applySessionFile(st.sessionFile, st.sessionName);
+    host.postMessage({ type: "state", state: st });
+    host.postMessage({ type: "adoptSession" });
+    void sendContextUsage();
+  }
+
   async function switchTo(sessionFile: string): Promise<void> {
     pendingNewSession = false;
     // Whatever the guide's message said belongs to the session being left.
@@ -1522,9 +1595,15 @@ export async function createChatSession(
         onEvent: (event) => {
           if (gen !== rpcGeneration || sessionDisposed) return;
           if (event.type === "agent_start") {
+            // A new run: how the last one ended says nothing about this one.
+            lastStopReason = undefined;
             updateStreamingState(true);
           } else if (event.type === "agent_settled") {
             updateStreamingState(false);
+            ringCompletionSound();
+          } else if (event.type === "message_end") {
+            const reason = (event.message as { stopReason?: unknown } | undefined)?.stopReason;
+            if (typeof reason === "string") lastStopReason = reason;
           } else if (event.type === "compaction_start") {
             compacting = true;
           } else if (event.type === "compaction_end") {
@@ -1549,7 +1628,12 @@ export async function createChatSession(
                 // turn: re-push the row's own timestamp so the header keeps
                 // agreeing with the switcher. Named sessions have nothing to
                 // refresh, and no scan is worth running for them.
-                if (!s.sessionName) void sendSessionInfo();
+                if (!s.sessionName) {
+                  void sendSessionInfo();
+                  // The turn settled, so an earlier naming attempt — if it came
+                  // back empty — gets its one retry here.
+                  considerNamingSession(naming.candidate, currentSessionFile);
+                }
               })
               .catch(() => {});
             refreshCommands();

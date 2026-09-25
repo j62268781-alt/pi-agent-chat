@@ -4,6 +4,7 @@ import {
   getAgentDir,
   SessionManager,
 } from "@earendil-works/pi-coding-agent";
+import { titleTrace } from "../../providers/chat/rpc-trace.ts";
 
 /**
  * Name a chat session after the message that created it.
@@ -60,6 +61,7 @@ export async function generateSessionTitle(
   let session: Awaited<ReturnType<typeof createAgentSession>>["session"] | undefined;
   let unsubscribe: (() => void) | undefined;
   let timer: NodeJS.Timeout | undefined;
+  const startedAt = Date.now();
   try {
     const agentDir = getAgentDir();
     // Everything the project would otherwise inject (AGENTS.md, skills, the
@@ -87,10 +89,19 @@ export async function generateSessionTitle(
     session = created.session;
 
     let text = "";
+    let refusal: string | undefined;
     unsubscribe = session.subscribe((event) => {
-      if (event.type !== "message_update") return;
-      const inner = event.assistantMessageEvent as { type: string; delta?: string };
-      if (inner?.type === "text_delta" && typeof inner.delta === "string") text += inner.delta;
+      if (event.type === "message_update") {
+        const inner = event.assistantMessageEvent as { type: string; delta?: string };
+        if (inner?.type === "text_delta" && typeof inner.delta === "string") text += inner.delta;
+        return;
+      }
+      // A provider that refused answers with an error on the message rather than
+      // by throwing, so this is the only record of why there is no title.
+      if (event.type === "message_end") {
+        const error = (event.message as { errorMessage?: string } | undefined)?.errorMessage;
+        if (error) refusal = error;
+      }
     });
 
     timer = setTimeout(() => {
@@ -98,8 +109,18 @@ export async function generateSessionTitle(
     }, TIMEOUT_MS);
 
     await session.prompt(message);
-    return sanitizeTitle(text);
-  } catch {
+    const title = sanitizeTitle(text);
+    // Silent to the user by design — the session keeps its date — but whether it
+    // ran and what came back has to be answerable somewhere, or "起名没生效" is
+    // unanswerable from the panel (彬哥 asked exactly that).
+    if (title) {
+      titleTrace(`named in ${Date.now() - startedAt}ms: ${JSON.stringify(title)}`);
+    } else {
+      titleTrace(`no title: ${refusal ?? (text ? "unusable reply" : "empty reply")}`);
+    }
+    return title;
+  } catch (e) {
+    titleTrace(`failed: ${e instanceof Error ? e.message : String(e)}`);
     return undefined;
   } finally {
     if (timer) clearTimeout(timer);

@@ -63,7 +63,6 @@ export function readChatDisplaySettings(): ChatDisplaySettings {
     expandToolCalls: config.get<boolean>("chatExpandToolCalls") ?? false,
     expandThinking: config.get<boolean>("chatExpandThinking") ?? false,
     keepReadingAnchor: config.get<boolean>("chatKeepReadingAnchor") ?? false,
-    completionSound: config.get<boolean>("chatCompletionSound") ?? true,
   };
 }
 
