@@ -12,6 +12,7 @@ import type { SessionListItem } from "@protocol/messages";
 import { post } from "@/lib/bridge.ts";
 import { formatClock } from "@/lib/format.ts";
 import { t } from "@/lib/i18n.ts";
+import { sessionTitle } from "@/lib/session-title.ts";
 import { useComposerStore } from "@/stores/composer.ts";
 import { useOverlaysStore } from "@/stores/overlays.ts";
 import { useSessionStore } from "@/stores/session.ts";
@@ -125,18 +126,6 @@ function formatSessionTime(iso: string): string {
   return date.toLocaleDateString([], { year: "numeric", month: "2-digit", day: "2-digit" });
 }
 
-/** Unnamed sessions get a timestamp title and show their first message below. */
-function sessionTitle(file: string, name: string, modified: string): string {
-  if (name) return name;
-  const date = new Date(modified);
-  if (!Number.isNaN(date.getTime())) {
-    const pad = (value: number): string => (value < 10 ? `0${value}` : String(value));
-    const label = `${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
-    return t("Session {0}", label);
-  }
-  return file.split("/").pop() || file;
-}
-
 function preview(text: string): string {
   const flattened = text.trim().replace(/\s+/g, " ");
   return flattened.length > 90 ? `${flattened.slice(0, 90)}…` : flattened;
@@ -224,11 +213,9 @@ function choose(item: SessionListItem): void {
     overlays.toast(t("Stop the agent before switching sessions."), "error");
     return;
   }
-  session.beginSwitch(
-    item.file,
-    sessionTitle(item.file, item.name, item.modified),
-    transcript.messages.slice(),
-  );
+  // The real name, not the row's title: the header derives the title itself, and
+  // the rename box prefills from the name — a date label is not a name.
+  session.beginSwitch(item.file, item.name, transcript.messages.slice(), item.modified);
   transcript.reset();
   post({ type: "switchSession", file: item.file });
 }

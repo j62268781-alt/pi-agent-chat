@@ -326,14 +326,46 @@ export async function createChatSession(
     return shortenHome(fsPath);
   }
 
+  /**
+   * When the session was last touched, in pi's own terms.
+   *
+   * The webview's header shows an unnamed session under a date, and the
+   * switcher's row dates it from `SessionManager.list` — which is *not* the
+   * file's mtime (measured: seconds to minutes apart), so the same number has to
+   * be looked up the same way or the header and the row disagree (彬哥: 切换会话后
+   * 左上角还是"新会话"). A session pi has not written yet is on no scan at all;
+   * that is the freshly created one, so now is its date.
+   */
+  async function currentSessionModified(file: string | undefined): Promise<string> {
+    if (file && cwd) {
+      try {
+        const list = await SessionManager.list(cwd);
+        const row = list.find((entry) => entry.path === file);
+        if (row?.modified) {
+          return row.modified instanceof Date ? row.modified.toISOString() : String(row.modified);
+        }
+      } catch {
+        /* an unreadable scan dates it now, which is right for a new session */
+      }
+    }
+    return new Date().toISOString();
+  }
+
   async function sendSessionInfo(): Promise<void> {
     if (sessionDisposed) return;
     // The webview toolbar shows only the session name — cwd and branch are
     // visible in the editor's own UI and read as noise in a chat header.
+    const file = currentSessionFile;
+    const name = sessionName;
+    const modified = await currentSessionModified(file);
+    // A replacement can land while the scan runs; its own push is the one the
+    // panel should read, so this one stands down rather than racing it.
+    if (sessionDisposed || file !== currentSessionFile || name !== sessionName) return;
     host.postMessage({
       type: "sessionInfo",
-      label: sessionName || "",
-      sessionFile: currentSessionFile ?? null,
+      label: name || "",
+      sessionFile: file ?? null,
+      modified,
     });
   }
 
@@ -1513,6 +1545,11 @@ export async function createChatSession(
                 if (gen !== rpcGeneration || sessionDisposed) return;
                 if (needsSessionFile) applySessionFile(s.sessionFile, s.sessionName);
                 host.postMessage({ type: "state", state: s });
+                // An unnamed session is dated, and its date moved with this
+                // turn: re-push the row's own timestamp so the header keeps
+                // agreeing with the switcher. Named sessions have nothing to
+                // refresh, and no scan is worth running for them.
+                if (!s.sessionName) void sendSessionInfo();
               })
               .catch(() => {});
             refreshCommands();

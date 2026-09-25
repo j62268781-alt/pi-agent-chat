@@ -8,6 +8,7 @@ import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 import type { RpcCommand, RpcContextUsage, RpcModel, RpcSessionStats } from "@protocol/rpc";
 import type { PermissionMode, SessionListItem } from "@protocol/messages";
+import { sessionTitle } from "@/lib/session-title";
 import { aggregateUsage, type UsageTotals } from "@/lib/usage";
 
 /** `provider/modelId` — the key the host uses for the favourites list. */
@@ -18,6 +19,8 @@ function modelKey(provider: string, id: string): string {
 export const useSessionStore = defineStore("session", () => {
   const sessionFile = ref<string | null>(null);
   const sessionName = ref("");
+  /** pi's `modified` for this session — what its own row in the switcher dates. */
+  const sessionModified = ref("");
   const model = ref<RpcModel | null>(null);
   const thinkingLevel = ref("");
   const isStreaming = ref(false);
@@ -60,16 +63,25 @@ export const useSessionStore = defineStore("session", () => {
    * moment a session is clicked, while pi is still loading it. If the host
    * reports an error instead of content, the snapshot puts everything back.
    */
-  const switchSnapshot = ref<{ file: string | null; name: string; messages: unknown[] } | null>(
-    null,
-  );
+  const switchSnapshot = ref<{
+    file: string | null;
+    name: string;
+    modified: string;
+    messages: unknown[];
+  } | null>(null);
 
-  function beginSwitch(file: string, name: string, messages: unknown[]): void {
+  function beginSwitch(file: string, name: string, messages: unknown[], modified = ""): void {
     // Whatever the previous session was waiting for belongs to that session.
     awaitingAgent.value = false;
-    switchSnapshot.value = { file: sessionFile.value, name: sessionName.value, messages };
+    switchSnapshot.value = {
+      file: sessionFile.value,
+      name: sessionName.value,
+      modified: sessionModified.value,
+      messages,
+    };
     sessionFile.value = file;
     sessionName.value = name;
+    sessionModified.value = modified;
     pendingNew.value = false;
   }
 
@@ -85,11 +97,21 @@ export const useSessionStore = defineStore("session", () => {
     switchSnapshot.value = null;
     sessionFile.value = snapshot.file;
     sessionName.value = snapshot.name;
+    sessionModified.value = snapshot.modified;
     transcript.restore(snapshot.messages);
   }
 
   /** Local usage totals, recomputed as the transcript grows. */
   const totals = ref<UsageTotals>({ input: 0, output: 0, cacheRead: 0, cacheWrite: 0, cost: 0 });
+
+  /**
+   * The title this session is shown under — the header's own line and the
+   * switcher's row read the same derivation, so a switch cannot leave one of
+   * them saying "新会话" while the other names the date (彬哥).
+   */
+  const title = computed(() =>
+    sessionTitle(sessionFile.value, sessionName.value, sessionModified.value),
+  );
 
   const currentModelLabel = computed(() => {
     const selected = model.value;
@@ -163,6 +185,8 @@ export const useSessionStore = defineStore("session", () => {
   return {
     sessionFile,
     sessionName,
+    sessionModified,
+    title,
     model,
     thinkingLevel,
     isStreaming,

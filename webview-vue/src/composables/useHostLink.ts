@@ -97,6 +97,7 @@ export function useHostLink() {
       case "sessionInfo":
         session.sessionFile = message.sessionFile;
         session.sessionName = message.label;
+        session.sessionModified = message.modified;
         break;
 
       case "sessionFailed":

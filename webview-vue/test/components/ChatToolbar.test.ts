@@ -88,6 +88,72 @@ describe("ChatToolbar — the new-chat button", () => {
   });
 });
 
+// The header's title has to be the title the switcher's row shows. Both derive
+// it from the same fields now; before that, an unnamed session left the header
+// on the generic "新会话" while the row that was just clicked said
+// "会话 09-25 18:02" (彬哥).
+describe("ChatToolbar — the session title", () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+  });
+
+  const header = (wrapper: ReturnType<typeof mount>) => wrapper.get("#session-info");
+  const dated = (iso: string): string => {
+    const date = new Date(iso);
+    const pad = (value: number): string => (value < 10 ? `0${value}` : String(value));
+    return t(
+      "Session {0}",
+      `${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`,
+    );
+  };
+
+  it("is the row's date once an unnamed session is switched to", async () => {
+    const session = useSessionStore();
+    const wrapper = mountToolbar();
+    const modified = "2026-09-25T10:02:34.320Z";
+
+    // What clicking a row does, then what the host answers for it: pi has no
+    // name for this session, only a timestamp.
+    session.beginSwitch("/tmp/sessions/b.jsonl", "", [], modified);
+    await wrapper.vm.$nextTick();
+    // Optimistic title, before the host has answered.
+    expect(header(wrapper).text()).toBe(dated(modified));
+
+    session.sessionName = "";
+    session.sessionModified = modified;
+    await wrapper.vm.$nextTick();
+
+    expect(header(wrapper).text()).toBe(dated(modified));
+    expect(header(wrapper).text()).not.toBe(t("New session"));
+  });
+
+  it("is still the name when the session has one", async () => {
+    const session = useSessionStore();
+    const wrapper = mountToolbar();
+    session.beginSwitch("/tmp/sessions/a.jsonl", "登录流程", [], "2026-09-25T10:02:34.320Z");
+    await wrapper.vm.$nextTick();
+
+    expect(header(wrapper).text()).toBe("登录流程");
+  });
+
+  it("says nothing but a placeholder before any session is known", () => {
+    expect(header(mountToolbar()).text()).toBe(t("New session"));
+  });
+
+  it("names the guide, which has no session behind it yet", async () => {
+    const session = useSessionStore();
+    // The "+" is gated on the host's count, so the session has to have grown.
+    session.applyState({ messageCount: 2 });
+    const wrapper = mountToolbar();
+
+    await wrapper.get("#new-chat-btn").trigger("click");
+
+    expect(session.pendingNew).toBe(true);
+    await wrapper.vm.$nextTick();
+    expect(header(wrapper).text()).toBe(t("New chat"));
+  });
+});
+
 // The switcher button is the list's trigger *and* its anchor, so it belongs to
 // the popup's "clicked inside" set — see `SessionsPopup`'s document mousedown.
 // 彬哥: 列表开着时点按钮，本该关掉，却又打开了。

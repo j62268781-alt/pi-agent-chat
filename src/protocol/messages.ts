@@ -178,7 +178,12 @@ export type ExtToWebview =
    */
   | { type: "workspaceRequired"; required: boolean }
   | { type: "state"; state: RpcState }
-  | { type: "sessionInfo"; label: string; sessionFile: string | null }
+  /**
+   * `label` is the session's real name (`""` when it has none); `modified` is
+   * pi's own timestamp for it — what the switcher's row dates an unnamed session
+   * by, so the header can show the same title.
+   */
+  | { type: "sessionInfo"; label: string; sessionFile: string | null; modified: string }
   | { type: "sessionFailed"; message: string }
   | { type: "models"; models: RpcModel[] }
   | { type: "enabledModels"; keys: string[] }

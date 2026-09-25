@@ -195,6 +195,35 @@ describe("the state the host pushes", () => {
     );
   });
 
+  // The header shows an unnamed session under a date, and the switcher's row
+  // dates it from `SessionManager.list` — not from the file's mtime (measured:
+  // seconds to minutes apart). One source, or the two disagree.
+  it("dates the session the way its own row in the switcher is dated", async () => {
+    const modified = new Date("2026-09-25T09:46:04.225Z");
+    harness.state.sessionId = "session-before";
+    harness.state.sessionFile = "/tmp/pi-sessions/before.jsonl";
+    harness.listed.push({
+      path: "/tmp/pi-sessions/before.jsonl",
+      name: "",
+      firstMessage: "先看登录流程",
+      modified,
+      messageCount: 2,
+    });
+    const session = await boot();
+    await session.sendFromWebview({ type: "webviewReady" });
+
+    await vi.waitFor(() =>
+      expect(
+        posts()
+          .filter((p) => p.type === "sessionInfo")
+          .at(-1),
+      ).toMatchObject({
+        sessionFile: "/tmp/pi-sessions/before.jsonl",
+        modified: modified.toISOString(),
+      }),
+    );
+  });
+
   it("names the session file a lazily-created session only writes on its first turn", async () => {
     const session = await boot();
     await session.sendFromWebview({ type: "webviewReady" });

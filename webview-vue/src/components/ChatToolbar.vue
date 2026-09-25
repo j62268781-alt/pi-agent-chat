@@ -65,6 +65,16 @@ const newChatTitle = computed(() => {
   return t("New chat");
 });
 
+/**
+ * What the header calls the open session: the "+" guide has no session yet, and
+ * everything else is titled the way the switcher's row titles it. An unnamed
+ * session used to fall back to the generic "新会话" here while its row showed a
+ * date — the same session, named two ways (彬哥).
+ */
+const sessionLabel = computed(() =>
+  session.pendingNew ? t("New chat") : session.title || t("New session"),
+);
+
 function newChat(): void {
   if (!canStartNew.value) return;
   // Enter the guide immediately; the session itself is only created when the
@@ -118,9 +128,9 @@ const statusLabel = (): string => {
       v-show="!editing"
       id="session-info"
       class="session-info"
-      :title="session.pendingNew ? t('New chat') : session.sessionName"
+      :title="sessionLabel"
       @dblclick="beginRename"
-      >{{ session.pendingNew ? t("New chat") : session.sessionName || t("New session") }}</span
+      >{{ sessionLabel }}</span
     >
     <input
       v-show="editing"

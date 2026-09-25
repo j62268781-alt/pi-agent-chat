@@ -256,8 +256,10 @@ watch(
         <div v-if="session.switchSnapshot" class="switch-loading">
           <span class="switch-loading-spin" aria-hidden="true"></span>
           <span>{{ t("Loading session…") }}</span>
-          <span v-if="session.sessionName" class="switch-loading-name">
-            {{ session.sessionName }}
+          <!-- The title, not the name: the session being loaded is usually
+               unnamed, and the row that was clicked titled it by date. -->
+          <span v-if="session.title" class="switch-loading-name">
+            {{ session.title }}
           </span>
         </div>
 
