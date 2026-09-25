@@ -91,8 +91,8 @@ function openSettings(): void {
 
 const statusLabel = (): string => {
   if (transcript.statusText === "compacting") return t("Compacting…");
-  if (transcript.retryAttempt > 0)
-    return t("Retrying {0}/{1}…", transcript.retryAttempt, transcript.retryMax);
+  // Retries are named by the transcript's own status row, where the reader is
+  // already looking — see `TranscriptView`'s `liveLabel`.
   if (session.isStreaming) return t("Working…");
   return "";
 };

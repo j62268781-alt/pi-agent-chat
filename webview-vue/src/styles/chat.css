@@ -1274,17 +1274,6 @@ body {
 .thinking-block.is-running > summary {
   opacity: 1;
 }
-.thinking-block.is-running > summary::after {
-  content: "";
-  display: inline-block;
-  width: 9px;
-  height: 9px;
-  margin-left: auto;
-  border: 1.5px solid var(--pi-info);
-  border-top-color: transparent;
-  border-radius: 50%;
-  animation: tool-spin 0.7s linear infinite;
-}
 .thinking-block > summary::-webkit-details-marker {
   display: none;
 }
@@ -1760,9 +1749,9 @@ body {
 #input {
   width: 100%;
   display: block;
-  min-height: 36px;
+  min-height: 23px;
   max-height: 200px;
-  padding: 8px 0 6px;
+  padding: 3px 0 0;
   background: transparent;
   color: var(--pi-text);
   border: none;
@@ -3575,16 +3564,17 @@ body {
     min-width: 70px;
   }
 
-  /* The gauge gives its extra 2px back and drops the number with them: at this
-   * width the hole is the row's own size, and a 10px "100%" no longer fits in
-   * it. The ring itself is still readable as a ring. */
+  /* The gauge gives its extra 2px back; the number stays, one rung down. It used
+   * to be dropped here — but a ring that reads "usage 3%" in its own card while
+   * showing nothing at all in the hole is the worst of both (彬哥, 2026-09-25). A
+   * 9px "100" is ~16px against this hole, so it fits where the 10px rung did. */
   .ctx-ring {
     width: var(--pi-h-chat-control);
     height: var(--pi-h-chat-control);
   }
 
   .ctx-ring-label {
-    display: none;
+    font-size: 9px;
   }
 }
 

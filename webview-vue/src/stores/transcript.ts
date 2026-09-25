@@ -559,9 +559,15 @@ export const useTranscriptStore = defineStore("transcript", () => {
     }
   }
 
-  function markTextFinalized(assistant: AssistantMessage): void {
+  /**
+   * Closes whatever the turn was still doing. Both live flags have to fall here:
+   * an aborted run can stop mid-thought, and a reasoning row that keeps
+   * `running` would keep claiming 思考中 (and spinning) after the turn is over.
+   */
+  function finalizeLiveBlocks(assistant: AssistantMessage): void {
     for (const block of assistant.blocks) {
       if (block.kind === "text") block.streaming = false;
+      else if (block.kind === "thinking") block.running = false;
     }
   }
 
@@ -657,7 +663,7 @@ export const useTranscriptStore = defineStore("transcript", () => {
         session.applyState({ isStreaming: false });
         retryAttempt.value = 0;
         retryMax.value = 0;
-        if (activeAssistant.value) markTextFinalized(activeAssistant.value);
+        if (activeAssistant.value) finalizeLiveBlocks(activeAssistant.value);
         activeAssistantIndex.value = -1;
         break;
       case "message_start": {
@@ -666,15 +672,23 @@ export const useTranscriptStore = defineStore("transcript", () => {
         if (message.role === "assistant") {
           beginAssistant(typeof message.timestamp === "number" ? message.timestamp : null);
         } else if (message.role === "user") {
-          const last = messages.value[messages.value.length - 1];
-          if (last?.kind === "user" && last.timestamp === null) {
-            last.timestamp = typeof message.timestamp === "number" ? message.timestamp : null;
+          // A bubble we already drew on send gets its time filled in rather than
+          // being drawn again — matched by text, not by "the last message": two
+          // sends can be in flight together (a slow session initialising in
+          // front of them), and each echo has to find its own slot.
+          const text = extractText(message.content);
+          const timestamp = typeof message.timestamp === "number" ? message.timestamp : null;
+          const pending = messages.value.find(
+            (entry) => entry.kind === "user" && entry.timestamp === null && entry.text === text,
+          );
+          if (pending && pending.kind === "user") {
+            pending.timestamp = timestamp;
           } else if (!isToolResultMessage(message)) {
             messages.value.push({
               kind: "user",
               id: nextId("user"),
-              timestamp: typeof message.timestamp === "number" ? message.timestamp : null,
-              text: extractText(message.content),
+              timestamp,
+              text,
               images: extractImages(message.content),
             });
           }
@@ -691,7 +705,7 @@ export const useTranscriptStore = defineStore("transcript", () => {
           assistant.stopReason = typeof message.stopReason === "string" ? message.stopReason : null;
           assistant.errorMessage =
             typeof message.errorMessage === "string" ? message.errorMessage : null;
-          markTextFinalized(assistant);
+          finalizeLiveBlocks(assistant);
         }
         activeAssistantIndex.value = -1;
         session.recomputeTotals(messages.value);
@@ -762,6 +776,24 @@ export const useTranscriptStore = defineStore("transcript", () => {
     }
   }
 
+  /**
+   * Draws the user's own message the moment it leaves the composer.
+   *
+   * A send does not always reach pi straight away: a fresh session or a
+   * replacement has to finish initialising first, and pi's echo arrives only
+   * after that. Until then the message is the user's own — it belongs on screen.
+   * `timestamp: null` is the join: pi's `message_start` fills that in instead of
+   * appending a second copy (see the user branch of `message_start`).
+   */
+  function pushPendingUser(
+    text: string,
+    images: Array<{ type: "image"; data: string; mimeType: string }>,
+  ): string {
+    const id = nextId("user");
+    messages.value.push({ kind: "user", id, timestamp: null, text, images });
+    return id;
+  }
+
   return {
     messages,
     restore,
@@ -785,6 +817,7 @@ export const useTranscriptStore = defineStore("transcript", () => {
     appendHistory,
     appendHydrated,
     beginAssistant,
+    pushPendingUser,
     ensureBlock,
     blockAt,
     resolveToolLocation,

@@ -112,7 +112,16 @@ describe("control-bar rhythm contract", () => {
     // its text by (6px container + 4px editor + the hairline), so the text, the
     // rule under it and the chip now share one left edge.
     const input = declarations(chat, "#input");
-    expect(input).toContain("padding: 8px 0 6px");
+    // The vertical padding is the empty-state ceiling/floor pair: 3px above the
+    // text and nothing below it, so the text sits ~10px under the card's inner
+    // edge and 6.5px above the divider. The height itself comes from the JS floor
+    // (`autoGrow`), which is why the two values are asserted together — editing
+    // one alone silently does nothing.
+    expect(input).toContain("padding: 3px 0 0");
+    expect(input).toContain("min-height: 23px");
+    expect(readFileSync("src/components/Composer.vue", "utf8")).toContain(
+      "Math.max(23, Math.min(el.scrollHeight, 200))",
+    );
     expect(input, "the input bought back its own side padding").not.toMatch(
       /padding:\s*[^;]*\b10px/,
     );
@@ -255,5 +264,15 @@ describe("meta-row contract", () => {
     for (const selector of [".msg-outcome", ".msg-time"]) {
       expect(declarations(chat, selector), selector).toContain("var(--pi-fs-body)");
     }
+  });
+});
+
+describe("the gauge's number in a narrow sidebar", () => {
+  it("shrinks a rung instead of disappearing", () => {
+    // A ring whose card reads "usage 3%" while its hole shows nothing is the
+    // worst of both (彬哥, 2026-09-25). The ≤300px block used to hide the label
+    // outright; it now drops one font rung so a three-digit reading still fits.
+    expect(chat).not.toMatch(/\.ctx-ring-label\s*\{[^}]*display:\s*none/);
+    expect(chat).toMatch(/\.ctx-ring-label\s*\{\s*font-size:\s*9px/);
   });
 });

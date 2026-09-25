@@ -128,6 +128,8 @@ export async function openChatPanel(
       cwd: folder,
       traceTag: panelId.slice(0, 8),
       host,
+      // Same bookkeeping as the tracked panels: what the user picked last.
+      preferences: opts.tracker,
       onSessionFile: (sessionFile, _name, previous) => {
         if (previous && previous !== sessionFile) {
           sessionToPanel.delete(previous);

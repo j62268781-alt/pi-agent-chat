@@ -29,7 +29,13 @@ async function openPanel(deps: ChatCommandDeps, cwd?: string): Promise<void> {
 
 async function openSidebar(deps: ChatCommandDeps): Promise<void> {
   const { openSidebarChat } = await import("../providers/chat/chat-sidebar.ts");
-  await openSidebarChat({ extensionUri: deps.extensionUri, bridgeConfig: deps.bridgeConfig() });
+  await openSidebarChat({
+    extensionUri: deps.extensionUri,
+    bridgeConfig: deps.bridgeConfig(),
+    // The panel's own bookkeeping — without it the sidebar chat loses what the
+    // user picked (the model/name memory) the moment it is opened from a command.
+    chatTracker: deps.chatTracker,
+  });
 }
 
 export function registerChatCommands(deps: ChatCommandDeps): vscode.Disposable[] {

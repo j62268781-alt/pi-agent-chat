@@ -11,6 +11,7 @@
 import { mount } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { t } from "@/lib/i18n.ts";
 import TranscriptView from "@/components/TranscriptView.vue";
 import { useSessionStore } from "@/stores/session.ts";
 import { useTranscriptStore } from "@/stores/transcript.ts";
@@ -52,5 +53,34 @@ describe("TranscriptView while a switch is in flight", () => {
     await wrapper.vm.$nextTick();
 
     expect(wrapper.find(".switch-loading").exists()).toBe(false);
+  });
+});
+
+describe("TranscriptView's live status row", () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+  });
+
+  it("names a retry there, not only on the toolbar", async () => {
+    // 彬哥: a run sitting in its retries looked like it was still answering, and
+    // the toolbar's own counter went unnoticed. The row the reader watches says
+    // it instead.
+    const wrapper = mount(TranscriptView);
+    useSessionStore().applyState({ isStreaming: true });
+    useTranscriptStore().applyEvent({ type: "auto_retry_start", attempt: 2, maxAttempts: 5 });
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.get(".status-text").text()).toBe(t("Retrying {0}/{1}…", 2, 5));
+  });
+
+  it("goes back to the answering phrase when the retry lands", async () => {
+    const wrapper = mount(TranscriptView);
+    useSessionStore().applyState({ isStreaming: true });
+    const transcript = useTranscriptStore();
+    transcript.applyEvent({ type: "auto_retry_start", attempt: 2, maxAttempts: 5 });
+    transcript.applyEvent({ type: "auto_retry_end", success: true });
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.get(".status-text").text()).toBe(t("Replying…"));
   });
 });

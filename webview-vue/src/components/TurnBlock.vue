@@ -8,6 +8,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { post } from "@/lib/bridge.ts";
+import { localizeError } from "@/lib/error-text.ts";
 import { formatCounts, formatDuration, formatTime, formatTokens } from "@/lib/format.ts";
 import { t } from "@/lib/i18n.ts";
 import { aggregateUsage, formatUsage } from "@/lib/usage.ts";
@@ -54,10 +55,18 @@ onUnmounted(() => {
 
 /** Outcome word of a settled turn: the fold head's label. */
 const outcome = computed(() => {
-  if (props.turn.errorMessage) return t("failed");
+  // pi writes an `errorMessage` for an aborted run as well, so the stop reason
+  // has to be read first — otherwise a reply the user merely stopped gets
+  // stamped 失败, which is not what a stop is.
   if (props.turn.stopReason === "aborted") return t("Stopped");
+  if (props.turn.errorMessage) return t("failed");
   return t("Processed");
 });
+
+/** Only a failure the user did not ask for counts as one. */
+const failed = computed(
+  () => props.turn.stopReason !== "aborted" && Boolean(props.turn.errorMessage),
+);
 
 /**
  * What the closing status line says about the outcome — nothing, usually.
@@ -68,7 +77,7 @@ const outcome = computed(() => {
  * 2分25秒 already sits at the top of the turn. It only speaks for the turns with
  * no head to hang anything on — folding off, or nothing to fold.
  */
-const settledOutcome = computed(() => (props.turn.errorMessage ? t("failed") : ""));
+const settledOutcome = computed(() => (failed.value ? t("failed") : ""));
 
 /**
  * pi's own word for an aborted run is "user cancelled" (`stopReason: "aborted"`
@@ -165,6 +174,29 @@ const hasContent = computed(
 );
 
 const counts = computed(() => formatCounts(props.turn.added, props.turn.removed));
+
+/**
+ * pi's own words for why a run failed, when nothing else on screen carries them.
+ *
+ * A run can fail before it produces a single block — every retry refused, a 4xx
+ * from the provider — and then there is nothing for the fold head or the status
+ * line to hang the word 失败 on: the turn is a bare bubble, and the reason lives
+ * only in `errorMessage` (彬哥, 2026-09-25: 三次发送都失败了，界面上什么都看不出来).
+ * A retry row already spells the failure out, and a stopped run says so in its
+ * own notice, so both are left alone.
+ */
+const failureText = computed(() => {
+  // Red is for the end of the run, not for the middle of it: pi writes the
+  // provider's `errorMessage` on every refused attempt, so during the retry
+  // window this banner would shout 请求超时 while the row under it is still
+  // counting 正在重试 2/5 (彬哥, 2026-09-25). The run has to be over first.
+  if (running.value || !failed.value) return "";
+  if (props.turn.leading.some((message) => message.variant === "retry")) return "";
+  return localizeError(props.turn.errorMessage ?? "");
+});
+
+/** The provider's own words, kept for the banner's tooltip. */
+const failureRaw = computed(() => (props.turn.errorMessage ?? "").trim());
 
 const canAct = computed(() => !session.isStreaming && props.turn.user?.timestamp != null);
 
@@ -310,7 +342,13 @@ async function forkTurn(): Promise<void> {
       <div v-if="message.text" class="compaction-summary-body">{{ message.text }}</div>
     </details>
     <div v-else class="error-banner">
-      {{ t("Error: Retry failed after {0} attempts: {1}", message.attempt ?? 0, message.text) }}
+      {{
+        t(
+          "Error: Retry failed after {0} attempts: {1}",
+          message.attempt ?? 0,
+          localizeError(message.text),
+        )
+      }}
     </div>
   </div>
 
@@ -355,6 +393,16 @@ async function forkTurn(): Promise<void> {
        reply above it still reads as a whole answer. -->
   <div v-if="stopped" class="aborted-notice">
     {{ t("pi's reply was stopped by you.") }}
+  </div>
+
+  <!-- Where a failed run says why: a run that dies before its first block has no
+       head and no status word, so this is the only place its reason can appear. -->
+  <div
+    v-if="failureText"
+    class="error-banner"
+    :title="failureRaw && failureRaw !== failureText ? failureRaw : undefined"
+  >
+    {{ failureText }}
   </div>
 
   <!-- Every settled turn closes with its own status line. The order is 彬哥's

@@ -238,5 +238,10 @@
   "The queued message was not sent": "排队消息未能发出，已放回队列",
   "Open a workspace folder to start pi.": "打开一个工作区文件夹以开始使用 pi。",
   "Open Folder...": "打开文件夹...",
-  "Waiting for the agent…": "正在等待 agent…"
+  "Waiting for the agent…": "正在等待 agent…",
+  "The request timed out.": "请求超时",
+  "The provider is rate-limiting.": "请求过于频繁（限流）",
+  "The provider rejected the credentials.": "凭据被拒绝（鉴权失败）",
+  "The request was aborted.": "请求被中止",
+  "The provider returned a server error.": "服务端返回错误"
 }

@@ -139,13 +139,23 @@ describe("TurnBlock — is this turn still running?", () => {
     expect(failed.get(".work-head").text()).toContain(t("failed"));
     expect(failed.find(".msg-status-line .msg-outcome").exists()).toBe(false);
 
+    // A stop is not a failure. pi writes an `errorMessage` for an aborted run as
+    // well — `stopReason: "aborted"` comes with `"Request was aborted"` — so the
+    // head has to read the stop reason first, or every stopped reply is 失败.
+    const stoppedHead = mountTurn(
+      { stopReason: "aborted", errorMessage: "Request was aborted" },
+      true,
+    );
+    expect(stoppedHead.get(".work-head").text()).toContain(t("Stopped"));
+    expect(stoppedHead.get(".work-head").text()).not.toContain(t("failed"));
+
     // No head (folding off, or nothing folded) means the line has to name it.
     useDisplayStore().settings.collapseWork = false;
     const noHead = mountTurn({ errorMessage: "boom" }, true);
     expect(noHead.get(".msg-status-line .msg-outcome").text()).toBe(t("failed"));
 
     // A stop never gets the word: the notice above says it in full.
-    const stopped = mountTurn({ stopReason: "aborted" }, true);
+    const stopped = mountTurn({ stopReason: "aborted", errorMessage: "Request was aborted" }, true);
     expect(stopped.find(".msg-status-line .msg-outcome").exists()).toBe(false);
   });
 
@@ -442,5 +452,73 @@ describe("TurnBlock — pi's retry banner", () => {
     expect(wrapper.get(".error-banner").text()).toBe(
       t("Error: Retry failed after {0} attempts: {1}", 2, "gateway down"),
     );
+  });
+});
+
+describe("TurnBlock — a run that failed before it made anything", () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+  });
+
+  /** No blocks at all: the retries were all refused, so the turn is one bubble. */
+  const empty = { workBlocks: [], finalBlocks: [] };
+
+  it("prints a localized summary, with pi's own words one hover away", () => {
+    const wrapper = mountTurn({
+      ...empty,
+      errorMessage: "429 Too Many Requests (retried 5 times)",
+    });
+
+    const banner = wrapper.get(".error-banner");
+    expect(banner.text()).toBe(t("The provider is rate-limiting."));
+    expect(banner.attributes("title")).toBe("429 Too Many Requests (retried 5 times)");
+  });
+
+  it("passes a failure it does not recognise through untouched", () => {
+    const wrapper = mountTurn({ ...empty, errorMessage: "zsh: command not found: pi" });
+
+    const banner = wrapper.get(".error-banner");
+    expect(banner.text()).toBe("zsh: command not found: pi");
+    expect(banner.attributes("title")).toBeUndefined();
+  });
+
+  it("says nothing extra when a retry row already spells it out", () => {
+    const retryRow = {
+      kind: "system" as const,
+      id: "sys-1",
+      variant: "retry" as const,
+      text: "connection reset",
+      timestamp: T0,
+      attempt: 5,
+    };
+    const wrapper = mountTurn({ ...empty, leading: [retryRow], errorMessage: "connection reset" });
+
+    const banners = wrapper.findAll(".error-banner");
+    expect(banners).toHaveLength(1);
+    expect(banners[0]?.text()).toContain("connection reset");
+  });
+
+  it("keeps the red row for the end of the run, not the middle of a retry", async () => {
+    // pi writes the provider's `errorMessage` on every refused attempt too, so
+    // while the status row is still counting 正在重试 2/5 the banner has to stay
+    // away — red belongs to the end of the run (彬哥, 2026-09-25).
+    useSessionStore().applyState({ isStreaming: true });
+    const wrapper = mountTurn({ ...empty, errorMessage: "Request timed out." }, true);
+    expect(wrapper.find(".error-banner").exists()).toBe(false);
+
+    useSessionStore().applyState({ isStreaming: false });
+    await wrapper.vm.$nextTick();
+    expect(wrapper.get(".error-banner").text()).toBe(t("The request timed out."));
+  });
+
+  it("leaves a stopped run to its own notice", () => {
+    const wrapper = mountTurn({
+      ...empty,
+      stopReason: "aborted",
+      errorMessage: "Request was aborted",
+    });
+
+    expect(wrapper.find(".error-banner").exists()).toBe(false);
+    expect(wrapper.find(".aborted-notice").exists()).toBe(true);
   });
 });

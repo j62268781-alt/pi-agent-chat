@@ -65,13 +65,14 @@ describe("the vscode bridge contract", () => {
     for (const name of promised) expect(registered.has(name), name).toBe(true);
   });
 
-  it("keeps the finished-run toast behind the window-focus gate", () => {
-    // Two halves again: the extension asks for the gate on its `agent_settled`
-    // toast, the host honours it. Either side losing the flag turns the "finished
-    // while you were away" marker back into a toast on every single run (彬哥).
+  it("leaves the finished-run notice to the panel, and keeps the host's gate", () => {
+    // The extension no longer notifies at all: the panel reports the outcome in
+    // the transcript and plays its own chime, so a toast was a second voice for
+    // the same news (彬哥, 2026-09-25). The host still honours `onlyWhenUnfocused`
+    // — that handler is a bridge capability any pi extension can call.
     const extension = readFileSync(EXTENSION, "utf8");
     const settle = extension.slice(extension.indexOf('pi.on("agent_settled"'));
-    expect(settle.slice(0, 600)).toContain("onlyWhenUnfocused: true");
+    expect(settle.slice(0, 600)).not.toContain('callBridge("showNotification"');
 
     const handler = readFileSync(HANDLERS, "utf8");
     const fn = handler.slice(handler.indexOf("async function showNotification"));

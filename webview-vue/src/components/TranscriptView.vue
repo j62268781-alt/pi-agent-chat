@@ -39,6 +39,11 @@ const activeBlock = computed(() => {
   return blocks[blocks.length - 1] ?? null;
 });
 const liveLabel = computed(() => {
+  // A retry outranks both phrases: it is the one thing that explains why nothing
+  // is moving, and this row otherwise keeps claiming 正在回复中 for minutes while
+  // the toolbar's own counter goes unnoticed (彬哥: 卡了很久我才注意到).
+  if (transcript.retryAttempt > 0)
+    return t("Retrying {0}/{1}…", transcript.retryAttempt, transcript.retryMax);
   if (!session.isStreaming) return "";
   return activeBlock.value?.kind === "thinking" ? t("Deep thinking…") : t("Replying…");
 });
@@ -107,10 +112,21 @@ const hints = computed(() => {
   ];
 });
 
+/** Is the viewport showing the end of the content? */
+const atBottom = (el: HTMLElement): boolean =>
+  el.scrollTop + el.clientHeight >= el.scrollHeight - STICK_THRESHOLD_PX;
+
+/** Re-measure after the content changed under a viewport that did not scroll. */
+async function refreshStuck(): Promise<void> {
+  await nextTick();
+  const el = scroller.value;
+  if (el) stuck.value = atBottom(el);
+}
+
 function onScroll(): void {
   const el = scroller.value;
   if (!el) return;
-  stuck.value = el.scrollTop + el.clientHeight >= el.scrollHeight - STICK_THRESHOLD_PX;
+  stuck.value = atBottom(el);
   // Near the top with history still unmounted: page in older turns. The
   // compensation inside runs after nextTick, so this handler re-fires for the
   // settled position; `expanding` serialises the batches.
@@ -155,7 +171,11 @@ onMounted(() => {
   if (el) {
     el.addEventListener("scroll", onScroll, { passive: true });
     observer = new ResizeObserver(() => {
+      // The content can also *shrink* under the viewport — a new session, a
+      // cleared transcript. Nothing scrolls then, so `stuck` has to be measured
+      // again here or the button outlives the content that earned it.
       if (stuck.value) void scrollToBottom();
+      else void refreshStuck();
     });
     // Border box, not the default content box: the queue's inset is padding on
     // this element (`--pi-queue-h`), which grows only the border box — watching
@@ -181,6 +201,7 @@ watch(
       return;
     }
     if (stuck.value) void scrollToBottom();
+    else void refreshStuck();
   },
 );
 </script>

@@ -141,6 +141,7 @@ function ensureSidebarSession(opts: SidebarChatOptions): Promise<ChatSession | u
         cwd: resolveChatCwd(vscode.workspace.workspaceFolders?.[0]?.uri.fsPath),
         traceTag: "sidebar",
         host,
+        preferences: opts.chatTracker,
       });
       if (session) sidebarState = { ...sidebarState, session };
       return session;

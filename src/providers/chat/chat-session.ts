@@ -27,6 +27,7 @@ import type {
   RpcImage,
   RpcSessionEntry,
   RpcSessionStats,
+  RpcState,
 } from "../../protocol/rpc.ts";
 import type { SessionListItem, ToastKind, WebviewToExt } from "../../protocol/messages.ts";
 import { createRpcClient } from "../../services/rpc/client.ts";
@@ -40,6 +41,8 @@ import {
   waitForSessionReplacement,
   type SessionIdentity,
 } from "./session-replacement.ts";
+import type { ChatPreferences } from "./chat-tracker.ts";
+import { generateSessionTitle } from "../../services/chat/session-title.ts";
 
 export interface ChatSessionUpdate {
   rename?: string;
@@ -70,6 +73,8 @@ export interface ChatSessionOptions {
   onStreamingChange?: (running: boolean) => void;
   /** The pi subprocess exited. */
   onExit?: (code: number | null) => void;
+  /** The panel's own memory of what the user picked (see `chat-tracker.ts`). */
+  preferences?: ChatPreferences;
 }
 
 export interface ChatSession {
@@ -559,9 +564,17 @@ export async function createChatSession(
     return lines.join("\n");
   }
 
+  /** Write a name into pi and push it everywhere it shows — the toast is the caller's. */
+  async function pushSessionName(name: string): Promise<void> {
+    await rpc.setSessionName(name);
+    const st = await rpc.getState();
+    applySessionFile(st.sessionFile, name);
+    host.postMessage({ type: "state", state: st });
+  }
+
   async function applySessionName(name: string): Promise<void> {
     try {
-      await rpc.setSessionName(name);
+      await pushSessionName(name);
     } catch (e) {
       if (String(e instanceof Error ? e.message : e).includes("set_session_name")) {
         toast("Setting the session name requires a newer pi. Please upgrade.", "error");
@@ -569,10 +582,29 @@ export async function createChatSession(
       }
       throw e;
     }
-    const st = await rpc.getState();
-    applySessionFile(st.sessionFile, name);
-    host.postMessage({ type: "state", state: st });
     toast(`Session name set: ${name}`, "success");
+  }
+
+  /**
+   * Name the session the guide just created after the message that created it.
+   *
+   * The title comes from an in-process model call (`session-title.ts`: no
+   * subprocess, no MCP) that runs while the first turn is in flight, so nothing
+   * waits on it. Every failure is silent on purpose — a session that keeps its
+   * timestamp title is what the panel did before, and the user never asked for
+   * this name. It is skipped if they renamed the session themselves meanwhile,
+   * or moved to another one.
+   */
+  function autoNameSession(firstMessage: string, file: string | undefined): void {
+    if (!file || !cwd || !firstMessage.trim()) return;
+    void (async () => {
+      const title = await generateSessionTitle(firstMessage, cwd);
+      if (sessionDisposed || !title) return;
+      if (currentSessionFile !== file || sessionName) return;
+      await pushSessionName(title);
+      // The switcher's row for this session is built from `sessionName`.
+      void postSessionsList();
+    })().catch(() => {});
   }
 
   async function handleBuiltin(message: string): Promise<boolean> {
@@ -816,6 +848,8 @@ export async function createChatSession(
               const result = await rpc.newSession();
               guard.assertCurrent();
               if (result.cancelled) return result;
+              await applyPickedModel();
+              guard.assertCurrent();
               await refreshAfterSwitch(before);
               return result;
             });
@@ -828,6 +862,7 @@ export async function createChatSession(
               });
               return;
             }
+            autoNameSession(newSessionFirstMessage, currentSessionFile);
           }
           if (await handleBuiltin(String(msg.message ?? ""))) break;
           const ackId = typeof msg.ackId === "string" ? msg.ackId : undefined;
@@ -900,6 +935,8 @@ export async function createChatSession(
         try {
           await rpc.setModel(String(msg.provider ?? ""), String(msg.modelId ?? ""));
           const st = await rpc.getState();
+          // The pick is the user's; pi's state echoes what is now in force.
+          rememberPickedModel(st);
           host.postMessage({ type: "state", state: st });
           const levels = await rpc.getAvailableThinkingLevels();
           host.postMessage({ type: "thinkingLevels", levels });
@@ -929,6 +966,8 @@ export async function createChatSession(
         try {
           await rpc.setThinkingLevel(String(msg.level ?? ""));
           const st = await rpc.getState();
+          // The level rides along with the model: a new session gets both back.
+          rememberPickedModel(st);
           host.postMessage({ type: "state", state: st });
         } catch {
           // ignore
@@ -1133,6 +1172,8 @@ export async function createChatSession(
                   guard.assertCurrent();
                   await rpc.newSession();
                   guard.assertCurrent();
+                  await applyPickedModel();
+                  guard.assertCurrent();
                   await refreshAfterSwitch(before);
                 }
                 await rm(file, { force: true });
@@ -1301,6 +1342,39 @@ export async function createChatSession(
     void refreshAfterSwitch().catch(() => {});
   }
 
+  /** The model in force, as the user's own last pick (see `ChatPreferences`). */
+  function rememberPickedModel(st: RpcState): void {
+    const model = st.model;
+    if (!model?.provider || !model.id) return;
+    opts.preferences?.writeLastModel({
+      provider: model.provider,
+      modelId: model.id,
+      thinkingLevel: st.thinkingLevel,
+    });
+  }
+
+  /**
+   * Hand the user's last pick to a replacement session.
+   *
+   * `new_session` is a fresh pi session, and pi gives it the model from its own
+   * settings — measured: 在 turing 上的会话，new_session 之后回落到 settings 的
+   * defaultModel，而 switch_session 回一个跑过的会话才会还原它自己的模型. The
+   * panel's memory is the only place the user's pick survives that, so it is
+   * re-applied here, before the state push that would otherwise show the
+   * default. A model that has since lost its auth fails the call, and pi's
+   * default stands — which is what would have happened anyway.
+   */
+  async function applyPickedModel(): Promise<void> {
+    const picked = opts.preferences?.readLastModel();
+    if (!picked) return;
+    try {
+      await rpc.setModel(picked.provider, picked.modelId);
+      if (picked.thinkingLevel) await rpc.setThinkingLevel(picked.thinkingLevel);
+    } catch {
+      /* pi's default is the fallback */
+    }
+  }
+
   async function switchTo(sessionFile: string): Promise<void> {
     pendingNewSession = false;
     // Whatever the guide's message said belongs to the session being left.
@@ -1371,6 +1445,8 @@ export async function createChatSession(
         if (result.cancelled) {
           throw new Error(t("A pi extension cancelled the new session."));
         }
+        await applyPickedModel();
+        guard.assertCurrent();
         await refreshAfterSwitch(before);
         toast(t("Started new session."), "success");
       });

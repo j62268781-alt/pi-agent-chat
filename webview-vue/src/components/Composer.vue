@@ -20,6 +20,7 @@ import { formatTokens } from "@/lib/format.ts";
 import { t } from "@/lib/i18n.ts";
 import {
   getCaretOffset,
+  LINE_FILLER_ATTR,
   renderSegments,
   segmentsFromLiveText,
   segmentsFromText,
@@ -86,7 +87,8 @@ function serializeInput(root: HTMLElement): string {
     if (node.nodeType !== Node.ELEMENT_NODE) continue;
     const element = node as HTMLElement;
     if (element.tagName === "BR") {
-      out += "\n";
+      // The trailing-line filler is layout, not a newline the user typed.
+      if (!element.hasAttribute(LINE_FILLER_ATTR)) out += "\n";
       continue;
     }
     if (element.classList.contains("token-file")) {
@@ -106,7 +108,7 @@ function autoGrow(): void {
   const el = inputEl.value;
   if (!el) return;
   el.style.height = "auto";
-  const height = Math.max(36, Math.min(el.scrollHeight, 200));
+  const height = Math.max(23, Math.min(el.scrollHeight, 200));
   el.style.height = `${height}px`;
   el.style.overflowY = height >= 200 ? "auto" : "hidden";
 }
@@ -124,8 +126,13 @@ function onInput(): void {
   if (rendering) return;
   const el = inputEl.value;
   if (!el) return;
-  const text = serializeInput(el);
-  const caret = getCaretOffset(el);
+  // A contenteditable parks a `<br>` behind the caret — after the last character
+  // is deleted, and when Enter is pressed on an empty input. It reads back as
+  // "\n" but it is not content: left in place it stops `#input:empty` matching,
+  // so the placeholder never returns, and it dirties the draft with a blank line.
+  const raw = serializeInput(el);
+  const text = /^\n+$/.test(raw) ? "" : raw;
+  const caret = text === "" ? 0 : getCaretOffset(el);
   historySnapshot = null;
   if (text !== composer.draft) composer.draft = text;
   // Redraw so a completed token becomes a chip. Never during IME composition:
@@ -405,6 +412,9 @@ function insertAtCaret(text: string): void {
   const el = inputEl.value;
   if (!el) return;
   const value = serializeInput(el);
+  // A newline on an empty composer would leave an invisible blank line (and a
+  // lone `<br>`, which also hides the placeholder) — that key does nothing yet.
+  if (text === "\n" && value === "") return;
   const caret = getCaretOffset(el);
   const next = value.slice(0, caret) + text + value.slice(caret);
   composer.draft = next;
@@ -642,6 +652,14 @@ function sendPrompt(explicitQueue?: boolean): void {
   if (hold) {
     pending.enqueue(messageWithTagLine, images);
     return;
+  }
+  // The bubble goes up now, not when pi echoes it: a send that has to wait for a
+  // session to finish initialising (a fresh session, a replacement) would
+  // otherwise leave the message invisible for the whole wait. Commands are left
+  // out — the host can answer one without pi ever echoing a user message, and a
+  // bubble with nothing behind it is worse than a late one.
+  if (!messageWithTagLine.trimStart().startsWith("/")) {
+    transcript.pushPendingUser(messageWithTagLine, images);
   }
   if (streaming) {
     post({

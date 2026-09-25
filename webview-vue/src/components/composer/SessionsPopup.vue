@@ -260,7 +260,13 @@ function onDocumentMouseDown(ev: MouseEvent): void {
   if (overlays.confirmState) return;
   const target = ev.target as Node | null;
   if (!target) return;
-  const anchor = (popupEl.value?.offsetParent as HTMLElement | null) ?? popupEl.value;
+  // The switcher button is the popup's own anchor, so it counts as inside.
+  // `parentElement`, not `offsetParent`: the popup is `position: fixed`, whose
+  // offsetParent is always null — the check silently fell back to the popup
+  // alone, and then the button's own mousedown closed the list a beat before its
+  // click toggled it back open, so clicking the button could never dismiss what
+  // it opened (彬哥).
+  const anchor = popupEl.value?.parentElement ?? popupEl.value;
   if (anchor?.contains(target)) return;
   composer.closePopups();
 }

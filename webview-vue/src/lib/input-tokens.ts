@@ -5,6 +5,18 @@ export type Segment =
   | { type: "cmd"; value: string }
   | { type: "file"; value: string; label: string };
 
+/**
+ * Marks the `<br>` that exists only so a trailing empty line has a line box:
+ * Chrome collapses a lone trailing `<br>`, so `"a\n"` needs a second one to
+ * render as two lines. It is never content — the serializer and the caret walker
+ * both skip it, or the draft would grow a newline on every keystroke.
+ */
+export const LINE_FILLER_ATTR = "data-line-filler";
+
+function isLineFiller(el: Element): boolean {
+  return el.hasAttribute(LINE_FILLER_ATTR);
+}
+
 function isWhitespace(ch: string): boolean {
   return /\s/.test(ch);
 }
@@ -79,7 +91,7 @@ function serializeNode(node: Node): string {
     return "";
   if (node.nodeType === Node.ELEMENT_NODE) {
     const eln = node as HTMLElement;
-    if (eln.tagName === "BR") return "\n";
+    if (eln.tagName === "BR") return isLineFiller(eln) ? "" : "\n";
     if (eln.classList && eln.classList.contains("token-file"))
       return "@" + (eln.getAttribute("data-path") || "");
     if (eln.classList && eln.classList.contains("token-cmd"))
@@ -146,7 +158,9 @@ export function setCaretOffset(root: HTMLElement, offset: number): void {
     if (node.nodeType === Node.ELEMENT_NODE) {
       const eln = node as HTMLElement;
       if (eln.tagName === "BR") {
-        remaining -= 1;
+        // Not a character: an offset at the end of the text lands before the
+        // filler, which is the empty trailing line the caret belongs on.
+        if (!isLineFiller(eln)) remaining -= 1;
         return false;
       }
       if (eln.classList && eln.classList.contains("token-file")) {
@@ -201,6 +215,12 @@ export function renderSegments(root: HTMLElement, segments: Segment[], caretOffs
         if (i > 0) root.appendChild(document.createElement("br"));
         const part = parts[i];
         if (part) root.appendChild(document.createTextNode(part));
+      }
+      // A trailing newline needs one more break to show its empty line.
+      if (parts.length > 1 && parts[parts.length - 1] === "") {
+        const filler = document.createElement("br");
+        filler.setAttribute(LINE_FILLER_ATTR, "1");
+        root.appendChild(filler);
       }
     } else if (seg.type === "cmd") {
       const span = document.createElement("span");
