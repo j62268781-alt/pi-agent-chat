@@ -13,6 +13,7 @@ import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { t } from "@/lib/i18n.ts";
 import TranscriptView from "@/components/TranscriptView.vue";
+import TodoPill from "@/components/TodoPill.vue";
 import { useSessionStore } from "@/stores/session.ts";
 import { useTranscriptStore } from "@/stores/transcript.ts";
 
@@ -82,5 +83,19 @@ describe("TranscriptView's live status row", () => {
     await wrapper.vm.$nextTick();
 
     expect(wrapper.get(".status-text").text()).toBe(t("Replying…"));
+  });
+});
+
+describe("TranscriptView floating row", () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+  });
+
+  it("pairs the todo capsule with the scroll-to-bottom button", () => {
+    const wrapper = mount(TranscriptView, { shallow: true });
+
+    const row = wrapper.get(".float-row");
+    expect(row.find("#scroll-bottom-btn").exists()).toBe(true);
+    expect(row.findComponent(TodoPill).exists()).toBe(true);
   });
 });

@@ -7,6 +7,7 @@ import {
   PERMISSION_GATE_EXTENSION_PATH,
   QUESTIONNAIRE_EXTENSION_PATH,
   REWIND_CODE_EXTENSION_PATH,
+  TODO_EXTENSION_PATH,
 } from "../../utils/constants.ts";
 import { resolvePiBinary } from "./binary.ts";
 import type { BridgeConfig } from "../bridge/types.ts";
@@ -77,6 +78,15 @@ export async function ensurePiBinary(): Promise<string | undefined> {
  */
 const BRIDGE_PROMPT_ARGS = ["--append-system-prompt", BRIDGE_BOOTSTRAP_PROMPT];
 
+/** Bundled pi extensions, injected with `-e` on every spawn. */
+export const BUNDLED_EXTENSIONS = [
+  BRIDGE_EXTENSION_PATH,
+  QUESTIONNAIRE_EXTENSION_PATH,
+  TODO_EXTENSION_PATH,
+  PERMISSION_GATE_EXTENSION_PATH,
+  REWIND_CODE_EXTENSION_PATH,
+] as const;
+
 /**
  * Build the pi CLI argument list (without the binary itself).
  */
@@ -86,16 +96,10 @@ export function createPiShellArgs(options: {
   extraArgs?: string[];
 }): string[] {
   const userArgs = vscode.workspace.getConfiguration("pi-agent-chat").get<string[]>("args") ?? [];
-  const extensionArgs = [
+  const extensionArgs = BUNDLED_EXTENSIONS.flatMap((path) => [
     "-e",
-    join(options.extensionUri.fsPath, BRIDGE_EXTENSION_PATH),
-    "-e",
-    join(options.extensionUri.fsPath, QUESTIONNAIRE_EXTENSION_PATH),
-    "-e",
-    join(options.extensionUri.fsPath, PERMISSION_GATE_EXTENSION_PATH),
-    "-e",
-    join(options.extensionUri.fsPath, REWIND_CODE_EXTENSION_PATH),
-  ];
+    join(options.extensionUri.fsPath, path),
+  ]);
   const args = options.sessionFile
     ? [
         "--session",
@@ -139,16 +143,10 @@ export function createRpcShellArgs(options: {
   extraArgs?: string[];
 }): string[] {
   const userArgs = vscode.workspace.getConfiguration("pi-agent-chat").get<string[]>("args") ?? [];
-  const extensionArgs = [
+  const extensionArgs = BUNDLED_EXTENSIONS.flatMap((path) => [
     "-e",
-    join(options.extensionUri.fsPath, BRIDGE_EXTENSION_PATH),
-    "-e",
-    join(options.extensionUri.fsPath, QUESTIONNAIRE_EXTENSION_PATH),
-    "-e",
-    join(options.extensionUri.fsPath, PERMISSION_GATE_EXTENSION_PATH),
-    "-e",
-    join(options.extensionUri.fsPath, REWIND_CODE_EXTENSION_PATH),
-  ];
+    join(options.extensionUri.fsPath, path),
+  ]);
   const base = ["--mode", "rpc"];
   return options.sessionFile
     ? [

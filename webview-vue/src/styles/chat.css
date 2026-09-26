@@ -5088,3 +5088,127 @@ body {
   border: var(--pi-stroke) solid var(--pi-border-bubble);
   background: var(--pi-bg-bubble);
 }
+
+/* ── 面板 todo：胶囊 + 悬停浮层 ───────────────────────────────────────────────
+ * 胶囊与「回到底部」按钮同处一条居中浮空行（`.float-row`，由 Task 5 提供）。载荷来自
+ * `pi-extensions/todo.ts` 发的 widget，`widgetLines[0]` 是 JSON。只读：模型写。 */
+.todo-pill-hover {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.todo-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 30px;
+  padding: 0 10px;
+  background: var(--pi-bg-raised);
+  color: var(--pi-text);
+  border: var(--pi-stroke) solid var(--pi-border);
+  border-radius: var(--pi-r-full);
+  box-shadow: var(--pi-shadow-menu);
+  cursor: default;
+  font-size: var(--pi-fs-meta);
+  font-variant-numeric: tabular-nums;
+}
+
+.todo-pill-icon {
+  font-size: 14px;
+  color: var(--pi-text-secondary);
+}
+
+.todo-popover {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 31;
+  min-width: 220px;
+  max-width: 340px;
+  max-height: 240px;
+  overflow-y: auto;
+  padding: 8px 10px;
+  background: var(--pi-bg-raised);
+  border: var(--pi-stroke) solid var(--pi-border);
+  border-radius: var(--pi-r-lg);
+  box-shadow: var(--pi-shadow-menu);
+}
+
+.todo-popover-title {
+  margin-bottom: 6px;
+  color: var(--pi-text-muted);
+  font-size: var(--pi-fs-micro);
+  font-variant-numeric: tabular-nums;
+}
+
+.todo-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.todo-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: var(--pi-fs-meta);
+  line-height: 1.4;
+}
+
+.todo-state {
+  flex-shrink: 0;
+  width: 14px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--pi-text-muted);
+}
+
+.todo-row.is-completed .todo-text {
+  color: var(--pi-text-muted);
+  text-decoration: line-through;
+}
+
+.todo-row.is-in_progress .todo-text {
+  color: var(--pi-text);
+}
+
+.todo-row.is-pending .todo-text {
+  color: var(--pi-text-secondary);
+}
+
+/* 进行中的圆环：复用既有 tool-spin，不新增字形。 */
+.todo-spin {
+  width: 9px;
+  height: 9px;
+  border: 1.5px solid var(--pi-border);
+  border-top-color: var(--pi-text-secondary);
+  border-radius: 50%;
+  animation: tool-spin 0.7s linear infinite;
+}
+
+/* ── 输入区上方的浮空行：todo 胶囊 + 回到底部按钮 ─────────────────────────────
+ * 按钮原来的规则是 `position:absolute; left:50%; margin-left:-15px`。进了 flex 行
+ * 之后要就地中和，否则会被双重居中。 */
+.float-row {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.float-row .scroll-bottom-btn {
+  position: static;
+  left: auto;
+  margin-left: 0;
+}

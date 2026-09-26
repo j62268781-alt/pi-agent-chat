@@ -296,7 +296,8 @@
             "type": "string",
             "enum": [
               "vscode_get_diagnostics",
-              "questionnaire"
+              "questionnaire",
+              "todo"
             ]
           },
           "default": [],

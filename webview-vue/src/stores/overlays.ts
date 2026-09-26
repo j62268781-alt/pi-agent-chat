@@ -39,8 +39,7 @@ export const useOverlaysStore = defineStore("overlays", () => {
 
   const dialog = ref<ExtensionUiRequest | null>(null);
   const infoPanel = ref<{ title: string; markdown: string } | null>(null);
-  const widget = ref<{ key: string; lines: string[] } | null>(null);
-  const widgetOpen = ref(true);
+  const widgets = ref<Record<string, string[]>>({});
 
   const rewindFiles = ref<RewindFile[]>([]);
   const rewindSessionId = ref("");
@@ -105,21 +104,26 @@ export const useOverlaysStore = defineStore("overlays", () => {
     pending?.resolve(accepted);
   }
 
+  /**
+   * One slot per widget key. With a single slot, any extension clearing its own
+   * widget (`setWidget(key, undefined)`) wiped whoever else had one showing.
+   */
   function applyWidget(key: string | undefined, lines: string[] | undefined): void {
-    if (!key || !lines || lines.length === 0) {
-      widget.value = null;
+    if (!key) return;
+    if (!lines || lines.length === 0) {
+      const next = { ...widgets.value };
+      delete next[key];
+      widgets.value = next;
       return;
     }
-    widget.value = { key, lines };
-    widgetOpen.value = true;
+    widgets.value = { ...widgets.value, [key]: lines };
   }
 
   return {
     toasts,
     dialog,
     infoPanel,
-    widget,
-    widgetOpen,
+    widgets,
     rewindFiles,
     rewindSessionId,
     rewindBaselineHash,

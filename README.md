@@ -159,15 +159,15 @@ set settles.
 All settings live under `pi-agent-chat.*` — see the Settings panel
 (<kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>,</kbd>) or the VS Code Settings UI. The most relevant:
 
-| setting                             | default          | meaning                                                                        |
-| ----------------------------------- | ---------------- | ------------------------------------------------------------------------------ |
-| `pi-agent-chat.ui`                  | `sidebar`        | `webview` (editor tab) or `sidebar`                                            |
-| `pi-agent-chat.path`                | `""`             | absolute path to the `pi` binary; empty = auto-detect                          |
-| `pi-agent-chat.language`            | `auto`           | `auto` / `en` / `zh-cn`                                                        |
-| `pi-agent-chat.permission.mode`     | `AskForApproval` | gate bash commands matching `permission.dangerousPatterns`                     |
-| `pi-agent-chat.disabledTools`       | `[]`             | bundled tools to keep unregistered (`vscode_get_diagnostics`, `questionnaire`) |
-| `pi-agent-chat.chatFontSize`        | `14`             | transcript font size in px                                                     |
-| `pi-agent-chat.chatBackgroundImage` | `""`             | optional background image path                                                 |
+| setting                             | default          | meaning                                                                                |
+| ----------------------------------- | ---------------- | -------------------------------------------------------------------------------------- |
+| `pi-agent-chat.ui`                  | `sidebar`        | `webview` (editor tab) or `sidebar`                                                    |
+| `pi-agent-chat.path`                | `""`             | absolute path to the `pi` binary; empty = auto-detect                                  |
+| `pi-agent-chat.language`            | `auto`           | `auto` / `en` / `zh-cn`                                                                |
+| `pi-agent-chat.permission.mode`     | `AskForApproval` | gate bash commands matching `permission.dangerousPatterns`                             |
+| `pi-agent-chat.disabledTools`       | `[]`             | bundled tools to keep unregistered (`vscode_get_diagnostics`, `questionnaire`, `todo`) |
+| `pi-agent-chat.chatFontSize`        | `14`             | transcript font size in px                                                             |
+| `pi-agent-chat.chatBackgroundImage` | `""`             | optional background image path                                                         |
 
 ## Credits
 

@@ -19,6 +19,7 @@ import { t } from "@/lib/i18n.ts";
 import { useDisplayStore } from "@/stores/display";
 import { useSessionStore } from "@/stores/session";
 import { useTranscriptStore } from "@/stores/transcript";
+import TodoPill from "./TodoPill.vue";
 import TurnBlock from "./TurnBlock.vue";
 
 const transcript = useTranscriptStore();
@@ -279,15 +280,18 @@ watch(
       </div>
     </div>
 
-    <button
-      id="scroll-bottom-btn"
-      class="scroll-bottom-btn"
-      :class="{ show: !stuck }"
-      type="button"
-      :title="t('Scroll to bottom')"
-      @click="scrollToBottom"
-    >
-      <span class="codicon codicon-chevron-down"></span>
-    </button>
+    <div class="float-row">
+      <TodoPill />
+      <button
+        id="scroll-bottom-btn"
+        class="scroll-bottom-btn"
+        :class="{ show: !stuck }"
+        type="button"
+        :title="t('Scroll to bottom')"
+        @click="scrollToBottom"
+      >
+        <span class="codicon codicon-chevron-down"></span>
+      </button>
+    </div>
   </div>
 </template>

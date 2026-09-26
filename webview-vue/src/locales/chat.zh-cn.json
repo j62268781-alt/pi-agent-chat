@@ -243,5 +243,8 @@
   "The provider is rate-limiting.": "请求过于频繁（限流）",
   "The provider rejected the credentials.": "凭据被拒绝（鉴权失败）",
   "The request was aborted.": "请求被中止",
-  "The provider returned a server error.": "服务端返回错误"
+  "The provider returned a server error.": "服务端返回错误",
+  "Todos": "待办",
+  "All done": "全部完成",
+  "Tasks": "任务"
 }

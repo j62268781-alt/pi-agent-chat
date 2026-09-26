@@ -23,9 +23,9 @@ const session = useSessionStore();
 const collapsed = ref(true);
 
 const parsed = computed(() => {
-  const widget = overlays.widget;
-  if (!widget || widget.key !== "rewind-files") return null;
-  return parseRewindWidget(widget.lines);
+  const lines = overlays.widgets["rewind-files"];
+  if (!lines) return null;
+  return parseRewindWidget(lines);
 });
 
 watch(
