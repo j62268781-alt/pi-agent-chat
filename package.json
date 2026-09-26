@@ -58,7 +58,7 @@
     "@types/node": "^25.5.0",
     "@types/vscode": "1.100.0",
     "@typescript/native-preview": "^7.0.0-dev.20260320.1",
-    "@vscode/vsce": "^3.7.1",
+    "@vscode/vsce": "^4.0.0",
     "ovsx": "^0.10.9",
     "oxfmt": "^0.41.0",
     "oxlint": "^1.56.0",
