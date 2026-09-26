@@ -572,35 +572,42 @@ export const useTranscriptStore = defineStore("transcript", () => {
   }
 
   function startToolExecution(event: Record<string, unknown>): void {
-    const assistant = activeAssistant.value;
-    if (!assistant) return;
     const name = String(event.toolName ?? "");
     const args = asRecord(event.args);
     const callId = String(event.toolCallId ?? "");
 
-    // The block normally already exists from `toolcall_start`; the execution
-    // event is what fills in the real name/args.
-    let block: ToolBlock | null = null;
-    for (const candidate of assistant.blocks) {
-      if (candidate.kind === "tool" && candidate.status === "running" && !candidate.name) {
-        block = candidate;
-        break;
-      }
-    }
+    // The block usually already exists: `toolcall_end` created it and registered
+    // where it lives, and that registration is the one to trust. pi runs a tool
+    // *after* the assistant message that asked for it has ended, and `message_end`
+    // clears `activeAssistant` — looking the block up through `activeAssistant`
+    // alone therefore never found it in a real run, so no start time (and so no
+    // duration) was ever recorded for a tool.
+    let block = resolveToolLocation(callId);
     if (!block) {
-      block = createToolBlock();
-      assistant.blocks.push(block);
+      const assistant = activeAssistant.value;
+      if (!assistant) return;
+      // The execution event can beat the call being closed out.
+      for (const candidate of assistant.blocks) {
+        if (candidate.kind === "tool" && candidate.status === "running" && !candidate.name) {
+          block = candidate;
+          break;
+        }
+      }
+      if (!block) {
+        block = createToolBlock();
+        assistant.blocks.push(block);
+      }
+      block.id = callId || block.id;
+      toolLocations.set(block.id, {
+        messageIndex: activeAssistantIndex.value,
+        blockIndex: assistant.blocks.indexOf(block),
+      });
     }
-    block.id = callId || block.id;
     block.name = name || block.name;
     block.args = args ?? block.args;
     if (args) block.argsText = JSON.stringify(args);
     block.status = "running";
     block.startedAt = Date.now();
-    toolLocations.set(block.id, {
-      messageIndex: activeAssistantIndex.value,
-      blockIndex: assistant.blocks.indexOf(block),
-    });
   }
 
   function updateToolExecution(event: Record<string, unknown>): void {
