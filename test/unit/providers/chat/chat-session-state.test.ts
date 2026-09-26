@@ -9,6 +9,7 @@
 // transcript held both messages and pi's own `get_state` said `2`; only the
 // mirror the button reads was frozen.
 
+import { join } from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { RpcClient, RpcEvent, RpcState } from "../../../../src/protocol/rpc.ts";
 import { setConfigValue } from "../../stubs/vscode.ts";
@@ -45,12 +46,20 @@ const harness = vi.hoisted(() => ({
   titleGate: null as Promise<void> | null,
 }));
 
-vi.mock("../../../../src/services/chat/completion-sound.ts", () => ({
-  COMPLETION_SOUND_FILE: "resources/completion.wav",
-  playCompletionSound: (file: string) => {
-    harness.sounds.push(file);
-  },
-}));
+vi.mock("../../../../src/services/chat/completion-sound.ts", async () => {
+  // Only the *player* is stubbed. The file name is the real module's, so a
+  // constant that no longer points at the shipped wav fails the test — pinning
+  // it here as a literal made the assertion unable to see that drift at all.
+  const actual = await vi.importActual<
+    typeof import("../../../../src/services/chat/completion-sound.ts")
+  >("../../../../src/services/chat/completion-sound.ts");
+  return {
+    COMPLETION_SOUND_FILE: actual.COMPLETION_SOUND_FILE,
+    playCompletionSound: (file: string) => {
+      harness.sounds.push(file);
+    },
+  };
+});
 
 vi.mock("../../../../src/services/chat/session-title.ts", () => ({
   generateSessionTitle: async () => {
@@ -521,8 +530,11 @@ describe("the completion chime", () => {
 
     settle(session);
 
-    // The file as it ships: `resources/` is what the .vsix carries.
-    expect(harness.sounds).toEqual([expect.stringContaining("resources/completion.wav")]);
+    // The file as it ships: `resources/` is what the .vsix carries. Joined
+    // rather than spelled out — the path reaches the player through `join(...)`,
+    // whose separators are the platform's, so the literal only ever matched a
+    // POSIX host (CI runs Linux; on Windows this assertion was red).
+    expect(harness.sounds).toEqual([expect.stringContaining(join("resources", "completion.wav"))]);
   });
 
   it("stays silent for a run the user stopped", async () => {
