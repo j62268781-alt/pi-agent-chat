@@ -12,11 +12,13 @@ import { localizeError } from "@/lib/error-text.ts";
 import { formatCounts, formatDuration, formatTime, formatTokens } from "@/lib/format.ts";
 import { t } from "@/lib/i18n.ts";
 import { aggregateUsage, formatUsage } from "@/lib/usage.ts";
+import { collectTurnFiles } from "@/lib/turn-files.ts";
 import { useDisplayStore } from "@/stores/display";
 import { useOverlaysStore } from "@/stores/overlays";
 import { useSessionStore } from "@/stores/session";
 import type { Turn } from "@/stores/transcript";
 import BlockView from "./BlockView.vue";
+import TurnFilesCard from "./TurnFilesCard.vue";
 
 const props = defineProps<{ turn: Turn; isLast?: boolean }>();
 
@@ -174,6 +176,9 @@ const hasContent = computed(
 );
 
 const counts = computed(() => formatCounts(props.turn.added, props.turn.removed));
+
+/** The turn's files, read back out of its own tool blocks. */
+const changes = computed(() => collectTurnFiles(props.turn));
 
 /**
  * pi's own words for why a run failed, when nothing else on screen carries them.
@@ -404,6 +409,10 @@ async function forkTurn(): Promise<void> {
   >
     {{ failureText }}
   </div>
+
+  <!-- What this turn changed on disk, as the last thing under its answer: the
+       files are the turn's result, the status line below is its chrome. -->
+  <TurnFilesCard :changes="changes" />
 
   <!-- Every settled turn closes with its own status line. The order is 彬哥's
        (2026-09-22): 复制 · 用量明细 · fork, then the timestamp — three icons the

@@ -5212,3 +5212,118 @@ body {
   left: auto;
   margin-left: 0;
 }
+
+/* The turn's changed files, under its answer.
+   A card rather than a fold: the answer is above it and the turn's chrome
+   (复制 · 用量 · fork · 时间) below it, so it reads as the turn's result. */
+.turn-files {
+  margin: var(--pi-sp-3) 0 0;
+  padding: var(--pi-sp-3) var(--pi-sp-4);
+  background: var(--pi-bg-raised);
+  border: var(--pi-stroke) solid var(--pi-border);
+  border-radius: var(--pi-r-lg);
+  font-size: var(--pi-fs-meta);
+}
+
+.turn-files-head {
+  display: flex;
+  align-items: center;
+  gap: var(--pi-sp-2);
+}
+
+.turn-files-head-toggle,
+.turn-files-diff-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--pi-sp-7);
+  height: var(--pi-sp-7);
+  flex-shrink: 0;
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--pi-icon-muted);
+  cursor: pointer;
+}
+
+.turn-files-head-toggle:hover,
+.turn-files-diff-toggle:hover {
+  color: var(--pi-text);
+}
+
+.turn-files-title {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.turn-files-totals {
+  margin-left: auto;
+  display: inline-flex;
+  gap: var(--pi-sp-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.turn-files-added {
+  color: var(--pi-success);
+}
+
+.turn-files-removed {
+  color: var(--pi-danger);
+}
+
+.turn-files-list {
+  margin: var(--pi-sp-2) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.turn-files-row + .turn-files-row {
+  margin-top: var(--pi-sp-1);
+}
+
+.turn-files-line {
+  display: flex;
+  align-items: center;
+  gap: var(--pi-sp-2);
+}
+
+/* The path is the row's button: the whole name is the target, the full path is
+   on hover, and a long path ellipsizes rather than wrapping the row. */
+.turn-files-open {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--pi-text-secondary);
+  font: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.turn-files-open:hover .turn-files-path {
+  color: var(--pi-text-brand);
+  text-decoration: underline;
+}
+
+.turn-files-row .turn-files-added,
+.turn-files-row .turn-files-removed,
+.turn-files-tag {
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.turn-files-tag {
+  padding: 0 var(--pi-sp-2);
+  border: var(--pi-stroke) solid var(--pi-border);
+  border-radius: var(--pi-r-full);
+  color: var(--pi-text-faint);
+}
+
+/* The same diff markup the tool card draws, one indent in from the row. */
+.turn-files-row .diff-block {
+  margin: var(--pi-sp-1) 0 0 var(--pi-sp-7);
+}

@@ -14,7 +14,7 @@ import { post } from "@/lib/bridge.ts";
 import { t } from "@/lib/i18n.ts";
 import { useDisplayStore } from "@/stores/display.ts";
 import { useSessionStore } from "@/stores/session.ts";
-import type { AssistantMessage, Block, Turn } from "@/stores/transcript.ts";
+import type { AssistantMessage, Block, ToolBlock, Turn } from "@/stores/transcript.ts";
 import TurnBlock from "@/components/TurnBlock.vue";
 
 vi.mock("@/lib/bridge.ts", () => ({
@@ -520,5 +520,47 @@ describe("TurnBlock — a run that failed before it made anything", () => {
 
     expect(wrapper.find(".error-banner").exists()).toBe(false);
     expect(wrapper.find(".aborted-notice").exists()).toBe(true);
+  });
+});
+
+// The turn's changed files, at the end of the turn. The data is already in the
+// turn (each `edit` block carries `args.path` and pi's diff), so this is a
+// rendering decision: which block counts, and where the card lands.
+describe("TurnBlock — the files the turn changed", () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+  });
+
+  /** The file tool, with the numbers pi's `details.diff` produced. */
+  const editEntry = (): Turn["workBlocks"][number] => {
+    const entry = toolEntry("tool-edit");
+    const block: ToolBlock = {
+      ...(entry.block as ToolBlock),
+      name: "edit",
+      diffText: "@@ -1 +1 @@\n-const a = 1;\n+const a = 2;",
+      added: 1,
+      removed: 1,
+    };
+    return { message: entry.message, block };
+  };
+
+  it("lists the turn's changed file, between the answer and the closing line", () => {
+    const wrapper = mountTurn({ workBlocks: [editEntry()] });
+
+    expect(wrapper.get(".turn-files-title").text()).toBe(t("Edited {0} file{1}", 1, ""));
+    expect(wrapper.get(".turn-files-row").text()).toContain("src/app.ts");
+
+    const card = wrapper.get(".turn-files").element;
+    const status = wrapper.get(".msg-status-line").element;
+    expect(card.compareDocumentPosition(status) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("stays away from a turn that touched no file", () => {
+    expect(
+      mountTurn({ workBlocks: [toolEntry("tool-1")] })
+        .find(".turn-files")
+        .exists(),
+    ).toBe(false);
+    expect(mountTurn({ workBlocks: [] }).find(".turn-files").exists()).toBe(false);
   });
 });

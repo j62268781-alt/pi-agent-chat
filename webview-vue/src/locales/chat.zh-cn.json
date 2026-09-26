@@ -246,5 +246,9 @@
   "The provider returned a server error.": "服务端返回错误",
   "Todos": "待办",
   "All done": "全部完成",
-  "Tasks": "任务"
+  "Tasks": "任务",
+  "Edited {0} file{1}": "已编辑 {0} 个文件",
+  "Show diff": "查看 diff",
+  "Hide diff": "收起 diff",
+  "Whole-file write": "整文件写入"
 }
