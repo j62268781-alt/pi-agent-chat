@@ -5213,6 +5213,121 @@ body {
   margin-left: 0;
 }
 
+/* ── 消息定位：右侧刻度 + 悬停卡 ──────────────────────────────────────────────
+ * 轨贴在 `.messages` 自己那条 6px 滚动条的左边，宽度正好是 transcript 的 20px
+ * 内边距（`right: 6px` + `width: --pi-sp-8`）：刻度既不压正文，也不挡滚动条。
+ *
+ * 每条提问一枚短划（6×2px、圆头），悬停变长变亮，当前那条取链接色；压缩事件画一
+ * 条更长的细线。轨自身可滚（滚动条隐藏，`MessageRail` 把当前刻度带进视野），不写
+ * `overscroll-behavior`：刻度滚到头时滚轮要能交还给 transcript（见上面滚轮那段）。
+ *
+ * 悬停卡是浮层，走浮层那一套（`--pi-bg-raised` + 描边 + `--pi-r-lg` +
+ * `--pi-shadow-menu`），不占正文的卡片面 —— 它不是会话流里的一张卡。 */
+.msg-rail {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 6px;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--pi-sp-1);
+  width: var(--pi-sp-8);
+  padding: var(--pi-sp-3) 0;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.msg-rail::-webkit-scrollbar {
+  display: none;
+}
+
+.msg-rail-mark {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  width: 100%;
+  height: var(--pi-sp-5);
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.msg-rail-mark::after {
+  content: "";
+  width: var(--pi-sp-2);
+  height: 2px;
+  border-radius: var(--pi-r-full);
+  background: var(--pi-text-faint);
+  transition:
+    width 0.12s,
+    background-color 0.12s;
+}
+
+.msg-rail-mark:hover::after,
+.msg-rail-mark.is-hover::after {
+  width: var(--pi-sp-7);
+  background: var(--pi-text-secondary);
+}
+
+/* 当前那条排在悬停之后：悬停反馈由卡片承担，刻度本身不该一悬停就掉色。 */
+.msg-rail-mark.is-current::after {
+  width: var(--pi-sp-5);
+  background: var(--pi-text-brand);
+}
+
+.msg-rail-mark:focus-visible {
+  outline: var(--pi-stroke) solid var(--pi-brand);
+  outline-offset: -1px;
+}
+
+.msg-rail-sep {
+  flex-shrink: 0;
+  width: var(--pi-sp-7);
+  height: var(--pi-stroke);
+  margin: var(--pi-sp-1) 0;
+  background: var(--pi-border);
+}
+
+/* `pointer-events: none`：卡片只是刻度的说明，别去抢刻度自己的点击。 */
+.msg-rail-card {
+  position: absolute;
+  right: calc(var(--pi-sp-8) + var(--pi-sp-5));
+  z-index: 40;
+  width: 300px;
+  max-width: calc(100% - var(--pi-sp-10) - var(--pi-sp-5));
+  padding: var(--pi-sp-4);
+  pointer-events: none;
+  background: var(--pi-bg-raised);
+  color: var(--pi-text);
+  border: var(--pi-stroke) solid var(--pi-border);
+  border-radius: var(--pi-r-lg);
+  box-shadow: var(--pi-shadow-menu);
+}
+
+.msg-rail-card-title {
+  font-size: var(--pi-fs-body);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+}
+
+.msg-rail-card-reply {
+  margin-top: var(--pi-sp-2);
+  font-size: var(--pi-fs-meta);
+  line-height: 1.5;
+  color: var(--pi-text-secondary);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+}
+
 /* The turn's changed files, under its answer.
    A card rather than a fold: the answer is above it and the turn's chrome
    (复制 · 用量 · fork · 时间) below it, so it reads as the turn's result. */

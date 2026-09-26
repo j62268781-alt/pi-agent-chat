@@ -300,7 +300,9 @@ async function forkTurn(): Promise<void> {
 </script>
 
 <template>
-  <div v-if="turn.user" class="msg user">
+  <!-- `data-turn-id` is the rail's anchor: it is how a mark finds the row it
+       jumps to and how the rail tells which prompt is at the top of the view. -->
+  <div v-if="turn.user" class="msg user" :data-turn-id="turn.id">
     <div class="bubble user-bubble">
       <div v-if="turn.user.images.length" class="bubble-imgs">
         <img

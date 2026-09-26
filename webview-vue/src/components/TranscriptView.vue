@@ -19,6 +19,7 @@ import { t } from "@/lib/i18n.ts";
 import { useDisplayStore } from "@/stores/display";
 import { useSessionStore } from "@/stores/session";
 import { useTranscriptStore } from "@/stores/transcript";
+import MessageRail from "./MessageRail.vue";
 import TodoPill from "./TodoPill.vue";
 import TurnBlock from "./TurnBlock.vue";
 
@@ -279,6 +280,10 @@ watch(
         </div>
       </div>
     </div>
+
+    <!-- The rail rides the right edge of the scroller's box: it marks prompts in
+         the *whole* session, while only the tail turns are mounted. -->
+    <MessageRail />
 
     <div class="float-row">
       <TodoPill />

@@ -227,6 +227,30 @@ flowchart LR
     },
   ]),
 
+  user("u-3", "面板窄到 300px 时，工具行的时间戳会换成第二行，帮我看看。", T0 + 5 * MIN),
+
+  assistant("a-3", T0 + 5 * MIN + 2_000, [
+    tool(
+      "t-8",
+      "read",
+      { path: "webview-vue/src/components/ToolCallView.vue" },
+      {
+        output: "…",
+        durationMs: 63,
+        filePath: "webview-vue/src/components/ToolCallView.vue",
+        fileLine: 214,
+      },
+    ),
+    {
+      kind: "text",
+      id: "tx-2",
+      markdown:
+        "时间戳那一行是 `flex-wrap: wrap`，窄面板下没地方就折行了。改成 `nowrap` 加省略号，300px 侧栏下不再折。",
+      streaming: false,
+      collapsed: false,
+    },
+  ]),
+
   user("u-2", "顺便把工具行的图标也统一一下吧，现在有的 16 有的 18。", T0 + 9 * MIN),
 
   assistant(
